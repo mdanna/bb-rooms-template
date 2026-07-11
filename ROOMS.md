@@ -97,7 +97,13 @@ camere, affittabili **sia singolarmente sia come intero**.
       merge in GET e salvataggio del solo sottoinsieme in POST). Copertina/galleria/ordine
       per-unità; pool immagini condiviso; la delete immagine ripulisce i riferimenti in
       TUTTE le unità. ✅ tsc 0, lint 0, build, 199 test; pagine 307/redirect corrette.
-      *Rimandato:* home "sola landing camere" quando la radice è `bookable:false`.
+- [x] **5c. Tipo di struttura (intera prenotabile / solo camere)**: `bookable` dell'unità
+      radice, deciso nel **wizard** (prompt "Solo camere?" → `setStructureRoomsOnly`) e
+      modificabile in **Impostazioni** (card "Tipo di struttura" → `/api/admin/structure`).
+      UI adattiva: `AdminUnitSwitcher bookableOnly` → Calendario/Prezzi/OTA solo camere;
+      Contenuti/Immagini restano struttura+camere; home pubblica senza CTA/nav "Prenota"
+      e `/prenota`→redirect quando la radice non è prenotabile. ✅ verificato live (home
+      solo-camere: 0 link /prenota, selettore = sole camere, /prenota 307) + tsc/lint/build/199 test.
 - [ ] **6. Portale**: assegnazione di una struttura a un portale come singola scheda (hub).
 - [ ] **7. Wizard**: `bb-wizard` crea una struttura con camere (numero camere, slug, provisioning).
 - [ ] **8. Sito d'esempio**: istanza dimostrativa completa.

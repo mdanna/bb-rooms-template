@@ -52,6 +52,14 @@ export default function CameraClient({ unitId, content, minAdvanceDays }: Props)
             <Diamond />
           </div>
           <p className="mx-auto mt-6 max-w-xl text-base text-foreground sm:text-lg">{subtitle}</p>
+          <div className="mt-8">
+            <a
+              href="#prenota"
+              className="rounded-full border border-gold bg-gold px-8 py-3 text-sm font-medium uppercase tracking-widest text-[#faf6ec] transition hover:bg-transparent hover:text-gold"
+            >
+              {t.hero.bookDirect}
+            </a>
+          </div>
         </div>
       </header>
 
@@ -87,7 +95,7 @@ export default function CameraClient({ unitId, content, minAdvanceDays }: Props)
       </section>
 
       {/* Prenotazione della camera */}
-      <section className="px-6 pb-20">
+      <section id="prenota" className="scroll-mt-24 px-6 pb-20">
         <div className="mx-auto max-w-4xl text-center">
           <h2 className="font-serif-display text-3xl italic text-foreground sm:text-4xl">
             {t.booking.title}

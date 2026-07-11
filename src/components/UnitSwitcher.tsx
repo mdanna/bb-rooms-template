@@ -9,9 +9,9 @@ import { bookableUnits, rootUnitId, type Unit } from "@/lib/structure";
 // Se c'è una sola unità affittabile (sito a unità singola) non mostra nulla.
 
 function unitHref(u: Unit): string {
-  // L'unità radice (slug "") porta al flusso dell'appartamento intero (/prenota);
-  // le camere alla loro pagina (/camera/<slug>).
-  return u.slug ? `/camera/${u.slug}` : "/prenota";
+  // Ogni bottone porta alla HOME dell'unità: l'appartamento intero → "/" (la home
+  // principale, che ha il suo pulsante Prenota); le camere → "/camera/<slug>".
+  return u.slug ? `/camera/${u.slug}` : "/";
 }
 
 export default function UnitSwitcher({ activeUnitId }: { activeUnitId?: string }) {

@@ -238,7 +238,6 @@ export default function SettingsManager() {
   const UNITS = bookableUnits();
   const hasRooms = allUnits().length > 1;
   const [syncUnit, setSyncUnit] = useState(bookableUnits()[0]?.id ?? rootUnitId());
-  const [origin, setOrigin] = useState("");
   // Tipo di struttura (appartamento intero prenotabile o solo camere).
   const [rootBookable, setRootBookable] = useState<boolean | null>(null);
   const [structState, setStructState] = useState<State>("idle");
@@ -254,13 +253,6 @@ export default function SettingsManager() {
   const [portalState, setPortalState] = useState<State>("idle");
   const [portalMsg, setPortalMsg] = useState("");
   const [locSaveState, setLocSaveState] = useState<State>("idle");
-
-  useEffect(() => {
-    // Origin disponibile solo lato client (per costruire l'URL di export iCal):
-    // sync intenzionale da un sistema esterno (window), non uno stato derivabile.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setOrigin(window.location.origin);
-  }, []);
 
   // Campi condivisi a livello struttura (annunci esterni, lingua del pannello).
   useEffect(() => {
@@ -613,20 +605,6 @@ export default function SettingsManager() {
             )}
           </div>
         )}
-      </div>
-
-      {/* Export iCal PER UNITÀ: URL da incollare nell'inserzione OTA della camera/appartamento. */}
-      <div className="rounded-lg border border-gold/40 bg-card p-5 space-y-3">
-        <div>
-          <h2 className="font-serif-display text-2xl italic text-foreground">{UL.exportTitle}</h2>
-          <p className="mt-1 text-sm text-foreground/60">{UL.exportDesc}</p>
-        </div>
-        <input
-          readOnly
-          value={origin ? `${origin}/api/ical/${syncUnit}` : `…/api/ical/${syncUnit}`}
-          onFocus={(e) => e.currentTarget.select()}
-          className="w-full rounded border border-gold/40 bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-gold font-mono"
-        />
       </div>
 
       <div className="rounded-lg border border-gold/40 bg-card p-5 space-y-4">
