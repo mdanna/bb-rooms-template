@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import type { SiteContent, MapBookmark, Review, AreaPlace, L10n, Details } from "@/lib/siteContent";
 import { useAdminLanguage } from "@/i18n/AdminLanguageContext";
 import { rootUnitId } from "@/lib/structure";
-import DeployToast from "@/components/admin/DeployToast";
+import { useDrafts } from "@/components/admin/DraftContext";
+import AdminSaveBar from "@/components/admin/AdminSaveBar";
 
-type SaveState = "idle" | "saving" | "success" | "error";
 type TranslateState = "idle" | "translating" | "done" | "error";
 type SubTab = "struttura" | "testi" | "area" | "servizi" | "recensioni" | "seo";
 
@@ -35,29 +35,6 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
   return <span className={labelTextCls}>{children}</span>;
 }
 
-function SaveButton({
-  saveState,
-  onClick,
-  labels,
-}: {
-  saveState: SaveState;
-  onClick: () => void;
-  labels: { save: string; saving: string; saved: string; error: string };
-}) {
-  return (
-    <div className="flex items-center gap-4 pt-6">
-      <button
-        onClick={onClick}
-        disabled={saveState === "saving"}
-        className="rounded-full bg-gold px-6 py-2 text-xs uppercase tracking-widest text-[#faf6ec] transition hover:opacity-90 disabled:opacity-50"
-      >
-        {saveState === "saving" ? labels.saving : labels.save}
-      </button>
-      {saveState === "success" && <span className="text-sm text-green-600">{labels.saved}</span>}
-      {saveState === "error" && <span className="text-sm text-red-600">{labels.error}</span>}
-    </div>
-  );
-}
 
 function LangBadge({ lang }: { lang: string }) {
   return (
@@ -67,17 +44,24 @@ function LangBadge({ lang }: { lang: string }) {
   );
 }
 
-export default function ContentEditor({ unitId }: { unitId?: string }) {
+export default function ContentEditor(props: { unitId?: string }) {
+  const { hydrated } = useDrafts();
+  // Rimonta a bozze idratate (refresh) / cambio unità → rilegge la bozza giusta.
+  return <ContentEditorInner key={`${props.unitId ?? "default"}-${hydrated}`} {...props} />;
+}
+
+function ContentEditorInner({ unitId }: { unitId?: string }) {
   const { t, locale } = useAdminLanguage();
-  const tc = t.contents;
-  const DEMO = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
   const subTabLabels = SUB_TAB_LABELS[locale] ?? SUB_TAB_LABELS.en;
   // Camera: solo i contenuti PROPRI (testi + servizi). I campi condivisi (posizione,
   // zona, mappa, recensioni, SEO) si modificano sull'appartamento (unità radice).
   const isRoom = !!unitId && unitId !== rootUnitId();
   const subTabs: SubTab[] = isRoom ? ["testi", "servizi"] : SUB_TABS;
   const unitQuery = unitId ? `?unit=${encodeURIComponent(unitId)}` : "";
-  const saveLabels = { save: tc.save, saving: tc.saving, saved: DEMO ? t.common.demoSaved : tc.saved, error: t.common.error };
+  // Bozza: le modifiche vanno in bozza con "Salva" (chiave content:<unità>), pubblicate
+  // tutte insieme con "Pubblica" (barra Salva/Pubblica in cima e in fondo).
+  const { getDraft, setDraft } = useDrafts();
+  const draftKey = `content:${unitId ?? "default"}`;
 
   const CONTENT_LABELS = {
     it: { property: "Struttura", posizione: "Posizione (visualizzata)", città: "Città", indirizzo: "Indirizzo", tel: "Telefono", email: "Email contatto", emailPren: "Email prenotazioni", piva: "Partita IVA / Codice fiscale host", cin: "CIN (Codice Identificativo Nazionale)", nomeHost: "Nome host", metaDesc: "Meta description (SEO)", privacyNote: "Visualizzato nella pagina Privacy come titolare del trattamento dati.", emailNote: "L'email di contatto è anche l'indirizzo dove ricevi le notifiche di prenotazione.", airbnbUrl: "URL Airbnb", rating: "Rating", numReviews: "Numero recensioni", details: "Dettagli", tipoAlloggio: "Tipo di alloggio", caratteristiche: "Caratteristiche", composizione: "Composizione", capacità: "Capacità", zona: "Zona", titoloStruttura: "Titolo struttura", sottotitoloHero: "Sottotitolo hero", titoloRacconto: "Titolo racconto", paragrafiRacconto: "Paragrafi racconto", aggiungiParag: "+ Aggiungi paragrafo", descArea: "Descrizione area", descrizione: "Descrizione", coordinate: "Coordinate appartamento", lat: "Latitudine", lng: "Longitudine", segnalibri: "Segnalibri mappa (max 5)", etichetta: "Etichetta", aggiungiSegnalibro: "Aggiungi segnalibro", puntiInteresse: "Punti di interesse", nome: "Nome", commento: "Commento", aggiungiPunto: "Aggiungi punto", servizi: "Servizi", aggiungiServizio: "Aggiungi servizio", autore: "Autore", testoRecensione: "Testo recensione", aggiungiRecensione: "Aggiungi recensione", elimina: "Elimina", rimuovi: "Rimuovi", traduceTutto: "Traduci tutto", traduceDesc: "Traduce automaticamente tutti i contenuti in 8 lingue con un solo clic, poi salva.", traduzioneCompletata: "Traduzione completata — ricordati di salvare.", traduciAuto: "Traduci automaticamente", traduciDettagli: "Traduci dettagli", traduciArea: "Traduci", traduciPunti: "Traduci punti di interesse", traduciServizi: "Traduci servizi", traduciRecensioni: "Traduci recensioni", inCorso: "Traduzione in corso…", vediEn: "Vedi traduzioni (EN)", nascondi: "Nascondi", tradotto: "Tradotto", airbnbSection: "Airbnb", paragrafoPh: "Paragrafo {n}…" },
@@ -93,8 +77,6 @@ export default function ContentEditor({ unitId }: { unitId?: string }) {
   const src = (field: L10n): string => field[srcLang] || field.it || Object.values(field).find(Boolean) || "";
 
   const [content, setContent] = useState<SiteContent | null>(null);
-  const [saveState, setSaveState] = useState<SaveState>("idle");
-  const [deploySha, setDeploySha] = useState<string | null>(null);
   const [loadError, setLoadError] = useState("");
   const [activeTab, setActiveTab] = useState<SubTab>("struttura");
 
@@ -123,6 +105,10 @@ export default function ContentEditor({ unitId }: { unitId?: string }) {
   const [allTranslateError, setAllTranslateError] = useState("");
 
   useEffect(() => {
+    // Se c'è una bozza non pubblicata per questa unità, riparti da lì; altrimenti dal server.
+    const d = getDraft<SiteContent>(draftKey);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (d) { setContent(d); return; }
     fetch(`/api/admin/content${unitQuery}`)
       .then((r) => r.json())
       .then(setContent)
@@ -130,23 +116,9 @@ export default function ContentEditor({ unitId }: { unitId?: string }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unitId]);
 
-  async function handleSave() {
-    if (!content) return;
-    setSaveState("saving");
-    try {
-      const res = await fetch(`/api/admin/content${unitQuery}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(content),
-      });
-      const data = (await res.json()) as { error?: string; commitSha?: string };
-      if (!res.ok) throw new Error(data.error ?? t.common.error);
-      setSaveState("success");
-      if (data.commitSha) setDeploySha(data.commitSha);
-      setTimeout(() => setSaveState("idle"), 3000);
-    } catch {
-      setSaveState("error");
-    }
+  // "Salva" mette in BOZZA i contenuti dell'unità (istantaneo); "Pubblica" committa tutto.
+  function saveToDraft() {
+    if (content) setDraft(draftKey, content);
   }
 
   function set<K extends keyof SiteContent>(key: K, value: SiteContent[K]) {
@@ -562,7 +534,7 @@ export default function ContentEditor({ unitId }: { unitId?: string }) {
           </div>
         </div>
 
-        <SaveButton saveState={saveState} onClick={handleSave} labels={saveLabels} />
+        <AdminSaveBar onSave={saveToDraft} />
       </div>
     );
   }
@@ -683,7 +655,7 @@ export default function ContentEditor({ unitId }: { unitId?: string }) {
           </div>
         )}
 
-        <SaveButton saveState={saveState} onClick={handleSave} labels={saveLabels} />
+        <AdminSaveBar onSave={saveToDraft} />
       </div>
     );
   }
@@ -902,7 +874,7 @@ export default function ContentEditor({ unitId }: { unitId?: string }) {
           </div>
         </div>
 
-        <SaveButton saveState={saveState} onClick={handleSave} labels={saveLabels} />
+        <AdminSaveBar onSave={saveToDraft} />
       </div>
     );
   }
@@ -963,7 +935,7 @@ export default function ContentEditor({ unitId }: { unitId?: string }) {
             )}
           </div>
         </div>
-        <SaveButton saveState={saveState} onClick={handleSave} labels={saveLabels} />
+        <AdminSaveBar onSave={saveToDraft} />
       </div>
     );
   }
@@ -1042,7 +1014,7 @@ export default function ContentEditor({ unitId }: { unitId?: string }) {
             )}
           </div>
         </div>
-        <SaveButton saveState={saveState} onClick={handleSave} labels={saveLabels} />
+        <AdminSaveBar onSave={saveToDraft} />
       </div>
     );
   }
@@ -1101,7 +1073,7 @@ export default function ContentEditor({ unitId }: { unitId?: string }) {
           <span className="text-xs text-foreground/40">{S.altNamesHelp}</span>
         </label>
 
-        <SaveButton saveState={saveState} onClick={handleSave} labels={saveLabels} />
+        <AdminSaveBar onSave={saveToDraft} />
       </div>
     );
   }
@@ -1112,6 +1084,7 @@ export default function ContentEditor({ unitId }: { unitId?: string }) {
 
   return (
     <div className="space-y-4">
+      <AdminSaveBar onSave={saveToDraft} />
       {/* Traduci tutto */}
       <div className="flex flex-wrap items-center gap-3 rounded-lg border border-gold/30 bg-gold/5 px-4 py-3">
         <button
@@ -1160,8 +1133,6 @@ export default function ContentEditor({ unitId }: { unitId?: string }) {
         {activeSub === "recensioni" && renderRecensioni()}
         {activeSub === "seo" && renderSeo()}
       </div>
-
-      <DeployToast sha={deploySha} onDone={() => setDeploySha(null)} />
     </div>
   );
 }

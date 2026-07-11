@@ -3,7 +3,8 @@
 import { useEffect, useState, useRef } from "react";
 import type { SiteContent } from "@/lib/siteContent";
 import { useAdminLanguage } from "@/i18n/AdminLanguageContext";
-import DeployToast from "@/components/admin/DeployToast";
+import { useDrafts } from "@/components/admin/DraftContext";
+import AdminSaveBar from "@/components/admin/AdminSaveBar";
 
 interface ImageFile {
   name: string;
@@ -12,17 +13,26 @@ interface ImageFile {
 }
 
 type UploadState = "idle" | "uploading" | "success" | "error";
-type SaveState = "idle" | "saving" | "success" | "error";
 
 const MAX_GALLERY = 12;
 
-export default function ImageManager({ unitId }: { unitId?: string }) {
+export default function ImageManager(props: { unitId?: string }) {
+  const { hydrated } = useDrafts();
+  // Rimonta a bozze idratate (refresh) / cambio unità → rilegge la bozza giusta.
+  return <ImageManagerInner key={`${props.unitId ?? "default"}-${hydrated}`} {...props} />;
+}
+
+function ImageManagerInner({ unitId }: { unitId?: string }) {
   const { t } = useAdminLanguage();
   const ti = t.images;
   const DEMO = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
   // Il pool immagini (public/images) è condiviso; copertina/galleria/ordine sono
   // PER UNITÀ (stanno nel content dell'unità selezionata).
   const unitQuery = unitId ? `?unit=${encodeURIComponent(unitId)}` : "";
+  // Bozza condivisa con Contenuti (chiave content:<unità>): copertina/galleria/ordine e
+  // testi si pubblicano insieme con "Pubblica".
+  const { getDraft, setDraft } = useDrafts();
+  const draftKey = `content:${unitId ?? "default"}`;
 
   const [images, setImages] = useState<ImageFile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,8 +44,6 @@ export default function ImageManager({ unitId }: { unitId?: string }) {
   const [fullContent, setFullContent] = useState<SiteContent | null>(null);
 
   const [selectionDirty, setSelectionDirty] = useState(false);
-  const [saveState, setSaveState] = useState<SaveState>("idle");
-  const [deploySha, setDeploySha] = useState<string | null>(null);
 
   const [uploadState, setUploadState] = useState<UploadState>("idle");
   const [uploadError, setUploadError] = useState("");
@@ -69,9 +77,14 @@ export default function ImageManager({ unitId }: { unitId?: string }) {
 
   useEffect(() => {
     let cancelled = false;
+    // Contenuto: dalla bozza se c'è (selezione/testi non pubblicati), altrimenti dal server.
+    const draftContent = getDraft<SiteContent>(draftKey);
+    const contentPromise = draftContent
+      ? Promise.resolve(draftContent)
+      : fetch(`/api/admin/content${unitQuery}`).then((r) => r.json() as Promise<SiteContent>);
     Promise.all([
       fetch("/api/admin/images").then((r) => r.json() as Promise<{ files?: ImageFile[]; error?: string }>),
-      fetch(`/api/admin/content${unitQuery}`).then((r) => r.json() as Promise<SiteContent>),
+      contentPromise,
     ])
       .then(([imgData, contentData]) => {
         if (cancelled) return;
@@ -110,7 +123,6 @@ export default function ImageManager({ unitId }: { unitId?: string }) {
 
   function markDirty() {
     setSelectionDirty(true);
-    setSaveState("idle");
   }
 
   function toggleHero(name: string) {
@@ -141,28 +153,16 @@ export default function ImageManager({ unitId }: { unitId?: string }) {
     markDirty();
   }
 
-  async function handleSaveSelection() {
+  // "Salva" mette in BOZZA la selezione (copertina/galleria/ordine) sul content dell'unità
+  // — stessa chiave di Contenuti, così testi e immagini si pubblicano insieme. "Pubblica"
+  // committa tutto. (Upload/elimina immagini restano immediati: operano sui file.)
+  function saveToDraft() {
     if (!fullContent) return;
-    setSaveState("saving");
-    try {
-      // Galleria pubblica = immagini in galleria, nell'ordine unificato scelto dall'admin.
-      const galleryImages = order.filter((n) => inGallery.includes(n));
-      const body: SiteContent = { ...fullContent, heroImage, galleryImages, imageOrder: order };
-      const res = await fetch(`/api/admin/content${unitQuery}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const data = (await res.json()) as { error?: string; commitSha?: string };
-      if (!res.ok) throw new Error(data.error ?? t.common.error);
-      setFullContent(body);
-      setSaveState("success");
-      if (data.commitSha) setDeploySha(data.commitSha);
-      setSelectionDirty(false);
-      setTimeout(() => setSaveState("idle"), 3000);
-    } catch {
-      setSaveState("error");
-    }
+    const galleryImages = order.filter((n) => inGallery.includes(n));
+    const body: SiteContent = { ...fullContent, heroImage, galleryImages, imageOrder: order };
+    setDraft(draftKey, body);
+    setFullContent(body);
+    setSelectionDirty(false);
   }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -243,7 +243,9 @@ export default function ImageManager({ unitId }: { unitId?: string }) {
         galleryImages: prev.galleryImages.filter((n) => n !== name),
         imageOrder: (prev.imageOrder ?? []).filter((n) => n !== name),
       } : prev);
-      if (data.commitSha) setDeploySha(data.commitSha);
+      // Se c'è una bozza per questa unità, togli anche lì il riferimento all'immagine eliminata.
+      const d = getDraft<SiteContent>(draftKey);
+      if (d) setDraft(draftKey, { ...d, heroImage: d.heroImage === name ? "" : d.heroImage, galleryImages: (d.galleryImages ?? []).filter((n) => n !== name), imageOrder: (d.imageOrder ?? []).filter((n) => n !== name) });
       await loadImages();
     } catch (err) {
       alert(err instanceof Error ? err.message : t.common.error);
@@ -257,6 +259,7 @@ export default function ImageManager({ unitId }: { unitId?: string }) {
 
   return (
     <div className="space-y-6">
+      <AdminSaveBar onSave={saveToDraft} />
       {/* Carica immagine: prima delle immagini (come il pannello portale) */}
       <div className="flex flex-wrap items-center gap-3">
         <button
@@ -354,20 +357,8 @@ export default function ImageManager({ unitId }: { unitId?: string }) {
         </div>
       )}
 
-      {/* Salvataggio della selezione (copertina + galleria + ordine) */}
-      <div className="flex items-center gap-4">
-        <button
-          onClick={handleSaveSelection}
-          disabled={saveState === "saving" || !selectionDirty}
-          className="rounded-full border border-gold bg-gold px-6 py-2 text-xs uppercase tracking-widest text-[#faf6ec] transition hover:bg-transparent hover:text-gold disabled:opacity-40"
-        >
-          {saveState === "saving" ? t.contents.saving : t.contents.save}
-        </button>
-        {saveState === "success" && <span className="text-sm text-green-600">{DEMO ? t.common.demoSaved : t.contents.saved}</span>}
-        {saveState === "error" && <span className="text-sm text-red-600">{t.common.error}</span>}
-      </div>
-
-      <DeployToast sha={deploySha} onDone={() => setDeploySha(null)} />
+      {/* Salvataggio della selezione (copertina + galleria + ordine) in bozza */}
+      <AdminSaveBar onSave={saveToDraft} />
 
       {/* Lightbox */}
       {zoomSrc && (

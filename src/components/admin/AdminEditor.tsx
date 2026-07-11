@@ -4,7 +4,8 @@ import { useState } from "react";
 import type { DayRate } from "@/data/availability";
 import AdminCalendar from "./AdminCalendar";
 import { useAdminLanguage } from "@/i18n/AdminLanguageContext";
-import DeployToast from "@/components/admin/DeployToast";
+import { useDrafts } from "@/components/admin/DraftContext";
+import AdminSaveBar from "@/components/admin/AdminSaveBar";
 
 interface Props {
   initialDefaultPrice: number;
@@ -13,7 +14,6 @@ interface Props {
   unitId?: string;
 }
 
-type SaveState = "idle" | "saving" | "success" | "error";
 type RangeMode = "price" | "booked" | "direct";
 
 const EDITOR_LABELS = {
@@ -109,16 +109,24 @@ function enumerateDates(start: string, end: string): string[] {
   return dates;
 }
 
-export default function AdminEditor({ initialDefaultPrice, initialOverrides, unitId }: Props) {
-  const { t, locale } = useAdminLanguage();
-  const L = EDITOR_LABELS[locale] ?? EDITOR_LABELS.en;
-  const DEMO = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+export default function AdminEditor(props: Props) {
+  const { hydrated } = useDrafts();
+  // Rimonta quando le bozze sono idratate da sessionStorage (dopo un refresh) o cambia
+  // unità → l'editor interno rilegge la bozza giusta invece dei dati del server.
+  return <AdminEditorInner key={`${props.unitId ?? "default"}-${hydrated}`} {...props} />;
+}
 
-  const [defaultPrice, setDefaultPrice] = useState(initialDefaultPrice);
-  const [overrides, setOverrides] = useState<DayRate[]>(initialOverrides);
-  const [saveState, setSaveState] = useState<SaveState>("idle");
-  const [deploySha, setDeploySha] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState("");
+function AdminEditorInner({ initialDefaultPrice, initialOverrides, unitId }: Props) {
+  const { locale } = useAdminLanguage();
+  const L = EDITOR_LABELS[locale] ?? EDITOR_LABELS.en;
+
+  // Bozza: se c'è una modifica non pubblicata per questa unità, riparti da lì.
+  const { getDraft, setDraft } = useDrafts();
+  const draftKey = `calendar:${unitId ?? "default"}`;
+  const draft = getDraft<{ defaultPrice: number; overrides: DayRate[] }>(draftKey);
+
+  const [defaultPrice, setDefaultPrice] = useState(draft?.defaultPrice ?? initialDefaultPrice);
+  const [overrides, setOverrides] = useState<DayRate[]>(draft?.overrides ?? initialOverrides);
   const today = toLocalISODate(new Date());
   const [rangeStart, setRangeStart] = useState(today);
   const [rangeEnd, setRangeEnd] = useState(today);
@@ -181,28 +189,16 @@ export default function AdminEditor({ initialDefaultPrice, initialOverrides, uni
     });
   }
 
-  async function handleSave() {
-    setSaveState("saving");
-    setErrorMessage("");
-    try {
-      const res = await fetch(`/api/admin/save${unitId ? `?unit=${encodeURIComponent(unitId)}` : ""}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ defaultPrice, overrides }),
-      });
-      const data = await res.json() as { error?: string; commitSha?: string };
-      if (!res.ok) throw new Error(data.error ?? t.common.error);
-      setSaveState("success");
-      if (data.commitSha) setDeploySha(data.commitSha);
-    } catch (err) {
-      setSaveState("error");
-      setErrorMessage(err instanceof Error ? err.message : t.common.error);
-    }
+  // "Salva" mette solo in BOZZA (istantaneo, niente deploy). La pubblicazione di TUTTE
+  // le bozze avviene con "Pubblica" (barra Salva/Pubblica in cima e in fondo).
+  function saveToDraft() {
+    setDraft(draftKey, { defaultPrice, overrides });
   }
 
   return (
     <div className="mt-10">
       <div className="space-y-10">
+        <AdminSaveBar onSave={saveToDraft} />
         <section>
           <h2 className="font-serif-display text-xl italic text-foreground">{L.basePrice}</h2>
           <p className="mt-1 text-sm text-foreground/60">{L.basePriceDesc}</p>
@@ -284,17 +280,8 @@ export default function AdminEditor({ initialDefaultPrice, initialOverrides, uni
           </div>
         </section>
 
-        <section className="flex flex-col items-start gap-3">
-          <button onClick={handleSave} disabled={saveState === "saving"}
-            className="rounded-full border border-gold bg-gold px-8 py-3 text-sm font-medium uppercase tracking-widest text-[#faf6ec] transition hover:bg-transparent hover:text-gold disabled:cursor-not-allowed disabled:opacity-50">
-            {saveState === "saving" ? L.saving : L.savePublish}
-          </button>
-          {saveState === "success" && <p className="text-sm text-green-700">{DEMO ? t.common.demoSaved : L.saved}</p>}
-          {saveState === "error" && <p className="text-sm text-red-600">{errorMessage}</p>}
-        </section>
+        <AdminSaveBar onSave={saveToDraft} />
       </div>
-
-      <DeployToast sha={deploySha} onDone={() => setDeploySha(null)} />
     </div>
   );
 }
