@@ -1,17 +1,32 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { signOut } from "next-auth/react";
 import { useAdminLanguage } from "@/i18n/AdminLanguageContext";
 import StructureSwitcher from "@/components/admin/StructureSwitcher";
+import { CONTENT } from "@/lib/siteContent";
+import { getUnit } from "@/lib/structure";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export default function AdminNav({ userName: _userName }: { userName?: string | null }) {
   const pathname = usePathname();
-  const { t } = useAdminLanguage();
+  const { t, locale } = useAdminLanguage();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // A sinistra il NOME di dove si è (così si capisce), come link alla home pubblica →
+  // la voce "Sito pubblico" diventa ridondante ed è stata tolta. Se stai gestendo una
+  // CAMERA (?unit=<camera>) mostra il suo nome e linka alla sua pagina; altrimenti il
+  // nome della struttura e linka alla home.
+  const searchParams = useSearchParams();
+  const unitParam = searchParams.get("unit") ?? undefined;
+  const activeUnit = unitParam ? getUnit(unitParam) : undefined;
+  const isRoom = !!activeUnit && !!activeUnit.slug; // le camere hanno uno slug; la radice ""
+  const headerName = isRoom
+    ? activeUnit!.name[locale] || activeUnit!.name.it || activeUnit!.id
+    : CONTENT.siteTitle[locale] || CONTENT.siteTitle.it || t.nav.title;
+  const homeHref = isRoom ? `/camera/${activeUnit!.slug}` : "/";
 
   // Ordine per frequenza d'uso: operatività (Dashboard, Calendario, Prenotazioni),
   // poi aspetto del sito (Contenuti, Immagini), poi Impostazioni.
@@ -47,18 +62,18 @@ export default function AdminNav({ userName: _userName }: { userName?: string | 
         >
           {mobileOpen ? "✕" : "☰"}
         </button>
-        <span className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap font-serif-display text-sm italic text-foreground">
-          {t.nav.title}
-        </span>
+        <Link href={homeHref} className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap font-serif-display text-sm italic text-foreground transition hover:text-gold">
+          {headerName}
+        </Link>
         <span className="w-9" aria-hidden />
       </div>
 
       {/* Desktop toolbar: full-width con px-6 costante (niente mx-auto/max-w) così
           titolo e voci restano ancorati ai bordi a qualsiasi larghezza, come il NavBar pubblico. */}
       <div className="hidden items-center justify-between px-6 py-3 lg:flex">
-        <span className="font-serif-display text-base italic text-foreground">
-          {t.nav.title}
-        </span>
+        <Link href={homeHref} className="font-serif-display text-base italic text-foreground transition hover:text-gold">
+          {headerName}
+        </Link>
         <div className="flex items-center gap-6">
           {links.map((link) => (
             <Link key={link.href} href={link.href} className={linkCls(link.href)}>
@@ -67,14 +82,6 @@ export default function AdminNav({ userName: _userName }: { userName?: string | 
           ))}
           {/* Switcher tra le strutture del portale (non mostrato se la struttura è singola) */}
           <StructureSwitcher />
-          <a
-            href="/"
-            target="_blank"
-            rel="noopener"
-            className="text-xs uppercase tracking-widest text-foreground/70 transition hover:text-gold"
-          >
-            {t.nav.publicSite}
-          </a>
           <button
             onClick={() => signOut({ callbackUrl: "/admin" })}
             className="text-xs uppercase tracking-widest text-foreground/70 transition hover:text-gold"
@@ -99,15 +106,6 @@ export default function AdminNav({ userName: _userName }: { userName?: string | 
               </Link>
             ))}
             <StructureSwitcher />
-            <a
-              href="/"
-              target="_blank"
-              rel="noopener"
-              onClick={() => setMobileOpen(false)}
-              className="text-left text-xs uppercase tracking-widest text-foreground/70 transition hover:text-gold"
-            >
-              {t.nav.publicSite}
-            </a>
             <button
               onClick={() => signOut({ callbackUrl: "/admin" })}
               className="text-left text-xs uppercase tracking-widest text-foreground/70 transition hover:text-gold"
