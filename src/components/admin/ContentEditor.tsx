@@ -6,6 +6,19 @@ import { useAdminLanguage } from "@/i18n/AdminLanguageContext";
 import { rootUnitId } from "@/lib/structure";
 import { useDrafts } from "@/components/admin/DraftContext";
 import AdminSaveBar from "@/components/admin/AdminSaveBar";
+import { localeOrder, translations } from "@/i18n/index";
+
+// Lingua principale del contenuto (★): sorgente/fallback del sito pubblico. I testi si
+// editano per-lingua tramite le chip (editLocale), indipendentemente dalla lingua del pannello.
+const PRIMARY: keyof L10n = "it";
+
+// Testo d'aiuto della barra chip, nella lingua del PANNELLO (non del contenuto).
+const CHIP_LABELS = {
+  it: { fillMain: "Compila almeno la lingua principale (★). Le lingue lasciate vuote mostrano il testo della principale — oppure usa «Traduci tutto».", editing: "Stai modificando" },
+  en: { fillMain: "Fill at least the main language (★). Empty languages fall back to the main text — or use «Translate all».", editing: "Editing" },
+  es: { fillMain: "Rellena al menos el idioma principal (★). Los idiomas vacíos muestran el texto principal — o usa «Traducir todo».", editing: "Editando" },
+  fr: { fillMain: "Remplissez au moins la langue principale (★). Les langues vides affichent le texte principal — ou utilisez «Tout traduire».", editing: "Modification" },
+} as const;
 
 type TranslateState = "idle" | "translating" | "done" | "error";
 type SubTab = "struttura" | "testi" | "area" | "servizi" | "recensioni" | "seo";
@@ -72,8 +85,12 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
 
   const L = CONTENT_LABELS[locale as keyof typeof CONTENT_LABELS] ?? CONTENT_LABELS.en;
   const S = SEO_LABELS[locale as keyof typeof SEO_LABELS] ?? SEO_LABELS.en;
-  const srcLang = locale as keyof L10n;
-  // Best available source text: prefer current admin locale, fallback to Italian
+  const CL = CHIP_LABELS[locale as keyof typeof CHIP_LABELS] ?? CHIP_LABELS.en;
+  // Lingua in modifica, scelta dalle chip (indipendente dalla lingua del pannello).
+  // Tutti i campi L10n leggono/scrivono questa lingua. Default = principale (★).
+  const [editLocale, setEditLocale] = useState<keyof L10n>(PRIMARY);
+  const srcLang = editLocale;
+  // Testo sorgente per la traduzione: lingua in modifica, con fallback alla principale.
   const src = (field: L10n): string => field[srcLang] || field.it || Object.values(field).find(Boolean) || "";
 
   const [content, setContent] = useState<SiteContent | null>(null);
@@ -151,7 +168,7 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
             storyTitle: src(content.storyTitle),
             ...paragraphTexts,
           },
-          sourceLang: locale,
+          sourceLang: srcLang,
         }),
       });
       const data = (await res.json()) as { translations?: Record<string, Record<string, string>>; error?: string };
@@ -200,7 +217,7 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
       const res = await fetch("/api/admin/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texts: { areaDescription: src(content.areaDescription) }, sourceLang: locale }),
+        body: JSON.stringify({ texts: { areaDescription: src(content.areaDescription) }, sourceLang: srcLang }),
       });
       const data = (await res.json()) as { translations?: Record<string, Record<string, string>>; error?: string };
       if (!res.ok || !data.translations) throw new Error(data.error ?? t.common.error);
@@ -227,7 +244,7 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
       const res = await fetch("/api/admin/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texts, sourceLang: locale }),
+        body: JSON.stringify({ texts, sourceLang: srcLang }),
       });
       const data = (await res.json()) as { translations?: Record<string, Record<string, string>>; error?: string };
       if (!res.ok || !data.translations) throw new Error(data.error ?? t.common.error);
@@ -257,7 +274,7 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
       const res = await fetch("/api/admin/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texts, sourceLang: locale }),
+        body: JSON.stringify({ texts, sourceLang: srcLang }),
       });
       const data = (await res.json()) as { translations?: Record<string, Record<string, string>>; error?: string };
       if (!res.ok || !data.translations) throw new Error(data.error ?? t.common.error);
@@ -284,7 +301,7 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
       const res = await fetch("/api/admin/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texts, sourceLang: locale }),
+        body: JSON.stringify({ texts, sourceLang: srcLang }),
       });
       const data = (await res.json()) as { translations?: Record<string, Record<string, string>>; error?: string };
       if (!res.ok || !data.translations) throw new Error(data.error ?? t.common.error);
@@ -321,7 +338,7 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
             maxGuests: src(content.details.maxGuests),
             neighborhood: src(content.details.neighborhood),
           },
-          sourceLang: locale,
+          sourceLang: srcLang,
         }),
       });
       const data = (await res.json()) as { translations?: Record<string, Record<string, string>>; error?: string };
@@ -383,7 +400,7 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
         const res = await fetch("/api/admin/translate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ texts, sourceLang: locale }),
+          body: JSON.stringify({ texts, sourceLang: srcLang }),
         });
         const data = (await res.json()) as { translations?: Record<string, Record<string, string>>; error?: string };
         if (!res.ok || !data.translations) throw new Error(data.error ?? t.common.error);
@@ -511,13 +528,13 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
             ] as { key: keyof Details; label: string }[]
           ).map(({ key, label }) => (
             <label key={key} className={labelCls}>
-              <span className={labelTextCls}>{label} <LangBadge lang={locale} /></span>
+              <span className={labelTextCls}>{label} <LangBadge lang={srcLang} /></span>
               <input
                 type="text"
                 value={content.details[key][srcLang] ?? ""}
                 onChange={(e) =>
                   setContent((c) =>
-                    c ? { ...c, details: { ...c.details, [key]: { ...c.details[key], it: e.target.value } } } : c
+                    c ? { ...c, details: { ...c.details, [key]: { ...c.details[key], [srcLang]: e.target.value } } } : c
                   )
                 }
                 className={inputCls}
@@ -566,17 +583,17 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
         <div className="rounded-lg border border-gold/30 bg-background p-6 space-y-5">
           {/* Titolo struttura */}
           <label className={labelCls}>
-            <span className={labelTextCls}>{L.titoloStruttura} <LangBadge lang={locale} /></span>
+            <span className={labelTextCls}>{L.titoloStruttura} <LangBadge lang={srcLang} /></span>
             <input type="text" value={content.siteTitle[srcLang] ?? ""}
               onChange={(e) => setL10nField("siteTitle", srcLang, e.target.value)} className={inputCls} />
           </label>
           <label className={labelCls}>
-            <span className={labelTextCls}>{L.sottotitoloHero} <LangBadge lang={locale} /></span>
+            <span className={labelTextCls}>{L.sottotitoloHero} <LangBadge lang={srcLang} /></span>
             <input type="text" value={content.heroSubtitle[srcLang] ?? ""}
               onChange={(e) => setL10nField("heroSubtitle", srcLang, e.target.value)} className={inputCls} />
           </label>
           <label className={labelCls}>
-            <span className={labelTextCls}>{L.titoloRacconto} <LangBadge lang={locale} /></span>
+            <span className={labelTextCls}>{L.titoloRacconto} <LangBadge lang={srcLang} /></span>
             <input type="text" value={content.storyTitle[srcLang] ?? ""}
               onChange={(e) => setL10nField("storyTitle", srcLang, e.target.value)} className={inputCls} />
           </label>
@@ -586,7 +603,7 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
         <div className="rounded-lg border border-gold/30 bg-background p-6 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-widest text-foreground/50">
-              {L.paragrafiRacconto} <LangBadge lang={locale} />
+              {L.paragrafiRacconto} <LangBadge lang={srcLang} />
               <span className="ml-2 text-foreground/40 normal-case font-normal">
                 ({content.storyParagraphs.length}/{MAX_PARAGRAPHS})
               </span>
@@ -669,7 +686,7 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
           <h3 className="text-xs font-bold uppercase tracking-widest text-foreground/50">{L.descArea}</h3>
           <label className={labelCls}>
             <span className={labelTextCls}>
-              {L.descrizione} <LangBadge lang={locale} />
+              {L.descrizione} <LangBadge lang={srcLang} />
             </span>
             <textarea
               rows={3}
@@ -802,7 +819,7 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
                 <div className="flex-1 grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <label className={labelCls}>
                     <span className={labelTextCls}>
-                      {L.nome} <LangBadge lang={locale} />
+                      {L.nome} <LangBadge lang={srcLang} />
                     </span>
                     <input
                       type="text"
@@ -818,7 +835,7 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
                   </label>
                   <label className={labelCls}>
                     <span className={labelTextCls}>
-                      {L.commento} <LangBadge lang={locale} />
+                      {L.commento} <LangBadge lang={srcLang} />
                     </span>
                     <input
                       type="text"
@@ -971,7 +988,7 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
               </div>
               <label className={labelCls}>
                 <span className={labelTextCls}>
-                  {L.testoRecensione} <LangBadge lang={locale} />
+                  {L.testoRecensione} <LangBadge lang={srcLang} />
                 </span>
                 <textarea
                   rows={4}
@@ -1105,6 +1122,34 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
         {allTranslateState === "error" && (
           <span className="text-xs text-red-600">{allTranslateError}</span>
         )}
+      </div>
+
+      {/* Selettore lingua dei testi (chip): indipendente dalla lingua del pannello,
+          vale per tutti i sub-tab. ★ = principale, • = lingua già compilata. */}
+      <div className="flex flex-col gap-2 rounded-lg border border-gold/20 bg-card px-4 py-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {localeOrder.map((code) => {
+            const filled = Boolean(
+              content.siteTitle?.[code]?.trim() || content.heroSubtitle?.[code]?.trim() ||
+              content.storyTitle?.[code]?.trim()
+            );
+            return (
+              <button
+                key={code}
+                type="button"
+                onClick={() => setEditLocale(code)}
+                className={`rounded-full border px-3 py-1 text-xs transition ${
+                  code === editLocale
+                    ? "border-gold bg-gold text-[#faf6ec]"
+                    : "border-foreground/15 text-foreground/70 hover:text-gold"
+                }`}
+              >
+                {translations[code].langName}{code === PRIMARY ? " ★" : filled ? " •" : ""}
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-xs text-foreground/40">{CL.fillMain}</p>
       </div>
 
       {/* Sub-tab bar (per una camera solo Testi + Servizi) */}
