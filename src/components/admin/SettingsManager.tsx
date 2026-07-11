@@ -7,76 +7,16 @@ import { adminLocaleOrder, adminTranslations, type AdminLocaleCode } from "@/i18
 import type { CalendarSyncResult } from "@/app/api/admin/calendar-sync/route";
 import type { OtaPlatform } from "@/data/availability";
 import { PORTAL_LINK } from "@/lib/portalLink";
-import { allUnits, bookableUnits, rootUnitId } from "@/lib/structure";
+import { bookableUnits, rootUnitId } from "@/lib/structure";
 
 type State = "idle" | "saving" | "success" | "error";
 
-// Etichette specifiche della struttura con camere (tenute fuori dall'oggetto LABELS
-// grande). Sincronizzazione e URL iCal sono PER UNITÀ: ogni inserzione OTA (appartamento
-// intero e ogni camera) ha i suoi calendari.
-const UNIT_LABELS: Record<
-  string,
-  {
-    unit: string;
-    exportTitle: string;
-    exportDesc: string;
-    structTitle: string;
-    structDesc: string;
-    whole: string;
-    wholeDesc: string;
-    roomsOnly: string;
-    roomsOnlyDesc: string;
-    structSaved: string;
-  }
-> = {
-  it: {
-    unit: "Unità",
-    exportTitle: "Esporta verso le OTA",
-    exportDesc: "Incolla questo URL iCal nell'inserzione OTA di questa unità: le notti occupate — comprese quelle bloccate perché un'altra unità è prenotata — si bloccheranno anche lì.",
-    structTitle: "Tipo di struttura",
-    structDesc: "Decide se l'appartamento intero è affittabile o se si prenotano solo le camere. Cambia i tab di prenotazione (calendario, prezzi, OTA) e la home pubblica.",
-    whole: "Appartamento intero + camere",
-    wholeDesc: "Si può affittare sia l'intero appartamento sia le singole camere.",
-    roomsOnly: "Solo camere",
-    roomsOnlyDesc: "L'appartamento è solo un contenitore: si prenotano solo le camere; la home elenca le camere.",
-    structSaved: "Salvato — la struttura si aggiornerà tra qualche secondo (redeploy).",
-  },
-  en: {
-    unit: "Unit",
-    exportTitle: "Export to the OTAs",
-    exportDesc: "Paste this iCal URL into this unit's OTA listing: booked nights — including those blocked because another unit is booked — will block there too.",
-    structTitle: "Structure type",
-    structDesc: "Whether the whole apartment is bookable or only the rooms are. Changes the booking tabs (calendar, prices, OTA) and the public home.",
-    whole: "Whole apartment + rooms",
-    wholeDesc: "Both the whole apartment and individual rooms can be rented.",
-    roomsOnly: "Rooms only",
-    roomsOnlyDesc: "The apartment is just a container: only rooms are booked; the home lists the rooms.",
-    structSaved: "Saved — the structure will update in a few seconds (redeploy).",
-  },
-  es: {
-    unit: "Unidad",
-    exportTitle: "Exportar a las OTAs",
-    exportDesc: "Pega esta URL iCal en el anuncio OTA de esta unidad: las noches ocupadas —incluidas las bloqueadas porque otra unidad está reservada— se bloquearán también allí.",
-    structTitle: "Tipo de alojamiento",
-    structDesc: "Si se alquila el apartamento entero o solo las habitaciones. Cambia las pestañas de reserva (calendario, precios, OTA) y la home pública.",
-    whole: "Apartamento entero + habitaciones",
-    wholeDesc: "Se pueden alquilar tanto el apartamento entero como las habitaciones.",
-    roomsOnly: "Solo habitaciones",
-    roomsOnlyDesc: "El apartamento es solo un contenedor: solo se reservan habitaciones; la home las lista.",
-    structSaved: "Guardado — el alojamiento se actualizará en unos segundos (redeploy).",
-  },
-  fr: {
-    unit: "Unité",
-    exportTitle: "Exporter vers les OTA",
-    exportDesc: "Collez cette URL iCal dans l'annonce OTA de cette unité : les nuits occupées — y compris celles bloquées car une autre unité est réservée — seront bloquées là aussi.",
-    structTitle: "Type de logement",
-    structDesc: "Si l'appartement entier est réservable ou si seules les chambres le sont. Change les onglets de réservation (calendrier, prix, OTA) et la page d'accueil.",
-    whole: "Appartement entier + chambres",
-    wholeDesc: "On peut louer l'appartement entier comme les chambres individuelles.",
-    roomsOnly: "Chambres uniquement",
-    roomsOnlyDesc: "L'appartement n'est qu'un conteneur : seules les chambres se réservent ; l'accueil les liste.",
-    structSaved: "Enregistré — le logement se mettra à jour dans quelques secondes (redeploy).",
-  },
+// Etichetta "Unità" per il selettore OTA per-unità (fuori dall'oggetto LABELS grande).
+const UNIT_LABELS: Record<string, { unit: string }> = {
+  it: { unit: "Unità" },
+  en: { unit: "Unit" },
+  es: { unit: "Unidad" },
+  fr: { unit: "Unité" },
 };
 
 const PLATFORMS: OtaPlatform[] = ["airbnb", "booking", "vrbo"];
@@ -234,13 +174,11 @@ export default function SettingsManager() {
   const L = LABELS[locale as keyof typeof LABELS] ?? LABELS.en;
   const UL = UNIT_LABELS[locale] ?? UNIT_LABELS.en;
 
-  // Tab OTA/export: solo unità affittabili (un appartamento "solo camere" non ha OTA proprie).
+  // Tab OTA: solo unità affittabili (un appartamento "solo camere" non ha OTA proprie).
+  // Il TIPO di struttura (intero prenotabile / solo camere) si decide alla creazione
+  // (wizard) e non è modificabile qui: cambiarlo a caldo è troppo delicato.
   const UNITS = bookableUnits();
-  const hasRooms = allUnits().length > 1;
   const [syncUnit, setSyncUnit] = useState(bookableUnits()[0]?.id ?? rootUnitId());
-  // Tipo di struttura (appartamento intero prenotabile o solo camere).
-  const [rootBookable, setRootBookable] = useState<boolean | null>(null);
-  const [structState, setStructState] = useState<State>("idle");
   const [urls, setUrls] = useState<Record<OtaPlatform, string>>({ airbnb: "", booking: "", vrbo: "" });
   const [saveState, setSaveState] = useState<State>("idle");
   const [syncState, setSyncState] = useState<State>("idle");
@@ -274,31 +212,6 @@ export default function SettingsManager() {
       })
       .catch(() => {});
   }, [syncUnit]);
-
-  // Tipo di struttura corrente (appartamento intero prenotabile o solo camere).
-  useEffect(() => {
-    if (!hasRooms) return;
-    fetch("/api/admin/structure")
-      .then((r) => r.json())
-      .then((d: { rootBookable?: boolean }) => {
-        if (typeof d.rootBookable === "boolean") setRootBookable(d.rootBookable);
-      })
-      .catch(() => {});
-  }, [hasRooms]);
-
-  async function saveStructureType(next: boolean) {
-    setRootBookable(next);
-    setStructState("saving");
-    try {
-      const res = await fetch("/api/admin/structure", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rootBookable: next }),
-      });
-      if (!res.ok) throw new Error();
-      setStructState("success");
-      setTimeout(() => setStructState("idle"), 6000);
-    } catch { setStructState("error"); }
-  }
 
   async function saveExternal() {
     setExtSaveState("saving");
@@ -414,42 +327,6 @@ export default function SettingsManager() {
           </Link>
         )}
       </div>
-
-      {/* Tipo di struttura: appartamento intero prenotabile o solo camere */}
-      {hasRooms && (
-        <div className="rounded-lg border border-gold/40 bg-card p-5 space-y-3">
-          <div>
-            <h2 className="font-serif-display text-2xl italic text-foreground">{UL.structTitle}</h2>
-            <p className="mt-1 text-sm text-foreground/60">{UL.structDesc}</p>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {[
-              { val: true, label: UL.whole, desc: UL.wholeDesc },
-              { val: false, label: UL.roomsOnly, desc: UL.roomsOnlyDesc },
-            ].map((opt) => {
-              const active = rootBookable === opt.val;
-              return (
-                <button
-                  key={String(opt.val)}
-                  onClick={() => saveStructureType(opt.val)}
-                  disabled={structState === "saving" || DEMO}
-                  className={`rounded-lg border p-4 text-left transition disabled:opacity-60 ${
-                    active ? "border-gold bg-gold/10" : "border-gold/40 hover:border-gold"
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className={`inline-block h-3 w-3 rounded-full border ${active ? "border-gold bg-gold" : "border-foreground/40"}`} />
-                    <span className="text-sm font-medium text-foreground">{opt.label}</span>
-                  </div>
-                  <p className="mt-1 text-xs text-foreground/60">{opt.desc}</p>
-                </button>
-              );
-            })}
-          </div>
-          {structState === "success" && <p className="text-xs text-green-700">{DEMO ? L.demo : UL.structSaved}</p>}
-          {structState === "error" && <p className="text-xs text-red-600">{L.saveError}</p>}
-        </div>
-      )}
 
       {/* Lingua del pannello admin */}
       <div className="rounded-lg border border-gold/40 bg-card p-5 space-y-3">
