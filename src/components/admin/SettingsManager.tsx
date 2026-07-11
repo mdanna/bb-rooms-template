@@ -208,7 +208,12 @@ export default function SettingsManager() {
   const [portalMsg, setPortalMsg] = useState("");
   const [locSaveState, setLocSaveState] = useState<State>("idle");
 
-  useEffect(() => setOrigin(window.location.origin), []);
+  useEffect(() => {
+    // Origin disponibile solo lato client (per costruire l'URL di export iCal):
+    // sync intenzionale da un sistema esterno (window), non uno stato derivabile.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setOrigin(window.location.origin);
+  }, []);
 
   // Campi condivisi a livello struttura (annunci esterni, lingua del pannello).
   useEffect(() => {
