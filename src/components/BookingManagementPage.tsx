@@ -445,8 +445,10 @@ export default function BookingManagementPage({ code, token }: { code: string; t
 function CheckinInfoCard({ locale }: { locale: LocaleCode }) {
   const ci = translations[locale].checkinInfo;
   const address = process.env.NEXT_PUBLIC_CHECKIN_ADDRESS;
-  const phone = process.env.NEXT_PUBLIC_HOST_PHONE;
-  const email = process.env.NEXT_PUBLIC_HOST_EMAIL;
+  // Telefono ed email dal CONTENUTO (modificabili in Contenuti), non dalle env fissate
+  // alla creazione: così cambiando "Email contatto"/"Telefono" si aggiorna anche qui.
+  const phone = CONTENT.phone || process.env.NEXT_PUBLIC_HOST_PHONE;
+  const email = CONTENT.email || process.env.NEXT_PUBLIC_HOST_EMAIL;
 
   if (!address && !phone && !email) return null;
 
