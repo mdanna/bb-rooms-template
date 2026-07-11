@@ -4,10 +4,18 @@ import { getFile, putFile, deleteFile, requireBotToken } from "@/lib/githubConte
 import { DEMO_MODE, demoWriteBlocked } from "@/lib/demo";
 import type { SiteContent } from "@/lib/siteContent";
 import { notifyPortalCard } from "@/lib/portalSync";
+import { allUnits, rootUnitId } from "@/lib/structure";
 import contentData from "@/data/content.json";
 
 const IMAGES_DIR = "public/images";
 const CONTENT_PATH = "src/data/content.json";
+// File di contenuto di ogni unità: content.json (struttura/appartamento) + content/<id>.json
+// per ogni camera. Il pool immagini è condiviso, ma i riferimenti (copertina/galleria/
+// ordine) sono per-unità → alla cancellazione vanno ripuliti OVUNQUE.
+function unitContentPaths(): string[] {
+  const root = rootUnitId();
+  return allUnits().map((u) => (u.id === root ? CONTENT_PATH : `src/data/content/${u.id}.json`));
+}
 
 export async function GET() {
   const session = await auth();
@@ -131,26 +139,30 @@ export async function DELETE(request: Request) {
     // galleria fa da rete di sicurezza).
     let contentUpdated = false;
     let commitSha: string | undefined;
-    try {
-      const { content: cur, sha: contentSha } = await getFile(CONTENT_PATH, token);
-      const current = JSON.parse(cur) as SiteContent;
-      const nextHero = current.heroImage === name ? "" : current.heroImage;
-      const nextGallery = (current.galleryImages ?? []).filter((n) => n !== name);
-      const nextOrder = (current.imageOrder ?? []).filter((n) => n !== name);
-      const changed =
-        nextHero !== current.heroImage ||
-        nextGallery.length !== (current.galleryImages ?? []).length ||
-        nextOrder.length !== (current.imageOrder ?? []).length;
-      if (changed) {
-        const merged: SiteContent = { ...current, heroImage: nextHero, galleryImages: nextGallery, imageOrder: nextOrder };
+    for (const path of unitContentPaths()) {
+      try {
+        const { content: cur, sha: contentSha } = await getFile(path, token);
+        const current = JSON.parse(cur) as Partial<SiteContent>;
+        const nextHero = current.heroImage === name ? "" : current.heroImage;
+        const nextGallery = (current.galleryImages ?? []).filter((n) => n !== name);
+        const nextOrder = (current.imageOrder ?? []).filter((n) => n !== name);
+        const changed =
+          nextHero !== current.heroImage ||
+          nextGallery.length !== (current.galleryImages ?? []).length ||
+          nextOrder.length !== (current.imageOrder ?? []).length;
+        if (!changed) continue;
+        const merged = { ...current, heroImage: nextHero, galleryImages: nextGallery, imageOrder: nextOrder };
         const json = JSON.stringify(merged, null, 2) + "\n";
-        ({ commitSha } = await putFile(CONTENT_PATH, json, contentSha, `Remove image reference: ${name}`, token));
+        const res = await putFile(path, json, contentSha, `Remove image reference: ${name}`, token);
         contentUpdated = true;
-        // Aggiorna il teaser del portale se collegato (best-effort, non blocca).
-        try { await notifyPortalCard(merged); } catch { /* ignora */ }
+        if (path === CONTENT_PATH) {
+          commitSha = res.commitSha;
+          // Aggiorna il teaser del portale se collegato (solo per la struttura; best-effort).
+          try { await notifyPortalCard(merged as SiteContent); } catch { /* ignora */ }
+        }
+      } catch {
+        // File assente o ripulitura non riuscita per questa unità: prosegui con le altre.
       }
-    } catch {
-      // Ripulitura non riuscita: procedi comunque con l'eliminazione del file.
     }
 
     const { sha } = await getFile(path, token);

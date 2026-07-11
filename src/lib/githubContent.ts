@@ -4,6 +4,8 @@ import availApartment from "@/data/availability/appartamento.json";
 import availRosa from "@/data/availability/camera-rosa.json";
 import availBlu from "@/data/availability/camera-blu.json";
 import contentData from "@/data/content.json";
+import contentRosa from "@/data/content/camera-rosa.json";
+import contentBlu from "@/data/content/camera-blu.json";
 import policiesData from "@/data/policies.json";
 import themeData from "@/data/theme.json";
 import stripeData from "@/data/stripe.json";
@@ -21,6 +23,8 @@ const DEMO_FILES: Record<string, unknown> = {
   "src/data/availability/camera-rosa.json": availRosa,
   "src/data/availability/camera-blu.json": availBlu,
   "src/data/content.json": contentData,
+  "src/data/content/camera-rosa.json": contentRosa,
+  "src/data/content/camera-blu.json": contentBlu,
   "src/data/policies.json": policiesData,
   "src/data/theme.json": themeData,
   "src/data/stripe.json": stripeData,

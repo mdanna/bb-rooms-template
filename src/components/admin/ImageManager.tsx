@@ -16,10 +16,13 @@ type SaveState = "idle" | "saving" | "success" | "error";
 
 const MAX_GALLERY = 12;
 
-export default function ImageManager() {
+export default function ImageManager({ unitId }: { unitId?: string }) {
   const { t } = useAdminLanguage();
   const ti = t.images;
   const DEMO = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+  // Il pool immagini (public/images) è condiviso; copertina/galleria/ordine sono
+  // PER UNITÀ (stanno nel content dell'unità selezionata).
+  const unitQuery = unitId ? `?unit=${encodeURIComponent(unitId)}` : "";
 
   const [images, setImages] = useState<ImageFile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,7 +71,7 @@ export default function ImageManager() {
     let cancelled = false;
     Promise.all([
       fetch("/api/admin/images").then((r) => r.json() as Promise<{ files?: ImageFile[]; error?: string }>),
-      fetch("/api/admin/content").then((r) => r.json() as Promise<SiteContent>),
+      fetch(`/api/admin/content${unitQuery}`).then((r) => r.json() as Promise<SiteContent>),
     ])
       .then(([imgData, contentData]) => {
         if (cancelled) return;
@@ -90,7 +93,7 @@ export default function ImageManager() {
       });
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [unitId]);
 
   // Mentre ci sono immagini "in pubblicazione", un solo timer (cadenza 3s) fa
   // avanzare il ticker: cambia il query param di quelle immagini → il browser
@@ -145,7 +148,7 @@ export default function ImageManager() {
       // Galleria pubblica = immagini in galleria, nell'ordine unificato scelto dall'admin.
       const galleryImages = order.filter((n) => inGallery.includes(n));
       const body: SiteContent = { ...fullContent, heroImage, galleryImages, imageOrder: order };
-      const res = await fetch("/api/admin/content", {
+      const res = await fetch(`/api/admin/content${unitQuery}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

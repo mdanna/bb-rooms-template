@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { SiteContent, MapBookmark, Review, AreaPlace, L10n, Details } from "@/lib/siteContent";
 import { useAdminLanguage } from "@/i18n/AdminLanguageContext";
+import { rootUnitId } from "@/lib/structure";
 import DeployToast from "@/components/admin/DeployToast";
 
 type SaveState = "idle" | "saving" | "success" | "error";
@@ -66,11 +67,16 @@ function LangBadge({ lang }: { lang: string }) {
   );
 }
 
-export default function ContentEditor() {
+export default function ContentEditor({ unitId }: { unitId?: string }) {
   const { t, locale } = useAdminLanguage();
   const tc = t.contents;
   const DEMO = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
   const subTabLabels = SUB_TAB_LABELS[locale] ?? SUB_TAB_LABELS.en;
+  // Camera: solo i contenuti PROPRI (testi + servizi). I campi condivisi (posizione,
+  // zona, mappa, recensioni, SEO) si modificano sull'appartamento (unità radice).
+  const isRoom = !!unitId && unitId !== rootUnitId();
+  const subTabs: SubTab[] = isRoom ? ["testi", "servizi"] : SUB_TABS;
+  const unitQuery = unitId ? `?unit=${encodeURIComponent(unitId)}` : "";
   const saveLabels = { save: tc.save, saving: tc.saving, saved: DEMO ? t.common.demoSaved : tc.saved, error: t.common.error };
 
   const CONTENT_LABELS = {
@@ -117,18 +123,18 @@ export default function ContentEditor() {
   const [allTranslateError, setAllTranslateError] = useState("");
 
   useEffect(() => {
-    fetch("/api/admin/content")
+    fetch(`/api/admin/content${unitQuery}`)
       .then((r) => r.json())
       .then(setContent)
       .catch(() => setLoadError(t.common.error));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [unitId]);
 
   async function handleSave() {
     if (!content) return;
     setSaveState("saving");
     try {
-      const res = await fetch("/api/admin/content", {
+      const res = await fetch(`/api/admin/content${unitQuery}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(content),
@@ -1100,6 +1106,10 @@ export default function ContentEditor() {
     );
   }
 
+  // Scheda attiva valida per l'unità corrente (se cambi unità e la scheda non esiste,
+  // ricadi sulla prima disponibile).
+  const activeSub: SubTab = subTabs.includes(activeTab) ? activeTab : subTabs[0];
+
   return (
     <div className="space-y-4">
       {/* Traduci tutto */}
@@ -1124,14 +1134,14 @@ export default function ContentEditor() {
         )}
       </div>
 
-      {/* Sub-tab bar */}
+      {/* Sub-tab bar (per una camera solo Testi + Servizi) */}
       <div className="flex gap-6 border-b border-gold/20">
-        {SUB_TABS.map((tab) => (
+        {subTabs.map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`pb-2 text-sm transition ${
-              activeTab === tab
+              activeSub === tab
                 ? "border-b border-foreground text-foreground"
                 : "text-foreground/60 hover:text-foreground/80"
             }`}
@@ -1142,13 +1152,13 @@ export default function ContentEditor() {
       </div>
 
       <div className="pt-2">
-        {activeTab === "struttura" && renderStruttura()}
+        {activeSub === "struttura" && renderStruttura()}
 
-        {activeTab === "testi" && renderTesti()}
-        {activeTab === "area" && renderArea()}
-        {activeTab === "servizi" && renderServizi()}
-        {activeTab === "recensioni" && renderRecensioni()}
-        {activeTab === "seo" && renderSeo()}
+        {activeSub === "testi" && renderTesti()}
+        {activeSub === "area" && renderArea()}
+        {activeSub === "servizi" && renderServizi()}
+        {activeSub === "recensioni" && renderRecensioni()}
+        {activeSub === "seo" && renderSeo()}
       </div>
 
       <DeployToast sha={deploySha} onDone={() => setDeploySha(null)} />
