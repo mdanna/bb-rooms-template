@@ -48,7 +48,9 @@ export default async function AdminPage({
       <AdminNav userName={session.user?.name ?? session.user?.email} />
       <div className="mx-auto max-w-3xl px-6 py-12">
         <AdminUnitSwitcher activeUnitId={unitId} basePath="/admin" bookableOnly />
-        <AdminEditor unitId={unitId} initialDefaultPrice={defaultPrice} initialOverrides={overrides} />
+        {/* key=unitId: rimonta l'editor al cambio unità (lo stato del calendario è in
+            useState dalle props → altrimenti mostrerebbe i dati del tab precedente). */}
+        <AdminEditor key={unitId} unitId={unitId} initialDefaultPrice={defaultPrice} initialOverrides={overrides} />
       </div>
     </div>
   );
