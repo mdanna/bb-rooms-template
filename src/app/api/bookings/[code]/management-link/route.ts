@@ -29,6 +29,7 @@ export async function POST(
     await sendManagementLinkEmail({
       to: booking.email,
       code: booking.code,
+      unitId: booking.unit_id ?? undefined,
       firstName: booking.first_name,
       locale: (booking.locale as import("@/i18n/index").LocaleCode) ?? "it",
     });

@@ -64,6 +64,7 @@ export async function POST(
     await sendGuestCancellationEmail({
       to: booking.email,
       code: booking.code,
+      unitId: booking.unit_id ?? undefined,
       firstName: booking.first_name,
       checkin: booking.checkin,
       checkout: booking.checkout,
@@ -78,6 +79,7 @@ export async function POST(
   try {
     await sendHostCancellationNotification({
       code: booking.code,
+      unitId: booking.unit_id ?? undefined,
       firstName: booking.first_name,
       lastName: booking.last_name,
       email: booking.email,

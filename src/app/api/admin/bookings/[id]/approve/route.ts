@@ -96,6 +96,7 @@ export async function POST(
     await sendApprovalEmail({
       to: booking.email,
       code: booking.code,
+      unitId: booking.unit_id ?? undefined,
       locale: (booking.locale as LocaleCode) ?? "it",
       totalPrice: booking.total_price,
       depositAmount: booking.deposit_amount,

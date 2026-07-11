@@ -126,6 +126,22 @@ export function isBookable(u: Unit): boolean {
   return u.bookable !== false;
 }
 
+/**
+ * Nome LOCALIZZATO di ciò che si sta prenotando (per le email): l'appartamento
+ * intero o una camera. Ritorna "" per un sito a unità singola (niente da
+ * disambiguare). unit_id NULL/ignoto ricade sull'unità radice.
+ */
+export function unitLabel(
+  unitId: string | null | undefined,
+  locale: LocaleCode,
+  s: Structure = STRUCTURE
+): string {
+  if (s.units.length <= 1) return "";
+  const u = getUnit(unitId ?? rootUnitId(s), s) ?? getUnit(rootUnitId(s), s);
+  if (!u) return "";
+  return u.name[locale] || u.name.it || u.id;
+}
+
 /** Le sole unità affittabili: quelle con un flusso di prenotazione/pagamento. */
 export function bookableUnits(s: Structure = STRUCTURE): Unit[] {
   return s.units.filter(isBookable);

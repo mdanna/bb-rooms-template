@@ -28,6 +28,7 @@ export async function completeBookingPayment(
     await sendPaymentConfirmationEmail({
       to: booking.email,
       code: booking.code,
+      unitId: booking.unit_id ?? undefined,
       firstName: booking.first_name,
       lastName: booking.last_name,
       checkin: booking.checkin,
@@ -48,6 +49,7 @@ export async function completeBookingPayment(
   try {
     await sendHostPaymentNotification({
       code: booking.code,
+      unitId: booking.unit_id ?? undefined,
       firstName: booking.first_name,
       lastName: booking.last_name,
       email: booking.email,

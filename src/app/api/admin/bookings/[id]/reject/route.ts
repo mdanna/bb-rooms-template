@@ -41,6 +41,7 @@ export async function POST(
     await sendRejectionEmail({
       to: booking.email,
       code: booking.code,
+      unitId: booking.unit_id ?? undefined,
       reason,
       locale: (booking.locale as LocaleCode) ?? "it",
     });

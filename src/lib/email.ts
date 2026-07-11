@@ -10,8 +10,26 @@ import {
 import { CONTENT } from "./siteContent";
 import { POLICIES, } from "./policies";
 import { MIN_DEPOSIT_RATE } from "./pricing";
+import { unitLabel } from "./structure";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+// Etichetta localizzata di "che cosa si sta prenotando" (appartamento intero o quale
+// camera). Presente in TUTTE le email (host in italiano, ospite nella sua lingua) per
+// una struttura con camere; vuota per un sito a unità singola.
+const ACCOMMODATION_LABEL: Record<LocaleCode, string> = {
+  it: "Alloggio", en: "Accommodation", fr: "Logement", de: "Unterkunft",
+  es: "Alojamiento", pt: "Alojamento", zh: "住宿", ja: "宿泊施設", ko: "숙소",
+};
+
+// Riga HTML "Alloggio: <unità>" (vuota se non c'è un'unità da indicare).
+function accHtml(unit: string, locale: LocaleCode): string {
+  return unit ? smallPara(`${bold(ACCOMMODATION_LABEL[locale] ?? ACCOMMODATION_LABEL.en)}: ${unit}`) : "";
+}
+// Riga testo equivalente (per la parte plain-text delle email).
+function accText(unit: string, locale: LocaleCode): string {
+  return unit ? `${ACCOMMODATION_LABEL[locale] ?? ACCOMMODATION_LABEL.en}: ${unit}` : "";
+}
 
 // Modello D — mittente UNICO dell'operatore (un dominio verificato in Resend,
 // uguale per tutta la flotta), così non serve verificare il dominio di ogni
@@ -53,11 +71,14 @@ export async function sendHostNotification(params: {
   checkout: string | Date;
   totalPrice: number | null;
   message: string | null;
+  unitId?: string;
 }) {
   const { code, firstName, lastName, email, phone, guests, checkin, checkout, totalPrice, message } =
     params;
+  const unit = unitLabel(params.unitId, "it");
   const rows: [string, string][] = [
     ["Codice", code],
+    ...(unit ? [["Alloggio", unit] as [string, string]] : []),
     ["Ospite", `${firstName} ${lastName}`],
     ["Email", email],
     ["Telefono", phone],
@@ -71,7 +92,7 @@ export async function sendHostNotification(params: {
     replyTo: email,
     subject: `Nuova richiesta di prenotazione · ${code}`,
     text: [
-      `Codice: ${code}`, `Ospite: ${firstName} ${lastName}`, `Email: ${email}`,
+      `Codice: ${code}`, unit ? `Alloggio: ${unit}` : null, `Ospite: ${firstName} ${lastName}`, `Email: ${email}`,
       `Telefono: ${phone}`, `Ospiti: ${guests}`,
       `Check-in: ${fmtDate(checkin)}`, `Check-out: ${fmtDate(checkout)}`,
       totalPrice ? `Totale stimato: €${totalPrice}` : null,
@@ -104,6 +125,7 @@ export async function sendHostPaymentNotification(params: {
   cityTax: number | null;
   cityTaxOnline?: boolean | null;
   paymentMethod: string;
+  unitId?: string;
 }) {
   const {
     code,
@@ -128,7 +150,9 @@ export async function sendHostPaymentNotification(params: {
   const balanceRow: [string, string, "amber"?][] = balanceDue != null && balanceDue > 0
     ? [["Saldo da incassare (entro 2 gg dal check-in)", `€${balanceDue}`, "amber"]]
     : balanceDue === 0 ? [["Pagamento", "Completo ✓"]] : [];
+  const unit = unitLabel(params.unitId, "it");
   const rows: [string, string, ("normal"|"green"|"amber"|"gold")?][] = [
+    ...(unit ? [["Alloggio", unit] as [string, string]] : []),
     ["Ospite", `${firstName} ${lastName}`],
     ["Email", email],
     ["Ospiti", String(guests)],
@@ -146,7 +170,7 @@ export async function sendHostPaymentNotification(params: {
     subject: `Pagamento anticipo ricevuto · Prenotazione ${code}`,
     text: [
       `L'anticipo per la prenotazione ${code} è stata pagata.`,
-      "", `Ospite: ${firstName} ${lastName}`, `Email: ${email}`,
+      "", unit ? `Alloggio: ${unit}` : null, `Ospite: ${firstName} ${lastName}`, `Email: ${email}`,
       `Ospiti: ${guests}`, `Check-in: ${fmtDate(checkin)}`, `Check-out: ${fmtDate(checkout)}`,
       totalPrice ? `Totale soggiorno: €${totalPrice}` : null,
       depositAmount ? `Anticipo incassato ora: €${depositAmount}` : null,
@@ -172,13 +196,16 @@ export async function sendRejectionEmail(params: {
   code: string;
   reason: string;
   locale: LocaleCode;
+  unitId?: string;
 }) {
+  const unit = unitLabel(params.unitId, params.locale);
   const { subject, text } = getEmailTemplates(params.locale).rejection({
     code: params.code,
     reason: params.reason,
   });
   const html = buildHtml(
     title("Prenotazione non disponibile") +
+    accHtml(unit, params.locale) +
     para(`Gentile ospite,`) +
     para(`Siamo spiacenti di comunicarti che la tua richiesta di prenotazione (${bold(params.code)}) non può essere confermata.`) +
     (params.reason ? infoBox(smallPara(`${bold("Motivo:")} ${params.reason}`)) : "") +
@@ -186,7 +213,8 @@ export async function sendRejectionEmail(params: {
     divider() +
     smallPara(`<a href="mailto:${HOST_EMAIL}" style="color:#b8755f;">${HOST_EMAIL}</a> · ${HOST_PHONE}`)
   );
-  await send({ to: params.to, subject, text, html, replyTo: HOST_EMAIL });
+  const finalText = (unit ? accText(unit, params.locale) + "\n\n" : "") + text;
+  await send({ to: params.to, subject, text: finalText, html, replyTo: HOST_EMAIL });
 }
 
 export async function sendApprovalEmail(params: {
@@ -199,7 +227,9 @@ export async function sendApprovalEmail(params: {
   cityTax: number | null;
   cityTaxOnline?: boolean | null;
   guests?: number;
+  unitId?: string;
 }) {
+  const unit = unitLabel(params.unitId, params.locale);
   const payUrl = `${siteUrl()}/pay/${params.code}?t=${encodeURIComponent(generateAccessToken(params.code))}`;
   const manageUrl = `${siteUrl()}/gestione-prenotazione/${params.code}?t=${encodeURIComponent(generateAccessToken(params.code))}`;
   const { subject, text } = getEmailTemplates(params.locale).approval({
@@ -218,13 +248,15 @@ export async function sendApprovalEmail(params: {
   ];
   const html = buildHtml(
     title("Prenotazione confermata") +
+    accHtml(unit, params.locale) +
     para(`La tua richiesta ${bold(params.code)} è stata approvata.`) +
     (priceRows.length ? dataTable(priceRows) : "") +
     para(`Scegli l'importo dell'anticipo (minimo ${Math.round(MIN_DEPOSIT_RATE * 100)}%) nella pagina di pagamento.`, true) +
     button("Procedi al pagamento", payUrl) +
     linkButton("Gestisci la prenotazione", manageUrl)
   );
-  await send({ to: params.to, subject, text, html, replyTo: HOST_EMAIL });
+  const finalText = (unit ? accText(unit, params.locale) + "\n\n" : "") + text;
+  await send({ to: params.to, subject, text: finalText, html, replyTo: HOST_EMAIL });
 }
 
 export async function sendPaymentConfirmationEmail(params: {
@@ -242,7 +274,9 @@ export async function sendPaymentConfirmationEmail(params: {
   guests: number;
   paymentMethod: string;
   locale: LocaleCode;
+  unitId?: string;
 }) {
+  const unit = unitLabel(params.unitId, params.locale);
   const token = generateAccessToken(params.code);
   const confirmationUrl = `${siteUrl()}/confirmation/${params.code}?t=${encodeURIComponent(token)}`;
   const manageUrl = `${siteUrl()}/gestione-prenotazione/${params.code}?t=${encodeURIComponent(token)}`;
@@ -272,6 +306,7 @@ export async function sendPaymentConfirmationEmail(params: {
   ];
   const html = buildHtml(
     title("Pagamento confermato") +
+    accHtml(unit, params.locale) +
     para(`Ciao ${bold(params.firstName)}, il tuo pagamento è stato ricevuto con successo.`) +
     dataTable(rows) +
     button("Visualizza conferma e ricevuta", confirmationUrl) +
@@ -280,7 +315,8 @@ export async function sendPaymentConfirmationEmail(params: {
     smallPara("Check-in a partire dalle ore 14:00 · Check-out entro le ore 10:00") +
     smallPara("Ti chiediamo di comunicarci l'orario previsto di arrivo rispondendo a questa email.")
   );
-  await send({ to: params.to, subject, text, html, replyTo: HOST_EMAIL });
+  const finalText = (unit ? accText(unit, params.locale) + "\n\n" : "") + text;
+  await send({ to: params.to, subject, text: finalText, html, replyTo: HOST_EMAIL });
 }
 
 export async function sendBookingRequestAutoReply(params: {
@@ -290,8 +326,10 @@ export async function sendBookingRequestAutoReply(params: {
   checkin: string | Date;
   checkout: string | Date;
   locale: LocaleCode;
+  unitId?: string;
 }) {
   const { to, code, firstName, checkin, checkout, locale } = params;
+  const unit = unitLabel(params.unitId, locale);
   const s = getExtraEmailStrings(locale);
   const ci = fmtDate(checkin);
   const co = fmtDate(checkout);
@@ -303,6 +341,7 @@ export async function sendBookingRequestAutoReply(params: {
     .join("");
   const html = buildHtml(
     title(s.autoReplySubject(code)) +
+    accHtml(unit, locale) +
     bodyHtml +
     divider() +
     smallPara(`<a href="mailto:${HOST_EMAIL}" style="color:#b8755f;">${HOST_EMAIL}</a> · ${HOST_PHONE}`)
@@ -310,7 +349,7 @@ export async function sendBookingRequestAutoReply(params: {
   await send({
     to, replyTo: HOST_EMAIL,
     subject: s.autoReplySubject(code),
-    text: s.autoReplyBody(firstName, code, ci, co) + "\n\n" + s.autoReplyFooter,
+    text: (unit ? accText(unit, locale) + "\n\n" : "") + s.autoReplyBody(firstName, code, ci, co) + "\n\n" + s.autoReplyFooter,
     html,
   });
 }
@@ -326,8 +365,10 @@ export async function sendGuestCancellationEmail(params: {
   refundAmount: number;
   feePercent: number;
   locale: LocaleCode;
+  unitId?: string;
 }) {
   const { to, code, firstName, checkin, checkout, wasPaid, refundEligible, refundAmount, feePercent, locale } = params;
+  const unit = unitLabel(params.unitId, locale);
   const s = getExtraEmailStrings(locale);
   const ci = fmtDate(checkin);
   const co = fmtDate(checkout);
@@ -342,6 +383,7 @@ export async function sendGuestCancellationEmail(params: {
     : infoBox(smallPara(wasPaid ? s.cancelNoRefundLate : s.cancelNoRefundNoDeposit));
   const html = buildHtml(
     title(s.cancelSubject(code)) +
+    accHtml(unit, locale) +
     para(s.cancelBody(firstName, code, ci, co).replace(/\n/g, "<br>")) +
     refundHtml +
     divider() +
@@ -350,7 +392,7 @@ export async function sendGuestCancellationEmail(params: {
   await send({
     to, replyTo: HOST_EMAIL,
     subject: s.cancelSubject(code),
-    text: [s.cancelBody(firstName, code, ci, co), "", refundLine, "", s.cancelFooter, "", s.houseName].join("\n"),
+    text: [unit ? accText(unit, locale) : null, unit ? "" : null, s.cancelBody(firstName, code, ci, co), "", refundLine, "", s.cancelFooter, "", s.houseName].filter((l) => l !== null).join("\n"),
     html,
   });
 }
@@ -368,9 +410,11 @@ export async function sendHostCancellationNotification(params: {
   refundAmount: number;
   feePercent: number;
   stripePaymentIntentId: string | null;
+  unitId?: string;
 }) {
   const { code, firstName, lastName, email, checkin, checkout, wasPaid, refundEligible,
     depositAmount, refundAmount, feePercent, stripePaymentIntentId } = params;
+  const unit = unitLabel(params.unitId, "it");
   const refundTextLines = refundEligible
     ? [`Rimborso da effettuare manualmente su Stripe:`, `  Importo pagato: €${depositAmount.toFixed(2)}`, `  Trattenuta ${feePercent}%: €${(depositAmount - refundAmount).toFixed(2)}`, `  Importo da rimborsare: €${refundAmount.toFixed(2)}`, stripePaymentIntentId ? `  Payment Intent: ${stripePaymentIntentId}` : `  (cerca il pagamento su Stripe per codice prenotazione)`, ``, `Come rimborsare: Stripe Dashboard → Pagamenti → cerca ${code} → Rimborsa → inserisci €${refundAmount.toFixed(2)}`]
     : wasPaid ? [`Nessun rimborso dovuto (cancellazione nelle ultime 48 ore).`] : [`Nessun rimborso dovuto (anticipo non ancora versata).`];
@@ -388,7 +432,7 @@ export async function sendHostCancellationNotification(params: {
     : infoBox(smallPara(wasPaid ? "Nessun rimborso dovuto (cancellazione nelle ultime 48 ore)." : "Nessun rimborso dovuto (anticipo non ancora versata)."));
   const html = buildHtml(
     title("Prenotazione annullata dall'ospite") +
-    dataTable([["Ospite", `${firstName} ${lastName}`], ["Email", email], ["Check-in", fmtDate(checkin)], ["Check-out", fmtDate(checkout)]]) +
+    dataTable([...(unit ? [["Alloggio", unit] as [string, string]] : []), ["Ospite", `${firstName} ${lastName}`], ["Email", email], ["Check-in", fmtDate(checkin)], ["Check-out", fmtDate(checkout)]]) +
     refundBox +
     divider() +
     button("Vai all'admin", `${siteUrl()}/admin/bookings`)
@@ -396,7 +440,7 @@ export async function sendHostCancellationNotification(params: {
   await send({
     to: HOST_EMAIL, replyTo: email,
     subject: `Prenotazione annullata dall'ospite · ${code}`,
-    text: [`L'ospite ${firstName} ${lastName} ha annullato la prenotazione ${code}.`, "", `Email: ${email}`, `Check-in: ${fmtDate(checkin)}`, `Check-out: ${fmtDate(checkout)}`, "", ...refundTextLines, "", `Dettagli su: ${siteUrl()}/admin/bookings`].join("\n"),
+    text: [`L'ospite ${firstName} ${lastName} ha annullato la prenotazione ${code}.`, "", unit ? `Alloggio: ${unit}` : null, `Email: ${email}`, `Check-in: ${fmtDate(checkin)}`, `Check-out: ${fmtDate(checkout)}`, "", ...refundTextLines, "", `Dettagli su: ${siteUrl()}/admin/bookings`].filter((l) => l !== null).join("\n"),
     html,
   });
 }
@@ -406,13 +450,16 @@ export async function sendManagementLinkEmail(params: {
   code: string;
   firstName: string;
   locale: LocaleCode;
+  unitId?: string;
 }) {
   const { to, code, firstName, locale } = params;
+  const unit = unitLabel(params.unitId, locale);
   const s = getExtraEmailStrings(locale);
   const token = generateManagementToken(code);
   const manageUrl = `${siteUrl()}/gestione-prenotazione/${code}?t=${encodeURIComponent(token)}`;
   const html = buildHtml(
     title(s.manageLinkSubject(code)) +
+    accHtml(unit, locale) +
     para(s.manageLinkBody(firstName, code).replace(/\n/g, "<br>")) +
     button(s.manageLinkExpiry, manageUrl) +
     divider() +
@@ -422,7 +469,7 @@ export async function sendManagementLinkEmail(params: {
   await send({
     to, replyTo: HOST_EMAIL,
     subject: s.manageLinkSubject(code),
-    text: [s.manageLinkBody(firstName, code), "", manageUrl, "", s.manageLinkExpiry, "", s.manageLinkDisclaimer, "", s.houseName, `${HOST_EMAIL} · ${HOST_PHONE}`].join("\n"),
+    text: [unit ? accText(unit, locale) : null, unit ? "" : null, s.manageLinkBody(firstName, code), "", manageUrl, "", s.manageLinkExpiry, "", s.manageLinkDisclaimer, "", s.houseName, `${HOST_EMAIL} · ${HOST_PHONE}`].filter((l) => l !== null).join("\n"),
     html,
   });
 }
@@ -438,8 +485,10 @@ export async function sendBalanceReminderEmail(params: {
   cityTaxOnline?: boolean | null;
   payBalanceUrl: string;
   locale: LocaleCode;
+  unitId?: string;
 }) {
   const { to, code, firstName, checkin, checkout, balanceDue, cityTax, cityTaxOnline, payBalanceUrl, locale } = params;
+  const unit = unitLabel(params.unitId, locale);
   const s = getExtraEmailStrings(locale);
   const ci = fmtDate(checkin);
   const co = fmtDate(checkout);
@@ -449,6 +498,7 @@ export async function sendBalanceReminderEmail(params: {
   const showCityTax = cityTax != null && cityTax > 0 && !cityTaxOnline;
   const html = buildHtml(
     title(s.balanceReminderSubject(code)) +
+    accHtml(unit, locale) +
     para(s.balanceReminderBody(firstName, code, ci)) +
     infoBox(
       para(balanceStr ? s.balanceReminderAmount(balanceStr) : s.balanceReminderNoDue) +
@@ -460,6 +510,7 @@ export async function sendBalanceReminderEmail(params: {
     smallPara(`<a href="mailto:${HOST_EMAIL}" style="color:#b8755f;">${HOST_EMAIL}</a> · +39 335 7573294`)
   );
   const textLines = [
+    unit ? accText(unit, locale) : null,
     s.balanceReminderBody(firstName, code, ci), "",
     balanceStr ? s.balanceReminderAmount(balanceStr) : s.balanceReminderNoDue, "",
     payBalanceUrl, "",
@@ -490,8 +541,10 @@ export async function sendBalanceReceiptEmail(params: {
   cityTaxOnline?: boolean | null;
   guests: number;
   locale: LocaleCode;
+  unitId?: string;
 }) {
   const { to, code, firstName, lastName, checkin, checkout, totalPrice, balanceDue, cityTax, cityTaxOnline, guests, locale } = params;
+  const unit = unitLabel(params.unitId, locale);
   const s = getExtraEmailStrings(locale);
   const token = generateAccessToken(code);
   const receiptUrl = `${siteUrl()}/api/bookings/${code}/receipt?t=${encodeURIComponent(token)}`;
@@ -508,12 +561,14 @@ export async function sendBalanceReceiptEmail(params: {
   ];
   const html = buildHtml(
     title(s.balanceReceiptSubject(code)) +
+    accHtml(unit, locale) +
     para(s.balanceReceiptGreeting(firstName, lastName, code)) +
     dataTable(rows) +
     button(s.balanceReceiptButton, receiptUrl) +
     linkButton(s.balanceReceiptManageButton, manageUrl)
   );
   const textLines = [
+    unit ? accText(unit, locale) : null, unit ? "" : null,
     s.balanceReceiptGreeting(firstName, lastName, code), "",
     totalPrice ? `  ${s.balanceReceiptTotalStay}: €${totalPrice}` : null,
     balanceDue != null ? `  ${s.balanceReceiptBalancePaid}: €${balanceDue}` : null,

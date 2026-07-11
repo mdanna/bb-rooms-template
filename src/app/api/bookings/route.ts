@@ -165,6 +165,7 @@ export async function POST(request: Request) {
   try {
     await sendHostNotification({
       code,
+      unitId,
       firstName: body.firstName,
       lastName: body.lastName,
       email: body.email,
@@ -183,6 +184,7 @@ export async function POST(request: Request) {
     await sendBookingRequestAutoReply({
       to: body.email,
       code,
+      unitId,
       firstName: body.firstName,
       checkin: body.checkin,
       checkout: body.checkout,

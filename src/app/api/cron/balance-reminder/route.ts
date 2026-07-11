@@ -14,6 +14,7 @@ async function sendReminder(booking: Booking): Promise<void> {
   await sendBalanceReminderEmail({
     to: booking.email,
     code: booking.code,
+    unitId: booking.unit_id ?? undefined,
     firstName: booking.first_name,
     checkin: booking.checkin,
     checkout: booking.checkout,

@@ -64,6 +64,7 @@ export async function POST(request: Request) {
             await sendBalanceReceiptEmail({
               to: booking.email,
               code: booking.code,
+              unitId: booking.unit_id ?? undefined,
               firstName: booking.first_name,
               lastName: booking.last_name,
               checkin: booking.checkin,
@@ -81,6 +82,7 @@ export async function POST(request: Request) {
           try {
             await sendHostPaymentNotification({
               code: booking.code,
+              unitId: booking.unit_id ?? undefined,
               firstName: booking.first_name,
               lastName: booking.last_name,
               email: booking.email,
