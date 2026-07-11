@@ -1,0 +1,149 @@
+{
+  "siteTitle": {
+    "it": "Il Tuo B&B",
+    "en": "Your B&B",
+    "fr": "Votre B&B",
+    "de": "Ihr B&B",
+    "es": "Tu B&B",
+    "pt": "O Seu B&B",
+    "zh": "您的民宿",
+    "ja": "あなたの民宿",
+    "ko": "당신의 B&B"
+  },
+  "locationDisplay": "Città · Quartiere",
+  "city": "Città",
+  "address": "Via Esempio 1, Città",
+  "phone": "+39 000 0000000",
+  "email": "info@esempio.com",
+  "bookingEmail": "prenotazioni@esempio.com",
+  "vatNumber": "",
+  "cin": "",
+  "metaDescription": "Descrizione del tuo appartamento per i motori di ricerca.",
+  "hostName": "Nome Cognome",
+  "airbnbUrl": "",
+  "airbnbRating": 5.0,
+  "airbnbReviewCount": 0,
+  "mapLat": 41.9028,
+  "mapLng": 12.4964,
+  "mapBookmarks": [],
+  "heroImage": "hero.jpg",
+  "galleryImages": [],
+  "amenities": [
+    {
+      "it": "Wi-Fi ad alta velocità",
+      "en": "High-speed Wi-Fi",
+      "fr": "Wi-Fi haut débit",
+      "de": "High-Speed-WLAN",
+      "es": "Wi-Fi de alta velocidad",
+      "pt": "Wi-Fi de alta velocidade",
+      "zh": "高速Wi-Fi",
+      "ja": "高速Wi-Fi",
+      "ko": "고속 Wi-Fi"
+    }
+  ],
+  "reviews": [],
+  "heroSubtitle": {
+    "it": "Un appartamento accogliente nel cuore della città.",
+    "en": "A welcoming apartment in the heart of the city.",
+    "fr": "Un appartement accueillant au cœur de la ville.",
+    "de": "Eine einladende Wohnung im Herzen der Stadt.",
+    "es": "Un apartamento acogedor en el corazón de la ciudad.",
+    "pt": "Um apartamento acolhedor no coração da cidade.",
+    "zh": "城市中心的温馨公寓。",
+    "ja": "街の中心にある居心地の良いアパートメント。",
+    "ko": "도시 중심부의 아늑한 아파트."
+  },
+  "storyTitle": {
+    "it": "La nostra storia",
+    "en": "Our story",
+    "fr": "Notre histoire",
+    "de": "Unsere Geschichte",
+    "es": "Nuestra historia",
+    "pt": "A nossa história",
+    "zh": "我们的故事",
+    "ja": "私たちのストーリー",
+    "ko": "우리의 이야기"
+  },
+  "storyParagraphs": [
+    {
+      "it": "Descrivi qui il tuo appartamento e la tua storia come host.",
+      "en": "Describe your apartment and your story as a host here.",
+      "fr": "Décrivez ici votre appartement et votre histoire en tant qu'hôte.",
+      "de": "Beschreiben Sie hier Ihre Wohnung und Ihre Geschichte als Gastgeber.",
+      "es": "Describe aquí tu apartamento y tu historia como anfitrión.",
+      "pt": "Descreva aqui o seu apartamento e a sua história como anfitrião.",
+      "zh": "在这里描述您的公寓和作为房东的故事。",
+      "ja": "ここにあなたのアパートメントとホストとしての物語を説明してください。",
+      "ko": "여기에 귀하의 아파트와 호스트로서의 이야기를 설명하세요."
+    }
+  ],
+  "areaDescription": {
+    "it": "Descrivi il quartiere e i punti di interesse nelle vicinanze.",
+    "en": "Describe the neighbourhood and nearby points of interest.",
+    "fr": "Décrivez le quartier et les points d'intérêt à proximité.",
+    "de": "Beschreiben Sie die Nachbarschaft und nahe gelegene Sehenswürdigkeiten.",
+    "es": "Describe el barrio y los puntos de interés cercanos.",
+    "pt": "Descreva o bairro e os pontos de interesse próximos.",
+    "zh": "描述周边社区和附近的景点。",
+    "ja": "近隣の地域と周辺の観光スポットを説明してください。",
+    "ko": "인근 지역과 주변 관광 명소를 설명하세요."
+  },
+  "areaPlaces": [],
+  "details": {
+    "entirePlace": {
+      "it": "Intero appartamento",
+      "en": "Entire apartment",
+      "fr": "Appartement entier",
+      "de": "Gesamte Wohnung",
+      "es": "Apartamento completo",
+      "pt": "Apartamento inteiro",
+      "zh": "整套公寓",
+      "ja": "アパートメント全体",
+      "ko": "아파트 전체"
+    },
+    "quietCourtyard": {
+      "it": "Vista cortile interno",
+      "en": "Quiet courtyard view",
+      "fr": "Vue sur cour intérieure",
+      "de": "Ruhiger Innenhofblick",
+      "es": "Vista al patio interior",
+      "pt": "Vista para o pátio interior",
+      "zh": "内庭院景观",
+      "ja": "静かな中庭の眺め",
+      "ko": "조용한 안뜰 전망"
+    },
+    "roomInfo": {
+      "it": "2 camere da letto · 1 bagno",
+      "en": "2 bedrooms · 1 bathroom",
+      "fr": "2 chambres · 1 salle de bain",
+      "de": "2 Schlafzimmer · 1 Bad",
+      "es": "2 dormitorios · 1 baño",
+      "pt": "2 quartos · 1 casa de banho",
+      "zh": "2间卧室 · 1间浴室",
+      "ja": "寝室2室 · バスルーム1室",
+      "ko": "침실 2개 · 욕실 1개"
+    },
+    "maxGuests": {
+      "it": "Fino a 4 ospiti",
+      "en": "Up to 4 guests",
+      "fr": "Jusqu'à 4 voyageurs",
+      "de": "Bis zu 4 Gäste",
+      "es": "Hasta 4 huéspedes",
+      "pt": "Até 4 hóspedes",
+      "zh": "最多4位客人",
+      "ja": "最大4名",
+      "ko": "최대 4명"
+    },
+    "neighborhood": {
+      "it": "Quartiere centrale e ben collegato",
+      "en": "Central and well-connected neighbourhood",
+      "fr": "Quartier central et bien desservi",
+      "de": "Zentrales und gut angebundenes Viertel",
+      "es": "Barrio céntrico y bien comunicado",
+      "pt": "Bairro central e bem ligado",
+      "zh": "交通便利的中心区域",
+      "ja": "交通便利な中心部のエリア",
+      "ko": "교통이 편리한 중심 지역"
+    }
+  }
+}

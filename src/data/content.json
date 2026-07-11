@@ -1,0 +1,394 @@
+{
+  "siteTitle": {
+    "it": "Villa dei Tigli",
+    "en": "",
+    "fr": "",
+    "de": "",
+    "es": "",
+    "pt": "",
+    "zh": "",
+    "ja": "",
+    "ko": ""
+  },
+  "locationDisplay": "Toscana · Val d'Orcia",
+  "city": "Pienza",
+  "address": "Podere dei Tigli 4, 53026 Pienza (SI)",
+  "phone": "+39 0578 748000",
+  "email": "info@villadeitigli.it",
+  "bookingEmail": "prenotazioni@villadeitigli.it",
+  "vatNumber": "IT01234567890",
+  "cin": "IT052024C1A234567890",
+  "metaDescription": "Villa dei Tigli — dimora di charme in Val d'Orcia, tra ulivi e cipressi. Prenotazione diretta, senza commissioni.",
+  "hostName": "Famiglia Ferretti",
+  "airbnbUrl": "https://www.airbnb.it/",
+  "airbnbRating": 4.92,
+  "airbnbReviewCount": 87,
+  "mapLat": 43.0761,
+  "mapLng": 11.6788,
+  "mapBookmarks": [
+    {
+      "label": "Piazza Pio II — Pienza",
+      "lat": 43.0785,
+      "lng": 11.679
+    },
+    {
+      "label": "Terme di Bagno Vignoni",
+      "lat": 43.03,
+      "lng": 11.618
+    }
+  ],
+  "heroImage": "hero.jpg",
+  "galleryImages": [
+    "esterno.jpg",
+    "giardino.jpg",
+    "colazione.jpg",
+    "salotto.jpg",
+    "terrazza.jpg"
+  ],
+  "amenities": [
+    {
+      "it": "Wi-Fi ad alta velocità",
+      "en": "",
+      "fr": "",
+      "de": "",
+      "es": "",
+      "pt": "",
+      "zh": "",
+      "ja": "",
+      "ko": ""
+    },
+    {
+      "it": "Piscina panoramica",
+      "en": "",
+      "fr": "",
+      "de": "",
+      "es": "",
+      "pt": "",
+      "zh": "",
+      "ja": "",
+      "ko": ""
+    },
+    {
+      "it": "Aria condizionata",
+      "en": "",
+      "fr": "",
+      "de": "",
+      "es": "",
+      "pt": "",
+      "zh": "",
+      "ja": "",
+      "ko": ""
+    },
+    {
+      "it": "Colazione con prodotti locali",
+      "en": "",
+      "fr": "",
+      "de": "",
+      "es": "",
+      "pt": "",
+      "zh": "",
+      "ja": "",
+      "ko": ""
+    },
+    {
+      "it": "Giardino con ulivi secolari",
+      "en": "",
+      "fr": "",
+      "de": "",
+      "es": "",
+      "pt": "",
+      "zh": "",
+      "ja": "",
+      "ko": ""
+    },
+    {
+      "it": "Parcheggio privato",
+      "en": "",
+      "fr": "",
+      "de": "",
+      "es": "",
+      "pt": "",
+      "zh": "",
+      "ja": "",
+      "ko": ""
+    },
+    {
+      "it": "Cucina attrezzata",
+      "en": "",
+      "fr": "",
+      "de": "",
+      "es": "",
+      "pt": "",
+      "zh": "",
+      "ja": "",
+      "ko": ""
+    },
+    {
+      "it": "Biancheria di lino",
+      "en": "",
+      "fr": "",
+      "de": "",
+      "es": "",
+      "pt": "",
+      "zh": "",
+      "ja": "",
+      "ko": ""
+    }
+  ],
+  "reviews": [
+    {
+      "text": {
+        "it": "Un posto incantevole, silenzioso e curato in ogni dettaglio. La colazione con i prodotti dell'orto è stata una gioia. Torneremo di sicuro.",
+        "en": "",
+        "fr": "",
+        "de": "",
+        "es": "",
+        "pt": "",
+        "zh": "",
+        "ja": "",
+        "ko": ""
+      },
+      "author": "Giulia M."
+    },
+    {
+      "text": {
+        "it": "La vista al tramonto dalla terrazza vale da sola il viaggio. Accoglienza impeccabile e piena di consigli preziosi.",
+        "en": "",
+        "fr": "",
+        "de": "",
+        "es": "",
+        "pt": "",
+        "zh": "",
+        "ja": "",
+        "ko": ""
+      },
+      "author": "Laurent D."
+    },
+    {
+      "text": {
+        "it": "Casa bellissima immersa negli ulivi, a due passi da Pienza. Perfetta per staccare davvero. Consigliatissima.",
+        "en": "",
+        "fr": "",
+        "de": "",
+        "es": "",
+        "pt": "",
+        "zh": "",
+        "ja": "",
+        "ko": ""
+      },
+      "author": "Marta e Paolo"
+    }
+  ],
+  "heroSubtitle": {
+    "it": "Una dimora di charme tra gli ulivi della Val d'Orcia.",
+    "en": "",
+    "fr": "",
+    "de": "",
+    "es": "",
+    "pt": "",
+    "zh": "",
+    "ja": "",
+    "ko": ""
+  },
+  "storyTitle": {
+    "it": "La nostra storia",
+    "en": "",
+    "fr": "",
+    "de": "",
+    "es": "",
+    "pt": "",
+    "zh": "",
+    "ja": "",
+    "ko": ""
+  },
+  "storyParagraphs": [
+    {
+      "it": "Villa dei Tigli è una casa colonica di fine Ottocento, ristrutturata con cura dalla nostra famiglia mantenendo le travi originali, il camino in pietra e il profumo del legno. Si affaccia su un dolce declivio di ulivi e cipressi, nel cuore della Val d'Orcia.",
+      "en": "",
+      "fr": "",
+      "de": "",
+      "es": "",
+      "pt": "",
+      "zh": "",
+      "ja": "",
+      "ko": ""
+    },
+    {
+      "it": "Ogni stanza racconta un pezzo della nostra storia: i mobili dei nonni, le ceramiche di Montepulciano, i quadri che ritraggono queste colline. Dopo il tramonto, dalla terrazza, il silenzio è rotto solo dal canto dei grilli.",
+      "en": "",
+      "fr": "",
+      "de": "",
+      "es": "",
+      "pt": "",
+      "zh": "",
+      "ja": "",
+      "ko": ""
+    }
+  ],
+  "areaDescription": {
+    "it": "A pochi minuti da Pienza e dai borghi più belli della Toscana, tra terme, cantine e strade panoramiche.",
+    "en": "",
+    "fr": "",
+    "de": "",
+    "es": "",
+    "pt": "",
+    "zh": "",
+    "ja": "",
+    "ko": ""
+  },
+  "areaPlaces": [
+    {
+      "name": {
+        "it": "Pienza — centro storico UNESCO",
+        "en": "",
+        "fr": "",
+        "de": "",
+        "es": "",
+        "pt": "",
+        "zh": "",
+        "ja": "",
+        "ko": ""
+      },
+      "comment": {
+        "it": "A 5 minuti in auto",
+        "en": "",
+        "fr": "",
+        "de": "",
+        "es": "",
+        "pt": "",
+        "zh": "",
+        "ja": "",
+        "ko": ""
+      }
+    },
+    {
+      "name": {
+        "it": "Montepulciano e le cantine di Nobile",
+        "en": "",
+        "fr": "",
+        "de": "",
+        "es": "",
+        "pt": "",
+        "zh": "",
+        "ja": "",
+        "ko": ""
+      },
+      "comment": {
+        "it": "A 20 minuti",
+        "en": "",
+        "fr": "",
+        "de": "",
+        "es": "",
+        "pt": "",
+        "zh": "",
+        "ja": "",
+        "ko": ""
+      }
+    },
+    {
+      "name": {
+        "it": "Terme di Bagno Vignoni",
+        "en": "",
+        "fr": "",
+        "de": "",
+        "es": "",
+        "pt": "",
+        "zh": "",
+        "ja": "",
+        "ko": ""
+      },
+      "comment": {
+        "it": "A 15 minuti",
+        "en": "",
+        "fr": "",
+        "de": "",
+        "es": "",
+        "pt": "",
+        "zh": "",
+        "ja": "",
+        "ko": ""
+      }
+    },
+    {
+      "name": {
+        "it": "Montalcino — Brunello",
+        "en": "",
+        "fr": "",
+        "de": "",
+        "es": "",
+        "pt": "",
+        "zh": "",
+        "ja": "",
+        "ko": ""
+      },
+      "comment": {
+        "it": "A 30 minuti",
+        "en": "",
+        "fr": "",
+        "de": "",
+        "es": "",
+        "pt": "",
+        "zh": "",
+        "ja": "",
+        "ko": ""
+      }
+    }
+  ],
+  "details": {
+    "entirePlace": {
+      "it": "Intera villa indipendente",
+      "en": "",
+      "fr": "",
+      "de": "",
+      "es": "",
+      "pt": "",
+      "zh": "",
+      "ja": "",
+      "ko": ""
+    },
+    "quietCourtyard": {
+      "it": "Vista sulle colline e piscina",
+      "en": "",
+      "fr": "",
+      "de": "",
+      "es": "",
+      "pt": "",
+      "zh": "",
+      "ja": "",
+      "ko": ""
+    },
+    "roomInfo": {
+      "it": "3 camere da letto · 2 bagni",
+      "en": "",
+      "fr": "",
+      "de": "",
+      "es": "",
+      "pt": "",
+      "zh": "",
+      "ja": "",
+      "ko": ""
+    },
+    "maxGuests": {
+      "it": "Fino a 6 ospiti",
+      "en": "",
+      "fr": "",
+      "de": "",
+      "es": "",
+      "pt": "",
+      "zh": "",
+      "ja": "",
+      "ko": ""
+    },
+    "neighborhood": {
+      "it": "Immersa negli ulivi, a 5 minuti da Pienza",
+      "en": "",
+      "fr": "",
+      "de": "",
+      "es": "",
+      "pt": "",
+      "zh": "",
+      "ja": "",
+      "ko": ""
+    }
+  }
+}

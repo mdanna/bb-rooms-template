@@ -1,0 +1,45 @@
+{
+  "structureTitle": {
+    "it": "Casa Verdi",
+    "en": "",
+    "fr": "",
+    "de": "",
+    "es": "",
+    "pt": "",
+    "zh": "",
+    "ja": "",
+    "ko": ""
+  },
+  "defaultLocale": "it",
+  "units": [
+    {
+      "id": "appartamento",
+      "kind": "whole",
+      "slug": "",
+      "bookable": true,
+      "name": {
+        "it": "Intero appartamento",
+        "en": "Whole apartment"
+      },
+      "contains": ["camera-rosa", "camera-blu"]
+    },
+    {
+      "id": "camera-rosa",
+      "kind": "room",
+      "slug": "camera-rosa",
+      "name": {
+        "it": "Camera Rosa",
+        "en": "Rose Room"
+      }
+    },
+    {
+      "id": "camera-blu",
+      "kind": "room",
+      "slug": "camera-blu",
+      "name": {
+        "it": "Camera Blu",
+        "en": "Blue Room"
+      }
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+# Zone PER-CLIENTE — durante un update dal template si mantiene SEMPRE la
+# versione locale del sito, non quella del template (driver di merge "local").
+#
+# Il driver "local" va abilitato una volta per clone con:
+#   git config merge.local.driver true
+# Lo fa il wizard al momento del `create`/`link` (vedi bb-wizard). Vedi FLEET.md.
+
+# Configurazione del singolo sito (contenuti, policy, prezzi, tema, modalità Stripe)
+src/data/*.json   merge=local
+
+# Codice su misura del singolo sito (mai propagato dal template)
+src/custom/**      merge=local
+
+# Foto della struttura, caricate dal pannello (per-sito, mai propagate)
+public/images/**   merge=local
+
+# Nota: src/data/availability.ts è CODICE condiviso (non .json) → si propaga.

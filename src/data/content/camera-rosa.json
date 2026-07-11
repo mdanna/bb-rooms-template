@@ -1,0 +1,28 @@
+{
+  "siteTitle": {
+    "it": "Camera Rosa",
+    "en": "Rose Room"
+  },
+  "heroImage": "salotto.jpg",
+  "heroSubtitle": {
+    "it": "Camera matrimoniale con bagno privato, affacciata sul giardino.",
+    "en": "Double room with private bathroom, overlooking the garden."
+  },
+  "storyTitle": {
+    "it": "La Camera Rosa",
+    "en": "The Rose Room"
+  },
+  "storyParagraphs": [
+    {
+      "it": "Una stanza calda e luminosa, arredata con mobili d'epoca e tessuti nelle tonalità del rosa antico. Il bagno privato e il grande letto matrimoniale la rendono ideale per una coppia.",
+      "en": "A warm, bright room furnished with period pieces and fabrics in shades of dusty pink. The private bathroom and large double bed make it ideal for a couple."
+    }
+  ],
+  "galleryImages": ["salotto.jpg", "giardino.jpg"],
+  "amenities": [
+    { "it": "Bagno privato", "en": "Private bathroom" },
+    { "it": "Letto matrimoniale", "en": "Double bed" },
+    { "it": "Wi-Fi ad alta velocità", "en": "High-speed Wi-Fi" },
+    { "it": "Aria condizionata", "en": "Air conditioning" }
+  ]
+}

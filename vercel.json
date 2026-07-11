@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/balance-reminder",
+      "schedule": "0 9 * * *"
+    }
+  ]
+}

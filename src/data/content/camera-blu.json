@@ -1,0 +1,28 @@
+{
+  "siteTitle": {
+    "it": "Camera Blu",
+    "en": "Blue Room"
+  },
+  "heroImage": "terrazza.jpg",
+  "heroSubtitle": {
+    "it": "Camera tranquilla con accesso alla terrazza e vista sui tetti.",
+    "en": "Quiet room with terrace access and a view over the rooftops."
+  },
+  "storyTitle": {
+    "it": "La Camera Blu",
+    "en": "The Blue Room"
+  },
+  "storyParagraphs": [
+    {
+      "it": "Una stanza raccolta e silenziosa, nelle tonalità del blu notte, con accesso diretto alla terrazza. Perfetta per chi cerca quiete e una vista aperta al mattino.",
+      "en": "A cosy, silent room in shades of midnight blue, with direct access to the terrace. Perfect for those seeking quiet and an open view in the morning."
+    }
+  ],
+  "galleryImages": ["terrazza.jpg", "esterno.jpg"],
+  "amenities": [
+    { "it": "Accesso alla terrazza", "en": "Terrace access" },
+    { "it": "Letto matrimoniale", "en": "Double bed" },
+    { "it": "Wi-Fi ad alta velocità", "en": "High-speed Wi-Fi" },
+    { "it": "Bagno privato", "en": "Private bathroom" }
+  ]
+}

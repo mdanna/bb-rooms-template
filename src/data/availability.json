@@ -1,0 +1,131 @@
+{
+  "defaultPrice": 180,
+  "overrides": [
+    {
+      "date": "2026-06-20",
+      "price": 180,
+      "status": "booked",
+      "source": "app"
+    },
+    {
+      "date": "2026-06-21",
+      "price": 180,
+      "status": "booked",
+      "source": "app"
+    },
+    {
+      "date": "2026-06-22",
+      "price": 180,
+      "status": "booked",
+      "source": "app"
+    },
+    {
+      "date": "2026-06-23",
+      "price": 180,
+      "status": "booked",
+      "source": "app"
+    },
+    {
+      "date": "2026-07-13",
+      "price": 180,
+      "status": "booked",
+      "source": "app",
+      "note": "Elena Conti",
+      "conflict": true,
+      "conflictWith": [
+        "airbnb"
+      ]
+    },
+    {
+      "date": "2026-07-18",
+      "price": 180,
+      "status": "booked",
+      "source": "app"
+    },
+    {
+      "date": "2026-07-19",
+      "price": 180,
+      "status": "booked",
+      "source": "app"
+    },
+    {
+      "date": "2026-07-20",
+      "price": 180,
+      "status": "booked",
+      "source": "app"
+    },
+    {
+      "date": "2026-07-25",
+      "price": 180,
+      "status": "booked",
+      "source": "booking",
+      "note": "Booking.com"
+    },
+    {
+      "date": "2026-07-26",
+      "price": 180,
+      "status": "booked",
+      "source": "booking",
+      "note": "Booking.com"
+    },
+    {
+      "date": "2026-07-27",
+      "price": 180,
+      "status": "booked",
+      "source": "booking",
+      "note": "Booking.com"
+    },
+    {
+      "date": "2026-07-30",
+      "price": 180,
+      "status": "booked",
+      "source": "imported",
+      "blockedBy": [
+        "booking",
+        "vrbo"
+      ]
+    },
+    {
+      "date": "2026-07-31",
+      "price": 180,
+      "status": "booked",
+      "source": "imported",
+      "blockedBy": [
+        "booking",
+        "vrbo"
+      ]
+    },
+    {
+      "date": "2026-08-02",
+      "price": 180,
+      "status": "booked",
+      "source": "app"
+    },
+    {
+      "date": "2026-08-03",
+      "price": 180,
+      "status": "booked",
+      "source": "app"
+    },
+    {
+      "date": "2026-08-04",
+      "price": 180,
+      "status": "booked",
+      "source": "app"
+    },
+    {
+      "date": "2026-08-15",
+      "price": 180,
+      "status": "booked",
+      "source": "vrbo",
+      "note": "Reserved"
+    },
+    {
+      "date": "2026-08-16",
+      "price": 180,
+      "status": "booked",
+      "source": "vrbo",
+      "note": "Reserved"
+    }
+  ]
+}
