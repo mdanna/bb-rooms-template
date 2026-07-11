@@ -4,7 +4,7 @@ import AdminLogin from "@/components/admin/AdminLogin";
 import AdminNav from "@/components/admin/AdminNav";
 import AdminUnitSwitcher from "@/components/admin/AdminUnitSwitcher";
 import { getFile } from "@/lib/githubContent";
-import { availPath, stripContained } from "@/lib/unitAvailability";
+import { availPath } from "@/lib/unitAvailability";
 import { getUnit, rootUnitId, isBookable, bookableUnits } from "@/lib/structure";
 import type { AvailabilityData, DayRate } from "@/data/availability";
 import { DEMO_MODE } from "@/lib/demo";
@@ -27,8 +27,10 @@ export default async function AdminPage({
   const fallback = rootU && isBookable(rootU) ? rootUnitId() : bookableUnits()[0]?.id ?? rootUnitId();
   const unitId = requested && isBookable(requested) ? requested.id : fallback;
 
-  // Carica il calendario dell'unità (fresco). Mostra all'admin solo il layer "proprio":
-  // i blocchi derivati "contained" non sono modificabili qui, sono ricalcolati al salvataggio.
+  // Carica il calendario dell'unità (fresco). Mostra TUTTO: le prenotazioni proprie
+  // (colorate) e i blocchi "contained" (grigio, non prenotabile perché un'altra unità
+  // collegata è prenotata) — così il calendario riflette davvero lo stato. I "contained"
+  // non sono editabili e vengono comunque scartati/ricalcolati al salvataggio.
   let defaultPrice = 100;
   let overrides: DayRate[] = [];
   try {
@@ -36,7 +38,7 @@ export default async function AdminPage({
     const { content } = await getFile(availPath(unitId), token);
     const data = JSON.parse(content) as AvailabilityData;
     defaultPrice = data.defaultPrice;
-    overrides = stripContained(data.overrides ?? []);
+    overrides = data.overrides ?? [];
   } catch {
     /* file non leggibile: si parte da un calendario vuoto */
   }

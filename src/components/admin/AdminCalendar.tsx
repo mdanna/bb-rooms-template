@@ -24,10 +24,10 @@ const WEEKDAYS = {
 };
 
 const LEGEND = {
-  it: { airbnb: "Airbnb", booking: "Booking.com", vrbo: "Vrbo", app: "Prenotazione app", direct: "Diretta", importedBlock: "Bloccata (OTA)", manualBlock: "Blocco manuale (cliccabile)", customPrice: "Prezzo personalizzato", overbooking: "⚠ Overbooking", blockedOn: "Bloccata su" },
-  en: { airbnb: "Airbnb", booking: "Booking.com", vrbo: "Vrbo", app: "App booking", direct: "Direct", importedBlock: "Blocked (OTA)", manualBlock: "Manual block (clickable)", customPrice: "Custom price", overbooking: "⚠ Overbooking", blockedOn: "Blocked on" },
-  es: { airbnb: "Airbnb", booking: "Booking.com", vrbo: "Vrbo", app: "Reserva app", direct: "Directa", importedBlock: "Bloqueada (OTA)", manualBlock: "Bloqueo manual (cliccable)", customPrice: "Precio personalizado", overbooking: "⚠ Overbooking", blockedOn: "Bloqueada en" },
-  fr: { airbnb: "Airbnb", booking: "Booking.com", vrbo: "Vrbo", app: "Réservation app", direct: "Directe", importedBlock: "Bloquée (OTA)", manualBlock: "Blocage manuel (cliquable)", customPrice: "Prix personnalisé", overbooking: "⚠ Overbooking", blockedOn: "Bloquée sur" },
+  it: { airbnb: "Airbnb", booking: "Booking.com", vrbo: "Vrbo", app: "Prenotazione app", direct: "Diretta", importedBlock: "Bloccata (OTA)", manualBlock: "Blocco manuale (cliccabile)", customPrice: "Prezzo personalizzato", overbooking: "⚠ Overbooking", blockedOn: "Bloccata su", notBookable: "Non prenotabile (altra unità)" },
+  en: { airbnb: "Airbnb", booking: "Booking.com", vrbo: "Vrbo", app: "App booking", direct: "Direct", importedBlock: "Blocked (OTA)", manualBlock: "Manual block (clickable)", customPrice: "Custom price", overbooking: "⚠ Overbooking", blockedOn: "Blocked on", notBookable: "Not bookable (other unit)" },
+  es: { airbnb: "Airbnb", booking: "Booking.com", vrbo: "Vrbo", app: "Reserva app", direct: "Directa", importedBlock: "Bloqueada (OTA)", manualBlock: "Bloqueo manual (cliccable)", customPrice: "Precio personalizado", overbooking: "⚠ Overbooking", blockedOn: "Bloqueada en", notBookable: "No reservable (otra unidad)" },
+  fr: { airbnb: "Airbnb", booking: "Booking.com", vrbo: "Vrbo", app: "Réservation app", direct: "Directe", importedBlock: "Bloquée (OTA)", manualBlock: "Blocage manuel (cliquable)", customPrice: "Prix personnalisé", overbooking: "⚠ Overbooking", blockedOn: "Bloquée sur", notBookable: "Non réservable (autre unité)" },
 };
 
 const AIRBNB_COLOR = "#FF5A5F";
@@ -37,6 +37,7 @@ const APP_COLOR = "rgb(96 165 250)";
 const DIRECT_COLOR = "#A78BFA";
 const MANUAL_COLOR = "#DDD6FE";            // blocco manuale (viola chiaro)
 const IMPORTED_COLOR = "rgba(0,0,0,0.12)"; // blocco importato da una OTA (grigio)
+const CONTAINED_COLOR = "rgba(0,0,0,0.15)"; // "contained": non prenotabile perché un'altra unità collegata è prenotata (grigio)
 const OVERBOOKING_COLOR = "#B3122B";       // overbooking (rosso pieno, distinto dal corallo)
 
 const PLATFORM_NAME: Record<OtaPlatform, string> = { airbnb: "Airbnb", booking: "Booking.com", vrbo: "Vrbo" };
@@ -50,6 +51,7 @@ function sourceColor(src: DaySource | undefined): string {
     case "app": return APP_COLOR;
     case "direct": return DIRECT_COLOR;
     case "blocked": return MANUAL_COLOR;
+    case "contained": return CONTAINED_COLOR; // non prenotabile (altra unità) → grigio
     case "imported":
     case "airbnb-blocked": return IMPORTED_COLOR; // legacy → grigio importato
     default: return MANUAL_COLOR;
@@ -58,7 +60,7 @@ function sourceColor(src: DaySource | undefined): string {
 // Fondo chiaro (testo scuro) per blocco manuale/importato; scuro (testo bianco) altrove.
 function isLightBg(src: DaySource | undefined, conflict: boolean): boolean {
   if (conflict) return false;
-  return src === "blocked" || src === "imported" || src === "airbnb-blocked";
+  return src === "blocked" || src === "imported" || src === "airbnb-blocked" || src === "contained";
 }
 // È una fonte "prenotazione" (apre il popup con dettagli)?
 function isReservationSource(src: DaySource | undefined): boolean {
@@ -225,7 +227,10 @@ export default function AdminCalendar({ defaultPrice, overrides, onToggleDay, on
           const isCheckoutDay = !booked && prevBooked;
           // Prenotazioni e blocchi importati aprono il popup; giorni liberi e blocchi
           // manuali si commutano al clic (aggiungi/rimuovi).
-          const opensPopup = !past && booked && !isManualBlock;
+          // I blocchi "contained" (non prenotabili, derivati) sono in sola lettura:
+          // niente popup né toggle.
+          const isContained = booked && source === "contained";
+          const opensPopup = !past && booked && !isManualBlock && !isContained;
           const clickable   = !past && (!booked || isManualBlock);
           const middleBg: React.CSSProperties = isMiddle
             ? { backgroundColor: isConflict ? OVERBOOKING_COLOR : sourceColor(source), borderColor: "transparent" }
@@ -278,6 +283,7 @@ export default function AdminCalendar({ defaultPrice, overrides, onToggleDay, on
         <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: DIRECT_COLOR }} />{legend.direct}</span>
         <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: MANUAL_COLOR }} />{legend.manualBlock}</span>
         <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: IMPORTED_COLOR }} />{legend.importedBlock}</span>
+        <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: CONTAINED_COLOR }} />{legend.notBookable}</span>
         <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-sm border border-gold bg-gold/10" />{legend.customPrice}</span>
         <span className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: OVERBOOKING_COLOR }} />{legend.overbooking}</span>
       </div>
