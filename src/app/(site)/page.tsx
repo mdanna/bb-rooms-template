@@ -7,7 +7,7 @@ import { CONTENT } from "@/lib/siteContent";
 import { getBookingLinks } from "@/lib/bookingLinks";
 import { format } from "@/i18n/format";
 import UnitSwitcher from "@/components/UnitSwitcher";
-import { rootUnitId } from "@/lib/structure";
+import { rootUnitId, getUnit, isBookable } from "@/lib/structure";
 
 function Diamond() {
   return <div className="divider-diamond text-gold">◆</div>;
@@ -16,6 +16,10 @@ function Diamond() {
 export default function Home() {
   const { t, locale } = useLanguage();
   const { primary: bookPrimary, others: bookOthers } = getBookingLinks();
+  // "Solo camere": l'appartamento intero non è prenotabile → niente CTA "prenota intero",
+  // la scelta passa dalle camere (selettore sotto l'hero) e la home non linka /prenota.
+  const rootU = getUnit(rootUnitId());
+  const wholeBookable = rootU ? isBookable(rootU) : true;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -43,13 +47,15 @@ export default function Home() {
             {CONTENT.heroSubtitle[locale] || CONTENT.heroSubtitle.it}
           </p>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-            <Link
-              href="/prenota"
-              className="rounded-full border border-gold bg-gold px-8 py-3 text-sm font-medium uppercase tracking-widest text-[#faf6ec] transition hover:bg-transparent hover:text-gold"
-            >
-              {t.hero.bookDirect}
-            </Link>
-            {bookPrimary && (
+            {wholeBookable && (
+              <Link
+                href="/prenota"
+                className="rounded-full border border-gold bg-gold px-8 py-3 text-sm font-medium uppercase tracking-widest text-[#faf6ec] transition hover:bg-transparent hover:text-gold"
+              >
+                {t.hero.bookDirect}
+              </Link>
+            )}
+            {wholeBookable && bookPrimary && (
               <a
                 href={bookPrimary.url}
                 target="_blank"
@@ -60,7 +66,7 @@ export default function Home() {
               </a>
             )}
           </div>
-          {bookOthers.length > 0 && (
+          {wholeBookable && bookOthers.length > 0 && (
             <p className="mt-5 text-sm text-foreground/60">
               {t.hero.alsoOn}{" "}
               {bookOthers.map((o, i) => (
@@ -104,7 +110,7 @@ export default function Home() {
             { href: "/servizi", label: t.nav.amenities },
             { href: "/zona", label: t.nav.area },
             { href: "/recensioni", label: t.nav.reviews },
-            { href: "/prenota", label: t.nav.booking },
+            ...(wholeBookable ? [{ href: "/prenota", label: t.nav.booking }] : []),
           ].map((item) => (
             <Link
               key={item.href}

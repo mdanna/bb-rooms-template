@@ -1,5 +1,6 @@
 import { DEMO_MODE } from "@/lib/demo";
 import availabilityData from "@/data/availability.json";
+import structureData from "@/data/structure.json";
 import availApartment from "@/data/availability/appartamento.json";
 import availRosa from "@/data/availability/camera-rosa.json";
 import availBlu from "@/data/availability/camera-blu.json";
@@ -19,6 +20,7 @@ const DATA_BRANCH = process.env.GITHUB_DATA_BRANCH ?? "main";
 // calendario ospite funzionano usando i dati demo, senza credenziali GitHub.
 const DEMO_FILES: Record<string, unknown> = {
   "src/data/availability.json": availabilityData,
+  "src/data/structure.json": structureData,
   "src/data/availability/appartamento.json": availApartment,
   "src/data/availability/camera-rosa.json": availRosa,
   "src/data/availability/camera-blu.json": availBlu,

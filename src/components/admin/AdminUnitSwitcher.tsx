@@ -2,21 +2,25 @@
 
 import Link from "next/link";
 import { useAdminLanguage } from "@/i18n/AdminLanguageContext";
-import { allUnits } from "@/lib/structure";
+import { allUnits, bookableUnits } from "@/lib/structure";
 
 // Selettore di unità nell'admin: schede appartamento intero + camere. Governa quale
 // calendario/prezzi/impostazioni si stanno modificando, via ?unit=<id>. Con una sola
 // unità (sito a unità singola) non mostra nulla. `basePath` è la pagina admin corrente
 // (es. "/admin" o "/admin/impostazioni") così lo switcher resta nella stessa sezione.
+// `bookableOnly` limita alle unità affittabili: nei tab di PRENOTAZIONE (calendario,
+// prezzi, OTA) l'appartamento non prenotabile ("solo camere") non deve comparire.
 export default function AdminUnitSwitcher({
   activeUnitId,
   basePath = "/admin",
+  bookableOnly = false,
 }: {
   activeUnitId: string;
   basePath?: string;
+  bookableOnly?: boolean;
 }) {
   const { locale } = useAdminLanguage();
-  const units = allUnits();
+  const units = bookableOnly ? bookableUnits() : allUnits();
   if (units.length <= 1) return null;
 
   return (

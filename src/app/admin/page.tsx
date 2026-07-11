@@ -5,7 +5,7 @@ import AdminNav from "@/components/admin/AdminNav";
 import AdminUnitSwitcher from "@/components/admin/AdminUnitSwitcher";
 import { getFile } from "@/lib/githubContent";
 import { availPath, stripContained } from "@/lib/unitAvailability";
-import { getUnit, rootUnitId } from "@/lib/structure";
+import { getUnit, rootUnitId, isBookable, bookableUnits } from "@/lib/structure";
 import type { AvailabilityData, DayRate } from "@/data/availability";
 import { DEMO_MODE } from "@/lib/demo";
 
@@ -19,8 +19,13 @@ export default async function AdminPage({
     return <AdminLogin demo={DEMO_MODE} />;
   }
 
+  // Il calendario/prezzi riguarda solo le unità AFFITTABILI: se l'appartamento è "solo
+  // camere" (non prenotabile) non ha un calendario proprio → default alla prima camera.
   const { unit } = await searchParams;
-  const unitId = unit && getUnit(unit) ? unit : rootUnitId();
+  const requested = unit ? getUnit(unit) : undefined;
+  const rootU = getUnit(rootUnitId());
+  const fallback = rootU && isBookable(rootU) ? rootUnitId() : bookableUnits()[0]?.id ?? rootUnitId();
+  const unitId = requested && isBookable(requested) ? requested.id : fallback;
 
   // Carica il calendario dell'unità (fresco). Mostra all'admin solo il layer "proprio":
   // i blocchi derivati "contained" non sono modificabili qui, sono ricalcolati al salvataggio.
@@ -40,7 +45,7 @@ export default async function AdminPage({
     <div className="min-h-screen bg-background">
       <AdminNav userName={session.user?.name ?? session.user?.email} />
       <div className="mx-auto max-w-3xl px-6 py-12">
-        <AdminUnitSwitcher activeUnitId={unitId} basePath="/admin" />
+        <AdminUnitSwitcher activeUnitId={unitId} basePath="/admin" bookableOnly />
         <AdminEditor unitId={unitId} initialDefaultPrice={defaultPrice} initialOverrides={overrides} />
       </div>
     </div>

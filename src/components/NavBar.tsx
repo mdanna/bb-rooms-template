@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { localeOrder, translations, type LocaleCode } from "@/i18n/index";
 import { CONTENT } from "@/lib/siteContent";
+import { getUnit, rootUnitId, isBookable } from "@/lib/structure";
 
 const FLAGS: Record<LocaleCode, string> = {
   it: "🇮🇹",
@@ -69,13 +70,18 @@ export default function NavBar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
 
+  // "Solo camere": l'appartamento intero non è prenotabile → nessuna voce "Prenota"
+  // (che porterebbe al flusso dell'intero); si prenota dalle pagine camera.
+  const rootU = getUnit(rootUnitId());
+  const wholeBookable = rootU ? isBookable(rootU) : true;
+
   const links = [
     { href: "/", label: t.nav.home },
     { href: "/galleria", label: t.nav.gallery },
     { href: "/servizi", label: t.nav.amenities },
     { href: "/zona", label: t.nav.area },
     { href: "/recensioni", label: t.nav.reviews },
-    { href: "/prenota", label: t.nav.booking },
+    ...(wholeBookable ? [{ href: "/prenota", label: t.nav.booking }] : []),
     { href: "/gestione-prenotazione", label: t.nav.manage },
   ];
 

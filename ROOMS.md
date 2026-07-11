@@ -91,9 +91,13 @@ camere, affittabili **sia singolarmente sia come intero**.
       Condivisi restano struttura-level: Stripe/tema/accessi/policy. ✅ tsc 0, 199 test;
       pagine admin renderizzano (login/redirect corretti), API guardate (401).
       *Click-through completo dell'admin non fatto (auth-gated) → fase di revisione.*
-      *Rimandato:* editing per-unità di contenuti/foto (`ContentEditor`/`ImageManager` per
-      camera) — oggi i contenuti camera si modificano via `content/<id>.json`; la home
-      "sola landing camere" quando la radice è `bookable:false` non è resa.
+- [x] **5b. Contenuti + Immagini per unità**: selettore unità in `/admin/contenuti` e
+      `/admin/immagini`. Appartamento (radice) → `content.json`, tutte le schede. Camera →
+      solo Testi+Servizi su `content/<id>.json` (API `/api/admin/content?unit=` con vista
+      merge in GET e salvataggio del solo sottoinsieme in POST). Copertina/galleria/ordine
+      per-unità; pool immagini condiviso; la delete immagine ripulisce i riferimenti in
+      TUTTE le unità. ✅ tsc 0, lint 0, build, 199 test; pagine 307/redirect corrette.
+      *Rimandato:* home "sola landing camere" quando la radice è `bookable:false`.
 - [ ] **6. Portale**: assegnazione di una struttura a un portale come singola scheda (hub).
 - [ ] **7. Wizard**: `bb-wizard` crea una struttura con camere (numero camere, slug, provisioning).
 - [ ] **8. Sito d'esempio**: istanza dimostrativa completa.
