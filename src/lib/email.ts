@@ -489,6 +489,55 @@ export async function sendHostCancellationNotification(params: {
   });
 }
 
+// Alert all'host quando Stripe incassa un pagamento (anticipo o saldo) per una prenotazione
+// che nel frattempo risulta ANNULLATA (race di cancellazione o sessione di checkout "stale").
+// Il denaro è stato catturato ma non è associato a nessuna prenotazione attiva: l'host valuta
+// un rimborso manuale. Nessun rimborso automatico (scelta operatore).
+export async function sendHostOrphanPaymentAlert(params: {
+  code: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  amount: number | null;
+  type: "anticipo" | "saldo";
+  paymentIntentId: string | null;
+}) {
+  const { code, firstName, lastName, email, amount, type, paymentIntentId } = params;
+  const amountStr = amount != null ? `€${amount.toFixed(2)}` : "(vedi Stripe)";
+  const html = buildHtml(
+    title("⚠️ Pagamento su prenotazione ANNULLATA") +
+    para(`È arrivato un pagamento (${type}) per la prenotazione ${bold(code)}, che risulta ${bold("annullata")}. Stripe ha incassato l'importo ma non è associato a nessuna prenotazione attiva: valuta un rimborso manuale.`) +
+    dataTable([
+      ["Ospite", `${firstName} ${lastName}`],
+      ["Email", email],
+      ["Tipo pagamento", type],
+      ["Importo incassato", amountStr],
+      ...(paymentIntentId ? [["Payment Intent", paymentIntentId] as [string, string]] : []),
+    ]) +
+    infoBox(smallPara(`Per rimborsare: Stripe Dashboard → Pagamenti → cerca ${bold(paymentIntentId ?? code)} → Rimborsa.`)) +
+    divider() +
+    button("Vai all'admin", `${siteUrl()}/admin/bookings`)
+  );
+  await send({
+    to: HOST_EMAIL,
+    replyTo: email,
+    subject: `⚠️ Pagamento su prenotazione annullata · ${code}`,
+    text: [
+      `Pagamento (${type}) ricevuto per la prenotazione ANNULLATA ${code}.`,
+      "",
+      `Ospite: ${firstName} ${lastName}`,
+      `Email: ${email}`,
+      `Importo incassato: ${amountStr}`,
+      paymentIntentId ? `Payment Intent: ${paymentIntentId}` : `(cerca su Stripe per codice ${code})`,
+      "",
+      `Valuta un rimborso manuale: Stripe Dashboard → Pagamenti → Rimborsa.`,
+      "",
+      `Admin: ${siteUrl()}/admin/bookings`,
+    ].join("\n"),
+    html,
+  });
+}
+
 export async function sendManagementLinkEmail(params: {
   to: string;
   code: string;

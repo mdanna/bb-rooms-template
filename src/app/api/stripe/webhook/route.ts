@@ -6,7 +6,7 @@ import { resolveSessionPaymentMethod } from "@/lib/stripePaymentMethod";
 import { markNightsBooked } from "@/lib/syncAvailability";
 import { rootUnitId } from "@/lib/structure";
 import { ensureSchema, pool, type Booking } from "@/lib/db";
-import { sendBalanceReceiptEmail, sendHostPaymentNotification } from "@/lib/email";
+import { sendBalanceReceiptEmail, sendHostPaymentNotification, sendHostOrphanPaymentAlert } from "@/lib/email";
 
 // Stripe richiede il corpo grezzo (non parsato) per verificare la firma della richiesta.
 export async function POST(request: Request) {
@@ -99,6 +99,11 @@ export async function POST(request: Request) {
           } catch (err) {
             console.error("sendHostPaymentNotification (balance) failed:", err);
           }
+        } else {
+          // Nessuna riga aggiornata: o saldo già registrato (retry idempotente) o
+          // prenotazione annullata → incasso orfano, avvisa l'host per un rimborso manuale.
+          const paid = typeof session.amount_total === "number" ? session.amount_total / 100 : null;
+          await alertIfPaidOnCancelled(code, "saldo", piId, paid);
         }
       } else {
         const method = await resolveSessionPaymentMethod(session);
@@ -111,10 +116,49 @@ export async function POST(request: Request) {
           } catch (err) {
             console.error("markNightsBooked after payment failed:", err);
           }
+        } else {
+          // completeBookingPayment non ha trovato una prenotazione 'approved': o già
+          // completata (retry idempotente) o annullata → incasso orfano, avvisa l'host.
+          const paid = typeof session.amount_total === "number" ? session.amount_total / 100 : null;
+          await alertIfPaidOnCancelled(code, "anticipo", paymentIntentId, paid);
         }
       }
     }
   }
 
   return NextResponse.json({ received: true });
+}
+
+// Un pagamento è arrivato per una prenotazione che risulta annullata (race di cancellazione o
+// sessione di checkout "stale"): Stripe ha già incassato. Non completiamo la prenotazione, ma
+// avvisiamo l'host per un eventuale rimborso manuale. Idempotente: registriamo il payment intent
+// nello slot libero così i retry del webhook Stripe non generano alert duplicati.
+async function alertIfPaidOnCancelled(
+  code: string,
+  type: "anticipo" | "saldo",
+  paymentIntentId: string | null,
+  amount: number | null
+) {
+  const check = await pool.query<Booking>(`SELECT * FROM bookings WHERE code = $1`, [code]);
+  const b = check.rows[0];
+  if (!b || b.status !== "cancelled" || !paymentIntentId) return;
+  const col = type === "saldo" ? "balance_payment_intent_id" : "stripe_payment_intent_id";
+  const claim = await pool.query(
+    `UPDATE bookings SET ${col} = $2 WHERE code = $1 AND status = 'cancelled' AND ${col} IS NULL RETURNING id`,
+    [code, paymentIntentId]
+  );
+  if (!claim.rows[0]) return; // già segnalato in un evento precedente
+  try {
+    await sendHostOrphanPaymentAlert({
+      code: b.code,
+      firstName: b.first_name,
+      lastName: b.last_name,
+      email: b.email,
+      amount,
+      type,
+      paymentIntentId,
+    });
+  } catch (err) {
+    console.error("sendHostOrphanPaymentAlert failed:", err);
+  }
 }

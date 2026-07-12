@@ -19,8 +19,19 @@ export async function POST(
   const { id } = await context.params;
   await ensureSchema();
 
+  // Cancellazione atomica in un'unica istruzione: la CTE `locked` blocca la riga con
+  // FOR UPDATE, `upd` la porta a 'cancelled' e la SELECT finale restituisce lo stato
+  // PRECEDENTE. Così un pagamento che completa in parallelo (webhook Stripe) non viene
+  // sovrascritto in modo silenzioso e wasPaid/rimborso riflettono lo stato reale al lock.
   const before = await pool.query<Booking>(
-    `SELECT * FROM bookings WHERE id = $1 AND status IN ('pending', 'approved', 'completed')`,
+    `WITH locked AS (
+       SELECT * FROM bookings
+       WHERE id = $1 AND status IN ('pending', 'approved', 'completed')
+       FOR UPDATE
+     ), upd AS (
+       UPDATE bookings SET status = 'cancelled' WHERE id IN (SELECT id FROM locked) RETURNING id
+     )
+     SELECT * FROM locked`,
     [id]
   );
   const previous = before.rows[0];
@@ -30,6 +41,8 @@ export async function POST(
       { status: 404 }
     );
   }
+  // La riga è ora 'cancelled' nel DB; per la risposta rispecchiamo lo stato aggiornato.
+  const booking: Booking = { ...previous, status: "cancelled" };
 
   const wasPaid = previous.status === "completed";
   const today = new Date();
@@ -45,12 +58,6 @@ export async function POST(
   const cityTaxRefund =
     wasPaid && previous.city_tax_online === true ? Number(previous.city_tax ?? 0) : 0;
   const refundDue = depositRefundDue || cityTaxRefund > 0;
-
-  const result = await pool.query<Booking>(
-    `UPDATE bookings SET status = 'cancelled' WHERE id = $1 RETURNING *`,
-    [id]
-  );
-  const booking = result.rows[0];
 
   let calendarError: string | null = null;
   // Se la richiesta era ancora "pending" il calendario non aveva nulla di bloccato per queste

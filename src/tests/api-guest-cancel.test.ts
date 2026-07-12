@@ -91,9 +91,9 @@ describe("POST /api/bookings/[code]/guest-cancel", () => {
   it("cancella con rimborso se checkin è lontano > 15 giorni", async () => {
     vi.mocked(verifyAccessToken).mockReturnValueOnce(true);
     const booking = makeBooking({ checkin: daysFromNow(20) });
-    vi.mocked(pool.query)
-      .mockResolvedValueOnce({ rows: [booking] } as never) // SELECT
-      .mockResolvedValueOnce({ rows: [], rowCount: 1 } as never); // UPDATE cancelled
+    // Cancellazione atomica: la route esegue UNA sola query (CTE lock+update) che
+    // restituisce lo stato precedente della prenotazione.
+    vi.mocked(pool.query).mockResolvedValueOnce({ rows: [booking] } as never);
 
     const { POST } = await import("@/app/api/bookings/[code]/guest-cancel/route");
     const res = await POST(makeRequest("CM-ABCD12"), makeContext("CM-ABCD12"));
@@ -106,9 +106,7 @@ describe("POST /api/bookings/[code]/guest-cancel", () => {
   it("cancella con rimborso parziale se checkin è tra cancelHalfRefundDays e cancelFullRefundDays", async () => {
     vi.mocked(verifyAccessToken).mockReturnValueOnce(true);
     const booking = makeBooking({ checkin: daysFromNow(5) });
-    vi.mocked(pool.query)
-      .mockResolvedValueOnce({ rows: [booking] } as never)
-      .mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
+    vi.mocked(pool.query).mockResolvedValueOnce({ rows: [booking] } as never);
 
     const { POST } = await import("@/app/api/bookings/[code]/guest-cancel/route");
     const res = await POST(makeRequest("CM-ABCD12"), makeContext("CM-ABCD12"));
@@ -123,9 +121,7 @@ describe("POST /api/bookings/[code]/guest-cancel", () => {
   it("cancella senza rimborso se checkin è entro 2 giorni", async () => {
     vi.mocked(verifyAccessToken).mockReturnValueOnce(true);
     const booking = makeBooking({ checkin: daysFromNow(1) });
-    vi.mocked(pool.query)
-      .mockResolvedValueOnce({ rows: [booking] } as never)
-      .mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
+    vi.mocked(pool.query).mockResolvedValueOnce({ rows: [booking] } as never);
 
     const { POST } = await import("@/app/api/bookings/[code]/guest-cancel/route");
     const res = await POST(makeRequest("CM-ABCD12"), makeContext("CM-ABCD12"));
@@ -138,9 +134,7 @@ describe("POST /api/bookings/[code]/guest-cancel", () => {
   it("calcola la trattenuta del 5% sull'importo rimborsabile", async () => {
     vi.mocked(verifyAccessToken).mockReturnValueOnce(true);
     const booking = makeBooking({ checkin: daysFromNow(20), deposit_amount: 200 });
-    vi.mocked(pool.query)
-      .mockResolvedValueOnce({ rows: [booking] } as never)
-      .mockResolvedValueOnce({ rows: [], rowCount: 1 } as never);
+    vi.mocked(pool.query).mockResolvedValueOnce({ rows: [booking] } as never);
 
     const { POST } = await import("@/app/api/bookings/[code]/guest-cancel/route");
     const res = await POST(makeRequest("CM-ABCD12"), makeContext("CM-ABCD12"));

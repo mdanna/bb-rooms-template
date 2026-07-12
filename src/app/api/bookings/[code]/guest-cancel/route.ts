@@ -20,8 +20,20 @@ export async function POST(
 
   await ensureSchema();
 
+  // Cancellazione atomica in un'unica istruzione: la CTE `locked` blocca la riga con
+  // FOR UPDATE, `upd` la porta a 'cancelled', e la SELECT finale restituisce lo stato
+  // PRECEDENTE al lock. Così un pagamento che completa in parallelo (webhook Stripe) non
+  // viene sovrascritto in modo silenzioso e wasPaid/rimborso sono calcolati sullo stato
+  // reale al momento del lock, non su una lettura obsoleta.
   const before = await pool.query<Booking>(
-    `SELECT * FROM bookings WHERE code = $1 AND status IN ('pending', 'approved', 'completed')`,
+    `WITH locked AS (
+       SELECT * FROM bookings
+       WHERE code = $1 AND status IN ('pending', 'approved', 'completed')
+       FOR UPDATE
+     ), upd AS (
+       UPDATE bookings SET status = 'cancelled' WHERE id IN (SELECT id FROM locked) RETURNING id
+     )
+     SELECT * FROM locked`,
     [code]
   );
   const booking = before.rows[0];
@@ -31,8 +43,6 @@ export async function POST(
       { status: 404 }
     );
   }
-
-  await pool.query(`UPDATE bookings SET status = 'cancelled' WHERE code = $1`, [code]);
 
   let calendarError: string | null = null;
   try {
