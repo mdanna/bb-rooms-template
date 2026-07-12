@@ -169,7 +169,15 @@ function ReviewForm() {
 
       <label className="block">
         <span className="mb-1 block text-xs text-foreground/60">{t.reviews.name}</span>
-        <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} required maxLength={80} />
+        <input
+          className={inputCls}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          maxLength={80}
+          placeholder={t.reviews.namePlaceholder}
+        />
+        <span className="mt-1 block text-[10px] text-foreground/40">{t.reviews.nameHint}</span>
       </label>
 
       <label className="block">
@@ -195,6 +203,7 @@ function ReviewForm() {
             placeholder={t.reviews.stayMonthPh}
             maxLength={40}
           />
+          <span className="mt-1 block text-[10px] text-foreground/40">{t.reviews.stayMonthHint}</span>
         </label>
         <label className="block">
           <span className="mb-1 block text-xs text-foreground/60">{t.reviews.bookingCode}</span>

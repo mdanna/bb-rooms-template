@@ -34,10 +34,13 @@ export interface Translation {
     verified: string;
     writeTitle: string;
     name: string;
+    namePlaceholder: string;
+    nameHint: string;
     yourRating: string;
     yourReview: string;
     stayMonth: string;
     stayMonthPh: string;
+    stayMonthHint: string;
     bookingCode: string;
     bookingCodeHelp: string;
     email: string;
