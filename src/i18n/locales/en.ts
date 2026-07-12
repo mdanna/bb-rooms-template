@@ -43,8 +43,11 @@ const en: Translation = {
   reviews: {
     title: "What guests say",
     subtitleOwn: "★ {rating} · {count} guest reviews",
+    aggregateReviews: "{count} reviews",
     empty: "No reviews yet. Be the first to leave one.",
     verified: "Verified stay",
+    writeCta: "Write a review",
+    backToList: "← Back to reviews",
     writeTitle: "Leave your review",
     name: "Your name",
     namePlaceholder: "e.g. Marco R.",

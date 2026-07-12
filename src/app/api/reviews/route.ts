@@ -3,6 +3,7 @@ import { revalidateTag } from "next/cache";
 import { pool, ensureReviewSchema } from "@/lib/db";
 import { REVIEWS_CACHE_TAG } from "@/lib/reviews";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { verifyAccessToken } from "@/lib/accessToken";
 import { localeOrder, type LocaleCode } from "@/i18n/index";
 import { sendReviewNotification } from "@/lib/email";
 import { DEMO_MODE, demoWriteBlocked } from "@/lib/demo";
@@ -21,6 +22,7 @@ interface CreateReviewBody {
   locale: string;
   stayMonth?: string;
   bookingCode?: string;
+  token?: string;
   consent: boolean;
 }
 
@@ -44,7 +46,8 @@ function isValid(b: unknown): b is CreateReviewBody {
     r.consent === true &&
     (r.email === undefined || (typeof r.email === "string" && r.email.length <= 254)) &&
     (r.stayMonth === undefined || (typeof r.stayMonth === "string" && r.stayMonth.length <= MAX_STAY)) &&
-    (r.bookingCode === undefined || (typeof r.bookingCode === "string" && r.bookingCode.length <= MAX_CODE))
+    (r.bookingCode === undefined || (typeof r.bookingCode === "string" && r.bookingCode.length <= MAX_CODE)) &&
+    (r.token === undefined || (typeof r.token === "string" && r.token.length <= 200))
   );
 }
 
@@ -71,13 +74,18 @@ export async function POST(request: Request) {
   const locale = body.locale as LocaleCode;
   const stayMonth = body.stayMonth?.trim() || null;
   const bookingCode = body.bookingCode?.trim() || null;
+  const token = body.token?.trim() || null;
 
   await ensureReviewSchema();
 
-  // Verifica soggiorno (badge, non requisito): il codice prenotazione deve
-  // corrispondere a una prenotazione reale con la stessa email dell'autore.
+  // Verifica soggiorno (badge, non requisito). Due strade:
+  // 1) Token firmato dall'email di richiesta recensione (link con codice + t): prova da solo
+  //    che è l'ospite reale → verificato senza richiedere di nuovo l'email.
+  // 2) Fallback manuale: codice prenotazione + email che corrisponde a una prenotazione reale.
   let verified = false;
-  if (bookingCode && email) {
+  if (bookingCode && token && verifyAccessToken(bookingCode, token)) {
+    verified = true;
+  } else if (bookingCode && email) {
     try {
       const { rows } = await pool.query<{ id: number }>(
         `SELECT id FROM bookings WHERE code = $1 AND lower(email) = lower($2) LIMIT 1`,

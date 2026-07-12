@@ -43,8 +43,11 @@ const fr: Translation = {
   reviews: {
     title: "Ce que disent les hôtes",
     subtitleOwn: "★ {rating} · {count} avis des voyageurs",
+    aggregateReviews: "{count} avis",
     empty: "Aucun avis pour le moment. Soyez le premier à en laisser un.",
     verified: "Séjour vérifié",
+    writeCta: "Écrire un avis",
+    backToList: "← Retour aux avis",
     writeTitle: "Laissez votre avis",
     name: "Votre nom",
     namePlaceholder: "ex. Marco R.",

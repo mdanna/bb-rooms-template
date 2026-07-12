@@ -43,8 +43,11 @@ const it: Translation = {
   reviews: {
     title: "Cosa dicono gli ospiti",
     subtitleOwn: "★ {rating} · {count} recensioni degli ospiti",
+    aggregateReviews: "{count} recensioni",
     empty: "Ancora nessuna recensione. Sii il primo a lasciarne una.",
     verified: "Soggiorno verificato",
+    writeCta: "Scrivi una recensione",
+    backToList: "← Torna alle recensioni",
     writeTitle: "Lascia la tua recensione",
     name: "Il tuo nome",
     namePlaceholder: "Es. Marco R.",

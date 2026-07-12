@@ -30,8 +30,11 @@ export interface Translation {
   reviews: {
     title: string;
     subtitleOwn: string;
+    aggregateReviews: string;
     empty: string;
     verified: string;
+    writeCta: string;
+    backToList: string;
     writeTitle: string;
     name: string;
     namePlaceholder: string;

@@ -43,8 +43,11 @@ const zh: Translation = {
   reviews: {
     title: "客人评价",
     subtitleOwn: "★ {rating} · {count} 条住客评价",
+    aggregateReviews: "{count} 条评价",
     empty: "还没有评价。成为第一个留下评价的人。",
     verified: "已验证入住",
+    writeCta: "写评价",
+    backToList: "← 返回评价",
     writeTitle: "留下您的评价",
     name: "您的姓名",
     namePlaceholder: "例如 Marco R.",

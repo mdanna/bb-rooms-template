@@ -43,8 +43,11 @@ const ko: Translation = {
   reviews: {
     title: "게스트 후기",
     subtitleOwn: "★ {rating} · 게스트 후기 {count}개",
+    aggregateReviews: "리뷰 {count}개",
     empty: "아직 후기가 없습니다. 첫 후기를 남겨주세요.",
     verified: "인증된 숙박",
+    writeCta: "리뷰 작성하기",
+    backToList: "← 후기 목록으로 돌아가기",
     writeTitle: "후기 남기기",
     name: "이름",
     namePlaceholder: "예: Marco R.",

@@ -567,6 +567,34 @@ export async function sendManagementLinkEmail(params: {
   });
 }
 
+// Email post-soggiorno che invita l'ospite a lasciare una recensione. Il link porta a
+// /recensioni/scrivi con codice + token firmato: la pagina precompila il codice prenotazione
+// e l'API marca la recensione come "soggiorno verificato" senza richiedere di nuovo l'email.
+export async function sendReviewRequestEmail(params: {
+  to: string;
+  code: string;
+  firstName: string;
+  reviewUrl: string;
+  locale: LocaleCode;
+}) {
+  const { to, code, firstName, reviewUrl, locale } = params;
+  const s = getExtraEmailStrings(locale);
+  const html = buildHtml(
+    title(s.reviewRequestSubject(code)) +
+    para(s.reviewRequestBody(firstName).replace(/\n/g, "<br>")) +
+    button(s.reviewRequestButton, reviewUrl) +
+    divider() +
+    smallPara(`<a href="mailto:${HOST_EMAIL}" style="color:#b8755f;">${HOST_EMAIL}</a> · ${HOST_PHONE}`)
+  );
+  await send({
+    to,
+    replyTo: HOST_EMAIL,
+    subject: s.reviewRequestSubject(code),
+    text: [s.reviewRequestBody(firstName), "", reviewUrl, "", s.houseName, `${HOST_EMAIL} · ${HOST_PHONE}`].join("\n"),
+    html,
+  });
+}
+
 export async function sendBalanceReminderEmail(params: {
   to: string;
   code: string;

@@ -775,6 +775,9 @@ interface ExtraStrings {
   manageLinkBody: (firstName: string, code: string) => string;
   manageLinkExpiry: string;
   manageLinkDisclaimer: string;
+  reviewRequestSubject: (code: string) => string;
+  reviewRequestBody: (firstName: string) => string;
+  reviewRequestButton: string;
   balanceReminderSubject: (code: string) => string;
   balanceReminderBody: (firstName: string, code: string, checkin: string) => string;
   balanceReminderAmount: (amount: string) => string;
@@ -798,6 +801,9 @@ interface ExtraStrings {
 const EXTRA: Record<LocaleCode, ExtraStrings> = {
   it: {
     houseName: CONTENT.siteTitle.it,
+    reviewRequestSubject: (c) => `La tua recensione · Prenotazione ${c}`,
+    reviewRequestBody: (fn) => `Ciao ${fn},\n\nsperiamo che il tuo soggiorno sia stato piacevole. Ti va di raccontare la tua esperienza in una breve recensione? Ti basta un minuto.`,
+    reviewRequestButton: "Lascia una recensione",
     autoReplySubject: (c) => `Richiesta ricevuta · ${c}`,
     autoReplyBody: (fn, c, ci, co) => `Ciao ${fn},\n\nAbbiamo ricevuto la tua richiesta di prenotazione (codice: ${c}) per il periodo dal ${ci} al ${co} presso ${CONTENT.siteTitle.it}, ${CONTENT.address}.\n\nEntro 24 ore ti contatteremo per confermare la disponibilità e inviarti il link per il pagamento dell'anticipo.\n\nInformazioni utili:\n• Check-in: dalle ${POLICIES.checkinTime}\n• Check-out: entro le ${POLICIES.checkoutTime}\n• Indirizzo: ${CONTENT.address}\n\nPer qualsiasi domanda puoi scriverci a ${HOST_EMAIL} o chiamarci al ${HOST_PHONE}.\n\nA presto!`,
     autoReplyFooter: `${CONTENT.siteTitle.it}\n${CONTENT.locationDisplay}`,
@@ -833,6 +839,9 @@ const EXTRA: Record<LocaleCode, ExtraStrings> = {
   },
   en: {
     houseName: CONTENT.siteTitle.en,
+    reviewRequestSubject: (c) => `Your review · Booking ${c}`,
+    reviewRequestBody: (fn) => `Hi ${fn},\n\nwe hope you enjoyed your stay. Would you share your experience in a short review? It only takes a minute.`,
+    reviewRequestButton: "Leave a review",
     autoReplySubject: (c) => `Request received · ${c}`,
     autoReplyBody: (fn, c, ci, co) => `Hello ${fn},\n\nWe have received your booking request (code: ${c}) for the period ${ci} – ${co} at ${CONTENT.siteTitle.en}, ${CONTENT.address}.\n\nWe will get back to you within 24 hours to confirm availability and send you the link to pay the deposit.\n\nUseful information:\n• Check-in: from ${POLICIES.checkinTime}\n• Check-out: by ${POLICIES.checkoutTime}\n• Address: ${CONTENT.address}\n\nIf you have any questions, feel free to write to us at ${HOST_EMAIL} or call us at ${HOST_PHONE}.\n\nSee you soon!`,
     autoReplyFooter: `${CONTENT.siteTitle.en}\n${CONTENT.locationDisplay}`,
@@ -868,6 +877,9 @@ const EXTRA: Record<LocaleCode, ExtraStrings> = {
   },
   fr: {
     houseName: CONTENT.siteTitle.fr,
+    reviewRequestSubject: (c) => `Votre avis · Réservation ${c}`,
+    reviewRequestBody: (fn) => `Bonjour ${fn},\n\nnous espérons que votre séjour s'est bien passé. Souhaitez-vous partager votre expérience en quelques lignes ? Cela ne prend qu'une minute.`,
+    reviewRequestButton: "Laisser un avis",
     autoReplySubject: (c) => `Demande reçue · ${c}`,
     autoReplyBody: (fn, c, ci, co) => `Bonjour ${fn},\n\nNous avons bien reçu votre demande de réservation (code : ${c}) pour la période du ${ci} au ${co} à ${CONTENT.siteTitle.fr}, ${CONTENT.address}.\n\nNous vous répondrons dans les 24 heures pour confirmer la disponibilité et vous envoyer le lien de paiement de l'acompte.\n\nInformations utiles :\n• Arrivée : à partir de ${POLICIES.checkinTime}\n• Départ : avant ${POLICIES.checkoutTime}\n• Adresse : ${CONTENT.address}\n\nPour toute question, n'hésitez pas à nous écrire à ${HOST_EMAIL} ou à nous appeler au ${HOST_PHONE}.\n\nÀ très bientôt !`,
     autoReplyFooter: `${CONTENT.siteTitle.fr}\n${CONTENT.locationDisplay}`,
@@ -903,6 +915,9 @@ const EXTRA: Record<LocaleCode, ExtraStrings> = {
   },
   de: {
     houseName: CONTENT.siteTitle.de,
+    reviewRequestSubject: (c) => `Ihre Bewertung · Buchung ${c}`,
+    reviewRequestBody: (fn) => `Hallo ${fn},\n\nwir hoffen, Ihr Aufenthalt hat Ihnen gefallen. Möchten Sie Ihre Erfahrung in einer kurzen Bewertung teilen? Es dauert nur eine Minute.`,
+    reviewRequestButton: "Bewertung abgeben",
     autoReplySubject: (c) => `Anfrage erhalten · ${c}`,
     autoReplyBody: (fn, c, ci, co) => `Hallo ${fn},\n\nWir haben Ihre Buchungsanfrage (Code: ${c}) für den Zeitraum vom ${ci} bis ${co} in ${CONTENT.siteTitle.de}, ${CONTENT.address} erhalten.\n\nWir werden innerhalb von 24 Stunden antworten, um die Verfügbarkeit zu bestätigen und Ihnen den Link zur Anzahlungszahlung zu senden.\n\nNützliche Informationen:\n• Check-in: ab ${POLICIES.checkinTime} Uhr\n• Check-out: bis ${POLICIES.checkoutTime} Uhr\n• Adresse: ${CONTENT.address}\n\nBei Fragen können Sie uns gerne unter ${HOST_EMAIL} schreiben oder uns unter ${HOST_PHONE} anrufen.\n\nBis bald!`,
     autoReplyFooter: `${CONTENT.siteTitle.de}\n${CONTENT.locationDisplay}`,
@@ -938,6 +953,9 @@ const EXTRA: Record<LocaleCode, ExtraStrings> = {
   },
   es: {
     houseName: CONTENT.siteTitle.es,
+    reviewRequestSubject: (c) => `Tu reseña · Reserva ${c}`,
+    reviewRequestBody: (fn) => `Hola ${fn},\n\nesperamos que hayas disfrutado tu estancia. ¿Te gustaría compartir tu experiencia en una breve reseña? Solo te llevará un minuto.`,
+    reviewRequestButton: "Dejar una reseña",
     autoReplySubject: (c) => `Solicitud recibida · ${c}`,
     autoReplyBody: (fn, c, ci, co) => `Hola ${fn},\n\nHemos recibido tu solicitud de reserva (código: ${c}) para el período del ${ci} al ${co} en ${CONTENT.siteTitle.es}, ${CONTENT.address}.\n\nTe responderemos en 24 horas para confirmar la disponibilidad y enviarte el enlace de pago del depósito.\n\nInformación útil:\n• Check-in: a partir de las ${POLICIES.checkinTime}\n• Check-out: antes de las ${POLICIES.checkoutTime}\n• Dirección: ${CONTENT.address}\n\nSi tienes alguna pregunta no dudes en escribirnos a ${HOST_EMAIL} o llamarnos al ${HOST_PHONE}.\n\n¡Hasta pronto!`,
     autoReplyFooter: `${CONTENT.siteTitle.es}\n${CONTENT.locationDisplay}`,
@@ -973,6 +991,9 @@ const EXTRA: Record<LocaleCode, ExtraStrings> = {
   },
   pt: {
     houseName: CONTENT.siteTitle.pt,
+    reviewRequestSubject: (c) => `A sua avaliação · Reserva ${c}`,
+    reviewRequestBody: (fn) => `Olá ${fn},\n\nesperamos que a sua estadia tenha sido agradável. Gostaria de partilhar a sua experiência numa breve avaliação? Demora apenas um minuto.`,
+    reviewRequestButton: "Deixar uma avaliação",
     autoReplySubject: (c) => `Pedido recebido · ${c}`,
     autoReplyBody: (fn, c, ci, co) => `Olá ${fn},\n\nRecebemos o seu pedido de reserva (código: ${c}) para o período de ${ci} a ${co} em ${CONTENT.siteTitle.pt}, ${CONTENT.address}.\n\nResponderemos em 24 horas para confirmar a disponibilidade e enviar-lhe o link de pagamento do sinal.\n\nInformações úteis:\n• Check-in: a partir das ${POLICIES.checkinTime}\n• Check-out: até às ${POLICIES.checkoutTime}\n• Morada: ${CONTENT.address}\n\nPara qualquer questão não hesite em escrever-nos para ${HOST_EMAIL} ou ligar para ${HOST_PHONE}.\n\nAté breve!`,
     autoReplyFooter: `${CONTENT.siteTitle.pt}\n${CONTENT.locationDisplay}`,
@@ -1008,6 +1029,9 @@ const EXTRA: Record<LocaleCode, ExtraStrings> = {
   },
   zh: {
     houseName: CONTENT.siteTitle.zh,
+    reviewRequestSubject: (c) => `您的评价 · 预订 ${c}`,
+    reviewRequestBody: (fn) => `您好 ${fn}，\n\n希望您入住愉快。愿意用简短的评价分享您的体验吗？只需一分钟。`,
+    reviewRequestButton: "留下评价",
     autoReplySubject: (c) => `预订申请已收到 · ${c}`,
     autoReplyBody: (fn, c, ci, co) => `您好 ${fn},\n\n我们已收到您的预订申请（代码：${c}），入住期间为 ${ci} 至 ${co}，地点：${CONTENT.siteTitle.zh}，${CONTENT.address}。\n\n我们将在24小时内回复以确认是否有空，并向您发送定金支付链接。\n\n实用信息：\n• 入住时间：${POLICIES.checkinTime} 起\n• 退房时间：${POLICIES.checkoutTime} 前\n• 地址：${CONTENT.address}\n\n如有任何疑问，请随时发送邮件至 ${HOST_EMAIL} 或致电 ${HOST_PHONE}。\n\n期待您的到来！`,
     autoReplyFooter: `${CONTENT.siteTitle.zh}\n${CONTENT.locationDisplay}`,
@@ -1043,6 +1067,9 @@ const EXTRA: Record<LocaleCode, ExtraStrings> = {
   },
   ja: {
     houseName: CONTENT.siteTitle.ja,
+    reviewRequestSubject: (c) => `ご感想をお聞かせください · 予約 ${c}`,
+    reviewRequestBody: (fn) => `${fn}様\n\nご滞在はいかがでしたか。よろしければ短いレビューでご感想をお聞かせください。1分ほどで完了します。`,
+    reviewRequestButton: "レビューを書く",
     autoReplySubject: (c) => `ご予約リクエストを受け付けました · ${c}`,
     autoReplyBody: (fn, c, ci, co) => `${fn}様\n\nご予約リクエスト（コード：${c}）を受け付けました。ご滞在期間：${ci}〜${co}、${CONTENT.siteTitle.ja}（${CONTENT.address}）。\n\n24時間以内に空室状況をご確認のうえ、ご連絡と手付金のお支払いリンクをお送りいたします。\n\nご参考情報：\n• チェックイン：${POLICIES.checkinTime}以降\n• チェックアウト：${POLICIES.checkoutTime}まで\n• 住所：${CONTENT.address}\n\nご質問がございましたら ${HOST_EMAIL} にメールいただくか、${HOST_PHONE} までお電話ください。\n\nお会いできることを楽しみにしております！`,
     autoReplyFooter: `${CONTENT.siteTitle.ja}\n${CONTENT.locationDisplay}`,
@@ -1078,6 +1105,9 @@ const EXTRA: Record<LocaleCode, ExtraStrings> = {
   },
   ko: {
     houseName: CONTENT.siteTitle.ko,
+    reviewRequestSubject: (c) => `리뷰를 남겨주세요 · 예약 ${c}`,
+    reviewRequestBody: (fn) => `안녕하세요 ${fn}님,\n\n즐거운 숙박이 되셨기를 바랍니다. 짧은 리뷰로 경험을 공유해 주시겠어요? 1분이면 충분합니다.`,
+    reviewRequestButton: "리뷰 남기기",
     autoReplySubject: (c) => `예약 요청을 받았습니다 · ${c}`,
     autoReplyBody: (fn, c, ci, co) => `안녕하세요 ${fn}님,\n\n예약 요청(코드: ${c})을 받았습니다. 체크인: ${ci}, 체크아웃: ${co}, 숙소: ${CONTENT.siteTitle.ko}(${CONTENT.address}).\n\n24시간 이내에 가능 여부를 확인하여 예약금 결제 링크와 함께 답변 드리겠습니다.\n\n안내 정보:\n• 체크인: ${POLICIES.checkinTime}부터\n• 체크아웃: ${POLICIES.checkoutTime}까지\n• 주소: ${CONTENT.address}\n\n문의 사항이 있으시면 ${HOST_EMAIL}로 이메일을 보내시거나 ${HOST_PHONE}으로 전화해 주세요.\n\n곧 뵙겠습니다!`,
     autoReplyFooter: `${CONTENT.siteTitle.ko}\n${CONTENT.locationDisplay}`,

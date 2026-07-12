@@ -43,8 +43,11 @@ const ja: Translation = {
   reviews: {
     title: "ゲストの声",
     subtitleOwn: "★ {rating} · {count}件のゲストレビュー",
+    aggregateReviews: "{count}件のレビュー",
     empty: "まだレビューがありません。最初のレビューを残しましょう。",
     verified: "認証済みの滞在",
+    writeCta: "レビューを書く",
+    backToList: "← レビュー一覧に戻る",
     writeTitle: "レビューを投稿",
     name: "お名前",
     namePlaceholder: "例：Marco R.",

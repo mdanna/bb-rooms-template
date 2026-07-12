@@ -68,6 +68,7 @@ export async function ensureSchema() {
   // vecchio (tassa riscossa al check-in). true = online. Le prenotazioni create prima di questa
   // colonna restano NULL = vecchio comportamento (tassa al check-in), invariato.
   await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS city_tax_online BOOLEAN;`);
+  await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS review_request_sent_at TIMESTAMPTZ;`);
   // Struttura con camere: a quale unità (appartamento intero o singola camera) si
   // riferisce la prenotazione. NULL = prenotazioni antecedenti / struttura a unità
   // singola → trattate come l'unità radice (vedi rootUnitId()).
@@ -238,4 +239,5 @@ export interface Booking {
   city_tax_online: boolean | null;
   // Unità prenotata (appartamento intero o singola camera). NULL = unità radice.
   unit_id: string | null;
+  review_request_sent_at: string | null;
 }

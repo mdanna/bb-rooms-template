@@ -43,8 +43,11 @@ const es: Translation = {
   reviews: {
     title: "Lo que dicen los huéspedes",
     subtitleOwn: "★ {rating} · {count} reseñas de huéspedes",
+    aggregateReviews: "{count} reseñas",
     empty: "Aún no hay reseñas. Sé el primero en dejar una.",
     verified: "Estancia verificada",
+    writeCta: "Escribir una reseña",
+    backToList: "← Volver a las reseñas",
     writeTitle: "Deja tu reseña",
     name: "Tu nombre",
     namePlaceholder: "p. ej. Marco R.",
