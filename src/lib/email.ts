@@ -537,6 +537,14 @@ export async function sendBalanceReminderEmail(params: {
   const ci = fmtDate(checkin);
   const co = fmtDate(checkout);
   const balanceStr = balanceDue != null && balanceDue > 0 ? `€${balanceDue}` : null;
+  // Tre stati: importo da pagare (balanceStr), saldo già completo (balanceDue === 0) o
+  // importo non ancora calcolato (null → fallback generico).
+  const fullyPaid = balanceDue != null && balanceDue <= 0;
+  const statusLine = balanceStr
+    ? s.balanceReminderAmount(balanceStr)
+    : fullyPaid
+      ? s.balanceReminderFullyPaid
+      : s.balanceReminderNoDue;
   // Opzione A: se la tassa è già stata incassata online (con l'acconto) NON va ricordata nel
   // promemoria del saldo — comparirebbe come "da riscuotere al check-in", cosa ormai errata.
   const showCityTax = cityTax != null && cityTax > 0 && !cityTaxOnline;
@@ -545,20 +553,20 @@ export async function sendBalanceReminderEmail(params: {
     accHtml(unit, locale) +
     para(s.balanceReminderBody(firstName, code, ci)) +
     infoBox(
-      para(balanceStr ? s.balanceReminderAmount(balanceStr) : s.balanceReminderNoDue) +
+      para(statusLine) +
       (showCityTax ? smallPara(s.balanceReminderCityTax(String(cityTax))) : "")
     ) +
-    button(s.balanceReminderButton, payBalanceUrl) +
-    divider() +
-    smallPara(s.balanceReminderAlternative) +
+    // Niente da pagare online se il saldo è già completo → nessun pulsante né alternativa contanti.
+    (fullyPaid ? "" : button(s.balanceReminderButton, payBalanceUrl) + divider() + smallPara(s.balanceReminderAlternative)) +
     smallPara(`<a href="mailto:${HOST_EMAIL}" style="color:#b8755f;">${HOST_EMAIL}</a> · +39 335 7573294`)
   );
   const textLines = [
     unit ? accText(unit, locale) : null,
     s.balanceReminderBody(firstName, code, ci), "",
-    balanceStr ? s.balanceReminderAmount(balanceStr) : s.balanceReminderNoDue, "",
-    payBalanceUrl, "",
-    s.balanceReminderAlternative,
+    statusLine, "",
+    fullyPaid ? null : payBalanceUrl,
+    fullyPaid ? null : "",
+    fullyPaid ? null : s.balanceReminderAlternative,
     showCityTax ? s.balanceReminderCityTax(String(cityTax)) : null,
     "", `${HOST_EMAIL} · +39 335 7573294`, "",
     s.houseName,

@@ -779,6 +779,7 @@ interface ExtraStrings {
   balanceReminderBody: (firstName: string, code: string, checkin: string) => string;
   balanceReminderAmount: (amount: string) => string;
   balanceReminderNoDue: string;
+  balanceReminderFullyPaid: string;
   balanceReminderCityTax: (amount: string) => string;
   balanceReminderButton: string;
   balanceReminderAlternative: string;
@@ -815,6 +816,7 @@ const EXTRA: Record<LocaleCode, ExtraStrings> = {
     balanceReminderBody: (fn, c, ci) => `Ciao ${fn},\n\nIl tuo check-in per la prenotazione ${c} è previsto tra 5 giorni (${ci}).`,
     balanceReminderAmount: (amt) => `Saldo da pagare: €${amt}`,
     balanceReminderNoDue: "Saldo da versare prima del check-in.",
+    balanceReminderFullyPaid: "L'importo è stato completamente saldato: non è previsto alcun pagamento prima del check-in.",
     balanceReminderCityTax: (amt) => `Tassa di soggiorno: €${amt} — riscossa separatamente al check-in.`,
     balanceReminderButton: "Paga il saldo online",
     balanceReminderAlternative: "In alternativa, potrai saldare in contanti o con carta direttamente al check-in.",
@@ -849,6 +851,7 @@ const EXTRA: Record<LocaleCode, ExtraStrings> = {
     balanceReminderBody: (fn, c, ci) => `Hello ${fn},\n\nYour check-in for booking ${c} is in 5 days (${ci}).`,
     balanceReminderAmount: (amt) => `Balance due: €${amt}`,
     balanceReminderNoDue: "A balance is due before check-in.",
+    balanceReminderFullyPaid: "The full amount has already been paid: no payment is due before check-in.",
     balanceReminderCityTax: (amt) => `City tax: €${amt} — collected separately at check-in.`,
     balanceReminderButton: "Pay the balance online",
     balanceReminderAlternative: "Alternatively, you can pay in cash or by card at check-in.",
@@ -883,6 +886,7 @@ const EXTRA: Record<LocaleCode, ExtraStrings> = {
     balanceReminderBody: (fn, c, ci) => `Bonjour ${fn},\n\nVotre arrivée pour la réservation ${c} est dans 5 jours (${ci}).`,
     balanceReminderAmount: (amt) => `Solde à payer : €${amt}`,
     balanceReminderNoDue: "Un solde est à régler avant l'arrivée.",
+    balanceReminderFullyPaid: "Le montant a déjà été intégralement réglé : aucun paiement n'est dû avant l'arrivée.",
     balanceReminderCityTax: (amt) => `Taxe de séjour : €${amt} — encaissée séparément à l'arrivée.`,
     balanceReminderButton: "Payer le solde en ligne",
     balanceReminderAlternative: "Vous pourrez également régler en espèces ou par carte directement à l'arrivée.",
@@ -917,6 +921,7 @@ const EXTRA: Record<LocaleCode, ExtraStrings> = {
     balanceReminderBody: (fn, c, ci) => `Hallo ${fn},\n\nIhr Check-in für die Buchung ${c} findet in 5 Tagen statt (${ci}).`,
     balanceReminderAmount: (amt) => `Ausstehender Restbetrag: €${amt}`,
     balanceReminderNoDue: "Vor dem Check-in ist ein Restbetrag zu zahlen.",
+    balanceReminderFullyPaid: "Der Betrag wurde bereits vollständig bezahlt: Vor dem Check-in ist keine Zahlung fällig.",
     balanceReminderCityTax: (amt) => `Kurtaxe: €${amt} — wird separat beim Check-in erhoben.`,
     balanceReminderButton: "Restbetrag online zahlen",
     balanceReminderAlternative: "Alternativ können Sie direkt beim Check-in bar oder mit Karte zahlen.",
@@ -951,6 +956,7 @@ const EXTRA: Record<LocaleCode, ExtraStrings> = {
     balanceReminderBody: (fn, c, ci) => `Hola ${fn},\n\nTu check-in para la reserva ${c} es en 5 días (${ci}).`,
     balanceReminderAmount: (amt) => `Saldo pendiente: €${amt}`,
     balanceReminderNoDue: "Hay un saldo pendiente antes del check-in.",
+    balanceReminderFullyPaid: "El importe ya ha sido pagado en su totalidad: no se debe realizar ningún pago antes del check-in.",
     balanceReminderCityTax: (amt) => `Tasa turística: €${amt} — cobrada por separado al hacer el check-in.`,
     balanceReminderButton: "Pagar el saldo online",
     balanceReminderAlternative: "Alternativamente, puedes pagar en efectivo o con tarjeta directamente en el check-in.",
@@ -985,6 +991,7 @@ const EXTRA: Record<LocaleCode, ExtraStrings> = {
     balanceReminderBody: (fn, c, ci) => `Olá ${fn},\n\nO seu check-in para a reserva ${c} é daqui a 5 dias (${ci}).`,
     balanceReminderAmount: (amt) => `Saldo a pagar: €${amt}`,
     balanceReminderNoDue: "Existe um saldo a pagar antes do check-in.",
+    balanceReminderFullyPaid: "O valor já foi integralmente pago: não é devido qualquer pagamento antes do check-in.",
     balanceReminderCityTax: (amt) => `Taxa turística: €${amt} — cobrada separadamente no check-in.`,
     balanceReminderButton: "Pagar o saldo online",
     balanceReminderAlternative: "Em alternativa, pode pagar em dinheiro ou cartão diretamente no check-in.",
@@ -1019,6 +1026,7 @@ const EXTRA: Record<LocaleCode, ExtraStrings> = {
     balanceReminderBody: (fn, c, ci) => `您好 ${fn},\n\n您的预订 ${c} 入住日期还有5天（${ci}）。`,
     balanceReminderAmount: (amt) => `待付余款：€${amt}`,
     balanceReminderNoDue: "入住前需支付余款。",
+    balanceReminderFullyPaid: "款项已全额支付：入住前无需再付款。",
     balanceReminderCityTax: (amt) => `城市税：€${amt} — 入住时单独收取。`,
     balanceReminderButton: "在线支付余款",
     balanceReminderAlternative: "您也可以在入住时以现金或银行卡直接付款。",
@@ -1053,6 +1061,7 @@ const EXTRA: Record<LocaleCode, ExtraStrings> = {
     balanceReminderBody: (fn, c, ci) => `${fn}様\n\n予約 ${c} のチェックインまで5日です（${ci}）。`,
     balanceReminderAmount: (amt) => `残額：€${amt}`,
     balanceReminderNoDue: "チェックイン前に残額のお支払いが必要です。",
+    balanceReminderFullyPaid: "料金は全額お支払い済みです。チェックイン前のお支払いは不要です。",
     balanceReminderCityTax: (amt) => `宿泊税：€${amt} — チェックイン時に別途徴収。`,
     balanceReminderButton: "残額をオンラインで支払う",
     balanceReminderAlternative: "チェックイン時に現金またはカードでのお支払いも可能です。",
@@ -1087,6 +1096,7 @@ const EXTRA: Record<LocaleCode, ExtraStrings> = {
     balanceReminderBody: (fn, c, ci) => `안녕하세요 ${fn}님,\n\n예약 ${c}의 체크인까지 5일 남았습니다(${ci}).`,
     balanceReminderAmount: (amt) => `납부할 잔액: €${amt}`,
     balanceReminderNoDue: "체크인 전에 잔액을 납부해야 합니다.",
+    balanceReminderFullyPaid: "금액이 전액 결제되었습니다: 체크인 전 추가 결제가 필요하지 않습니다.",
     balanceReminderCityTax: (amt) => `관광세: €${amt} — 체크인 시 별도 징수.`,
     balanceReminderButton: "온라인으로 잔액 결제",
     balanceReminderAlternative: "또는 체크인 시 현금이나 카드로 직접 결제하실 수 있습니다.",
