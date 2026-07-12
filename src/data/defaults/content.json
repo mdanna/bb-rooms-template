@@ -21,8 +21,6 @@
   "metaDescription": "Descrizione del tuo appartamento per i motori di ricerca.",
   "hostName": "Nome Cognome",
   "airbnbUrl": "",
-  "airbnbRating": 5.0,
-  "airbnbReviewCount": 0,
   "mapLat": 41.9028,
   "mapLng": 12.4964,
   "mapBookmarks": [],
@@ -41,7 +39,6 @@
       "ko": "고속 Wi-Fi"
     }
   ],
-  "reviews": [],
   "heroSubtitle": {
     "it": "Un appartamento accogliente nel cuore della città.",
     "en": "A welcoming apartment in the heart of the city.",

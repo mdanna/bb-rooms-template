@@ -1,54 +1,57 @@
-"use client";
-
-import { useLanguage } from "@/i18n/LanguageContext";
-import { format } from "@/i18n/format";
+import {
+  getPublishedReviews,
+  computeAggregateRating,
+  reviewDatePublished,
+  toVacationRentalReviews,
+} from "@/lib/reviews";
+import { buildReviewMarkup, serializeJsonLd, vacationRentalId } from "@/lib/vacationRentalJsonLd";
 import { CONTENT } from "@/lib/siteContent";
-import { listingUrls } from "@/lib/bookingLinks";
+import RecensioniClient, { type PublicReview } from "./RecensioniClient";
 
-function Diamond() {
-  return <div className="divider-diamond text-gold">◆</div>;
-}
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://your-domain.com").replace(/\/+$/, "");
 
-export default function RecensioniPage() {
-  const { t, locale } = useLanguage();
-  const airbnbUrl = listingUrls().airbnb;
+// Le recensioni vengono dal DB (fonte propria, moderate): render dinamico così le
+// nuove recensioni approvate compaiono subito. La lettura è comunque in cache
+// (unstable_cache), invalidata dalla moderazione.
+export const dynamic = "force-dynamic";
+
+export default async function RecensioniPage() {
+  const published = await getPublishedReviews();
+
+  const reviews: PublicReview[] = published.map((r) => ({
+    id: r.id,
+    author: r.author_name,
+    rating: r.rating,
+    translations: r.translations,
+    body: r.body,
+    bodyLocale: r.locale,
+    verified: r.verified,
+    stayMonth: r.stay_month,
+    datePublished: reviewDatePublished(r),
+  }));
+
+  const agg = computeAggregateRating(published);
+  const aggregate = agg ? { rating: agg.ratingValue.toFixed(2), count: agg.reviewCount } : null;
+
+  // Markup recensioni: iniettato SOLO qui, dove le recensioni sono visibili
+  // (stessa entità VacationRental via @id). Null se non ci sono recensioni.
+  const markup = buildReviewMarkup({
+    id: vacationRentalId(SITE_URL),
+    url: SITE_URL,
+    name: CONTENT.siteTitle.it,
+    reviews: toVacationRentalReviews(published, "it"),
+    aggregateRating: agg ?? undefined,
+  });
 
   return (
-    <section className="px-6 py-20">
-      <h1 className="font-serif-display mb-2 text-center text-3xl italic text-foreground">
-        {t.reviews.title}
-      </h1>
-      {CONTENT.airbnbReviewCount > 0 && (
-        <p className="text-center text-sm text-foreground/60">
-          {format(t.reviews.subtitle, { rating: CONTENT.airbnbRating, count: CONTENT.airbnbReviewCount })}
-        </p>
+    <>
+      {markup && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(markup) }}
+        />
       )}
-      <div className="mx-auto mb-10 mt-4 max-w-xs">
-        <Diamond />
-      </div>
-      <div className="mx-auto grid max-w-5xl gap-6 sm:grid-cols-3">
-        {CONTENT.reviews.map((review, i) => (
-          <blockquote
-            key={i}
-            className="rounded-lg border border-gold/40 bg-card p-6 text-sm leading-7 text-foreground/80"
-          >
-            <p>&ldquo;{review.text[locale] || review.text.it}&rdquo;</p>
-            <footer className="label-gold mt-4 text-[10px]">{review.author}</footer>
-          </blockquote>
-        ))}
-      </div>
-      {airbnbUrl && (
-        <p className="mx-auto mt-4 max-w-5xl text-center text-xs">
-          <a
-            href={airbnbUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-gold underline"
-          >
-            {t.reviews.readMore}
-          </a>
-        </p>
-      )}
-    </section>
+      <RecensioniClient reviews={reviews} aggregate={aggregate} />
+    </>
   );
 }

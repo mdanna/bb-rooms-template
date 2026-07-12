@@ -21,8 +21,6 @@
   "metaDescription": "Villa dei Tigli — dimora di charme in Val d'Orcia, tra ulivi e cipressi. Prenotazione diretta, senza commissioni.",
   "hostName": "Famiglia Ferretti",
   "airbnbUrl": "https://www.airbnb.it/",
-  "airbnbRating": 4.92,
-  "airbnbReviewCount": 87,
   "mapLat": 43.0761,
   "mapLng": 11.6788,
   "mapBookmarks": [
@@ -133,50 +131,6 @@
       "zh": "",
       "ja": "",
       "ko": ""
-    }
-  ],
-  "reviews": [
-    {
-      "text": {
-        "it": "Un posto incantevole, silenzioso e curato in ogni dettaglio. La colazione con i prodotti dell'orto è stata una gioia. Torneremo di sicuro.",
-        "en": "",
-        "fr": "",
-        "de": "",
-        "es": "",
-        "pt": "",
-        "zh": "",
-        "ja": "",
-        "ko": ""
-      },
-      "author": "Giulia M."
-    },
-    {
-      "text": {
-        "it": "La vista al tramonto dalla terrazza vale da sola il viaggio. Accoglienza impeccabile e piena di consigli preziosi.",
-        "en": "",
-        "fr": "",
-        "de": "",
-        "es": "",
-        "pt": "",
-        "zh": "",
-        "ja": "",
-        "ko": ""
-      },
-      "author": "Laurent D."
-    },
-    {
-      "text": {
-        "it": "Casa bellissima immersa negli ulivi, a due passi da Pienza. Perfetta per staccare davvero. Consigliatissima.",
-        "en": "",
-        "fr": "",
-        "de": "",
-        "es": "",
-        "pt": "",
-        "zh": "",
-        "ja": "",
-        "ko": ""
-      },
-      "author": "Marta e Paolo"
     }
   ],
   "heroSubtitle": {

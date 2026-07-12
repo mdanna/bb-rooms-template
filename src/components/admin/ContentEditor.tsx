@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { SiteContent, MapBookmark, Review, AreaPlace, L10n, Details } from "@/lib/siteContent";
+import type { SiteContent, MapBookmark, AreaPlace, L10n, Details } from "@/lib/siteContent";
 import { useAdminLanguage } from "@/i18n/AdminLanguageContext";
 import { rootUnitId } from "@/lib/structure";
 import { useDrafts } from "@/components/admin/DraftContext";
@@ -31,6 +31,31 @@ const SUB_TAB_LABELS: Record<string, Record<SubTab, string>> = {
 };
 
 const SUB_TABS: SubTab[] = ["struttura", "testi", "area", "servizi", "recensioni", "seo"];
+
+// La sub-tab "Recensioni" non modifica più testi statici: le recensioni sono di
+// fonte propria, inviate dagli ospiti e moderate nella pagina dedicata.
+const REVIEW_PANEL: Record<string, { title: string; body: string; cta: string }> = {
+  it: {
+    title: "Recensioni degli ospiti",
+    body: "Le recensioni sono raccolte direttamente dagli ospiti tramite il sito e vengono pubblicate dopo la tua approvazione. Solo le recensioni proprie approvate compaiono in pagina e nei dati strutturati (nessun dato da Airbnb o altre piattaforme). Gestiscile nella pagina di moderazione.",
+    cta: "Vai alla moderazione recensioni →",
+  },
+  en: {
+    title: "Guest reviews",
+    body: "Reviews are collected directly from guests via the site and published after your approval. Only your own approved reviews appear on the page and in structured data (no data from Airbnb or other platforms). Manage them on the moderation page.",
+    cta: "Go to review moderation →",
+  },
+  es: {
+    title: "Reseñas de huéspedes",
+    body: "Las reseñas se recogen directamente de los huéspedes a través del sitio y se publican tras tu aprobación. Solo tus reseñas aprobadas aparecen en la página y en los datos estructurados (ningún dato de Airbnb u otras plataformas). Gestiónalas en la página de moderación.",
+    cta: "Ir a la moderación de reseñas →",
+  },
+  fr: {
+    title: "Avis des voyageurs",
+    body: "Les avis sont recueillis directement auprès des voyageurs via le site et publiés après votre approbation. Seuls vos avis approuvés apparaissent sur la page et dans les données structurées (aucune donnée d'Airbnb ou d'autres plateformes). Gérez-les sur la page de modération.",
+    cta: "Aller à la modération des avis →",
+  },
+};
 
 const SEO_LABELS = {
   it: { intro: "Come appari su Google e a chi cerca la tua struttura. Aiuta chi ti ha trovato su Airbnb a ritrovarti qui, sul sito diretto.", preview: "Anteprima Google", metaDesc: "Descrizione per Google", metaDescHelp: "La frase sotto il titolo nei risultati. ~155 caratteri.", altNames: "Nomi alternativi", altNamesHelp: "Altri nomi con cui ti cercano (nome corto, titolo dell'annuncio Airbnb…), separati da virgola.", titleSuffix: "Aggiunta al titolo", titleSuffixHelp: "Un riferimento di zona per la SEO, es. «a due passi dal Vaticano».", titleSuffixPh: "a due passi da…" },
@@ -112,8 +137,6 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
   const [amenitiesTranslateState, setAmenitiesTranslateState] = useState<TranslateState>("idle");
   const [amenitiesTranslateError, setAmenitiesTranslateError] = useState("");
 
-  const [reviewsTranslateState, setReviewsTranslateState] = useState<TranslateState>("idle");
-  const [reviewsTranslateError, setReviewsTranslateError] = useState("");
 
   const [detailsTranslateState, setDetailsTranslateState] = useState<TranslateState>("idle");
   const [detailsTranslateError, setDetailsTranslateError] = useState("");
@@ -291,37 +314,6 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
     }
   }
 
-  async function handleTranslateReviews() {
-    if (!content) return;
-    setReviewsTranslateState("translating");
-    setReviewsTranslateError("");
-    try {
-      const texts: Record<string, string> = {};
-      content.reviews.forEach((r, i) => { texts[`review_${i}`] = src(r.text as L10n); });
-      const res = await fetch("/api/admin/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texts, sourceLang: srcLang }),
-      });
-      const data = (await res.json()) as { translations?: Record<string, Record<string, string>>; error?: string };
-      if (!res.ok || !data.translations) throw new Error(data.error ?? t.common.error);
-      const tr = data.translations;
-      setContent((c) => {
-        if (!c) return c;
-        const updated = c.reviews.map((r, i) => {
-          const trR = tr[`review_${i}`];
-          const merged = trR ? Object.fromEntries(Object.entries(trR).filter(([, v]) => v)) : {};
-          return { ...r, text: { ...(r.text as L10n), ...merged } };
-        });
-        return { ...c, reviews: updated };
-      });
-      setReviewsTranslateState("done");
-    } catch (e) {
-      setReviewsTranslateError(e instanceof Error ? e.message : t.common.error);
-      setReviewsTranslateState("error");
-    }
-  }
-
   async function handleTranslateDetails() {
     if (!content) return;
     setDetailsTranslateState("translating");
@@ -391,10 +383,9 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
         batchA[`place_${i}_comment`] = src(p.comment);
       });
 
-      // Batch B: long fields (story paragraphs + reviews)
+      // Batch B: long fields (story paragraphs)
       const batchB: Record<string, string> = {};
       content.storyParagraphs.forEach((p, i) => { batchB[`storyP${i}`] = src(p); });
-      content.reviews.forEach((r, i) => { batchB[`review_${i}`] = src(r.text as L10n); });
 
       const translate = async (texts: Record<string, string>) => {
         const res = await fetch("/api/admin/translate", {
@@ -427,10 +418,6 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
             comment: mergeNE(p.comment, tr[`place_${i}_comment`]),
           })),
           amenities: c.amenities.map((a, i) => mergeNE(a as L10n, tr[`amenity_${i}`])),
-          reviews: c.reviews.map((r, i) => ({
-            ...r,
-            text: mergeNE(r.text as L10n, tr[`review_${i}`]),
-          })),
           details: {
             entirePlace: merge(c.details.entirePlace, "entirePlace"),
             quietCourtyard: merge(c.details.quietCourtyard, "quietCourtyard"),
@@ -486,32 +473,6 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
             ))}
             <p className="col-span-full text-xs text-foreground/40 -mt-2">{L.privacyNote}</p>
             <p className="col-span-full text-xs text-gold/80">{L.emailNote}</p>
-          </div>
-        </div>
-
-        {/* Airbnb card */}
-        <div className="rounded-lg border border-gold/30 bg-background p-6">
-          <h3 className="mb-4 text-xs font-bold uppercase tracking-widest text-foreground/50">{L.airbnbSection}</h3>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <label className={labelCls}>
-              <FieldLabel>{L.rating}</FieldLabel>
-              <input
-                type="number"
-                step="0.01"
-                value={content.airbnbRating}
-                onChange={(e) => set("airbnbRating", Number(e.target.value))}
-                className={inputCls}
-              />
-            </label>
-            <label className={labelCls}>
-              <FieldLabel>{L.numReviews}</FieldLabel>
-              <input
-                type="number"
-                value={content.airbnbReviewCount}
-                onChange={(e) => set("airbnbReviewCount", Number(e.target.value))}
-                className={inputCls}
-              />
-            </label>
           </div>
         </div>
 
@@ -958,80 +919,19 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
   }
 
   function renderRecensioni() {
-    if (!content) return null;
+    const M = REVIEW_PANEL[locale] ?? REVIEW_PANEL.en;
     return (
       <div className="space-y-6">
-        <div className="space-y-4">
-          {content.reviews.map((review, i) => (
-            <div key={i} className="rounded-lg border border-gold/30 bg-background p-4 space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <label className="flex flex-1 flex-col gap-1 text-sm">
-                  <FieldLabel>{L.autore}</FieldLabel>
-                  <input
-                    type="text"
-                    value={review.author}
-                    onChange={(e) => {
-                      const updated: Review[] = content.reviews.map((r, j) =>
-                        j === i ? { ...r, author: e.target.value } : r
-                      );
-                      set("reviews", updated);
-                    }}
-                    className={inputCls}
-                  />
-                </label>
-                <button
-                  onClick={() => set("reviews", content.reviews.filter((_, j) => j !== i))}
-                  className="mt-5 text-xs text-red-500 hover:text-red-700"
-                >
-                  {L.elimina}
-                </button>
-              </div>
-              <label className={labelCls}>
-                <span className={labelTextCls}>
-                  {L.testoRecensione} <LangBadge lang={srcLang} />
-                </span>
-                <textarea
-                  rows={4}
-                  value={(review.text as L10n)[srcLang] ?? ""}
-                  onChange={(e) => {
-                    const updated: Review[] = content.reviews.map((r, j) =>
-                      j === i ? { ...r, text: { ...(r.text as L10n), [srcLang]: e.target.value } } : r
-                    );
-                    set("reviews", updated);
-                  }}
-                  className={inputCls}
-                />
-              </label>
-            </div>
-          ))}
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() =>
-                set("reviews", [
-                  ...content.reviews,
-                  { text: { it: "", en: "", fr: "", de: "", es: "", pt: "", zh: "", ja: "", ko: "" }, author: "" },
-                ])
-              }
-              className="rounded-full border border-gold/40 px-4 py-1.5 text-xs text-foreground/60 hover:bg-gold/5"
-            >
-              {L.aggiungiRecensione}
-            </button>
-            <button
-              onClick={handleTranslateReviews}
-              disabled={reviewsTranslateState === "translating"}
-              className="rounded-full border border-foreground/30 px-4 py-1.5 text-xs text-foreground/70 transition hover:bg-foreground/5 disabled:opacity-50"
-            >
-              {reviewsTranslateState === "translating" ? L.inCorso : L.traduciRecensioni}
-            </button>
-            {reviewsTranslateState === "done" && (
-              <span className="rounded bg-green-100 px-2 py-0.5 text-xs text-green-700">{L.tradotto}</span>
-            )}
-            {reviewsTranslateState === "error" && (
-              <span className="text-xs text-red-600">{reviewsTranslateError}</span>
-            )}
-          </div>
+        <div className="rounded-lg border border-gold/30 bg-background p-6 space-y-3">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-foreground/50">{M.title}</h3>
+          <p className="max-w-2xl text-sm leading-6 text-foreground/70">{M.body}</p>
+          <a
+            href="/admin/recensioni"
+            className="inline-block rounded-full bg-gold px-4 py-1.5 text-xs font-semibold text-background hover:opacity-90"
+          >
+            {M.cta}
+          </a>
         </div>
-        <AdminSaveBar onSave={saveToDraft} />
       </div>
     );
   }

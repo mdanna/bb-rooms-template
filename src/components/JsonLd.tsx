@@ -1,70 +1,81 @@
-import { CONTENT } from "@/lib/siteContent";
+import { CONTENT, resolveDescription } from "@/lib/siteContent";
+import { POLICIES } from "@/lib/policies";
+import { localeOrder } from "@/i18n/index";
+import {
+  buildVacationRentalJsonLd,
+  serializeJsonLd,
+  vacationRentalId,
+  type VacationRentalInput,
+} from "@/lib/vacationRentalJsonLd";
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://your-domain.com").replace(/\/+$/, "");
 
 /**
- * Dati strutturati schema.org (BedAndBreakfast) generati da content.json.
- * Dicono ai motori di ricerca che questa è una struttura ricettiva, con
- * indirizzo, mappa, valutazione, servizi e foto → schede ricche nei risultati.
- * Reso come <script type="application/ld+json"> nell'HTML server-side
- * (pattern raccomandato dalla guida Next su JSON-LD). Componente server:
- * niente hook, si limita a leggere CONTENT e l'URL del sito.
+ * Dati strutturati schema.org/VacationRental generati dal modello dati DimoraSuite.
+ * Rendono la pagina-struttura idonea al crawl di Google Vacation Rentals e leggibili
+ * dai sistemi AI (Gemini/ChatGPT/Perplexity). Reso come <script application/ld+json>
+ * server-side (pattern raccomandato da Next).
+ *
+ * IMPORTANTE (identità-only): questo blocco NON contiene aggregateRating/review.
+ * Le recensioni entrano nel markup SOLO sulla pagina /recensioni, dove sono
+ * visibili a schermo (policy Google: il markup deve riflettere il contenuto della
+ * pagina). Qui c'è solo l'identità della struttura, condivisa via `@id`, iniettata
+ * su tutte le pagine (SEO/AI). Nessun dato Airbnb/Booking/Vrbo entra nel markup.
+ *
+ * Nota realistica: questo markup è il prerequisito tecnico e dà valore SEO/AI
+ * immediato, ma NON pubblica da solo la struttura su Google Vacation Rentals —
+ * per i rich result di Google Travel serve l'ammissione a Hotel Center. Vedi
+ * README del modulo.
  */
 export default function JsonLd() {
   const images = [CONTENT.heroImage, ...CONTENT.galleryImages]
     .filter(Boolean)
     .map((img) => `${SITE_URL}/images/${img}`);
 
-  const jsonLd: Record<string, unknown> = {
-    "@context": "https://schema.org",
-    "@type": "BedAndBreakfast",
+  // ID stabile e content-independent: preferisci il CIN, poi la P.IVA/CF, infine
+  // l'host del dominio (fallback per istanze senza CIN configurato).
+  const host = SITE_URL.replace(/^https?:\/\//, "");
+  const identifier = (CONTENT.cin || CONTENT.vatNumber || host).trim();
+
+  // Indirizzo: `content.address` include già la città → la togliamo dallo
+  // streetAddress per non duplicarla in addressLocality.
+  const streetAddress = CONTENT.address.replace(new RegExp(`,?\\s*${CONTENT.city}\\s*$`, "i"), "").trim();
+
+  const input: VacationRentalInput = {
     name: CONTENT.siteTitle.it,
-    description: CONTENT.metaDescription,
+    identifier,
+    id: vacationRentalId(SITE_URL),
     url: SITE_URL,
-    image: images,
+    images,
+    latitude: CONTENT.mapLat,
+    longitude: CONTENT.mapLng,
+    maxOccupancy: POLICIES.maxGuests,
+    additionalType: "Apartment",
+    description: resolveDescription(CONTENT),
+    telephone: CONTENT.phone || undefined,
+    email: CONTENT.email || undefined,
     address: {
-      "@type": "PostalAddress",
-      streetAddress: CONTENT.address,
-      addressLocality: CONTENT.city,
+      streetAddress: streetAddress || undefined,
+      addressLocality: CONTENT.city || undefined,
       addressCountry: "IT",
+    },
+    checkinTime: POLICIES.checkinTime,
+    checkoutTime: POLICIES.checkoutTime,
+    knowsLanguage: [...localeOrder],
+    accommodation: {
+      additionalType: "EntirePlace",
+      amenities: CONTENT.amenities.map((a) => a.it).filter(Boolean),
     },
   };
 
-  if (CONTENT.mapLat && CONTENT.mapLng) {
-    jsonLd.geo = {
-      "@type": "GeoCoordinates",
-      latitude: CONTENT.mapLat,
-      longitude: CONTENT.mapLng,
-    };
-  }
-  if (CONTENT.phone) jsonLd.telephone = CONTENT.phone;
-  if (CONTENT.email) jsonLd.email = CONTENT.email;
-
-  if (CONTENT.airbnbRating > 0 && CONTENT.airbnbReviewCount > 0) {
-    jsonLd.aggregateRating = {
-      "@type": "AggregateRating",
-      ratingValue: CONTENT.airbnbRating,
-      reviewCount: CONTENT.airbnbReviewCount,
-      bestRating: 5,
-    };
-  }
-
-  const amenityFeature = CONTENT.amenities
-    .map((a) => a.it)
-    .filter(Boolean)
-    .map((name) => ({ "@type": "LocationFeatureSpecification", name, value: true }));
-  if (amenityFeature.length) jsonLd.amenityFeature = amenityFeature;
-
-  if (CONTENT.alternateNames && CONTENT.alternateNames.length > 0) {
-    jsonLd.alternateName = CONTENT.alternateNames;
-  }
+  const jsonLd = buildVacationRentalJsonLd(input);
 
   return (
     <script
       type="application/ld+json"
       // JSON-LD non è codice eseguibile: <script> nativo è corretto.
-      // replace('<' → '<') previene injection via i contenuti (guida Next).
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
+      // serializeJsonLd neutralizza '<' per prevenire injection via contenuti.
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
     />
   );
 }

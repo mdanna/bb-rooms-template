@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { CONTENT } from "@/lib/siteContent";
 import { POLICIES } from "@/lib/policies";
 import { listingUrls } from "@/lib/bookingLinks";
 import { getUnit, rootUnitId, isBookable } from "@/lib/structure";
@@ -14,7 +13,6 @@ export default function PrenotaPage() {
   return (
     <PrenotaClient
       airbnbUrl={listingUrls().airbnb}
-      airbnbRating={CONTENT.airbnbRating}
       minAdvanceDays={POLICIES.minAdvanceBookingDays}
     />
   );

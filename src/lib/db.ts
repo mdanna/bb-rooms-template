@@ -142,6 +142,67 @@ export async function ensureAuthSchema() {
   authInitialized = true;
 }
 
+let reviewsInitialized = false;
+
+/**
+ * Tabella delle recensioni DI FONTE PROPRIA (raccolte dagli ospiti tramite il
+ * form pubblico del sito). Nessun dato OTA (Airbnb/Booking/Vrbo) entra qui.
+ * Solo le righe con status='published' e consent=true alimentano la pagina
+ * pubblica e il markup schema.org VacationRental. Idempotente come ensureSchema().
+ */
+export async function ensureReviewSchema() {
+  if (reviewsInitialized) return;
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS reviews (
+      id SERIAL PRIMARY KEY,
+      author_name TEXT NOT NULL,
+      author_email TEXT,
+      rating SMALLINT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+      body TEXT NOT NULL,
+      locale TEXT NOT NULL DEFAULT 'it',
+      translations JSONB,
+      stay_month TEXT,
+      booking_code TEXT,
+      verified BOOLEAN NOT NULL DEFAULT false,
+      status TEXT NOT NULL DEFAULT 'pending',
+      consent BOOLEAN NOT NULL DEFAULT false,
+      published_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+  // Le recensioni pubblicate si leggono spesso (pagina + markup): indice mirato.
+  await pool.query(
+    `CREATE INDEX IF NOT EXISTS reviews_published_idx ON reviews (status, published_at DESC);`,
+  );
+  reviewsInitialized = true;
+}
+
+export interface Review {
+  id: number;
+  author_name: string;
+  /** Privato: usato solo per verifica/contatto, MAI pubblico né nel markup. */
+  author_email: string | null;
+  rating: number;
+  /** Testo originale come inviato dall'ospite (nella sua lingua). */
+  body: string;
+  /** Lingua di invio (LocaleCode). */
+  locale: string;
+  /** Traduzioni { it,en,... } riempite all'approvazione; null finché pending. */
+  translations: Record<string, string> | null;
+  /** Mese/periodo di soggiorno dichiarato (testo libero breve), opzionale. */
+  stay_month: string | null;
+  /** Codice prenotazione opzionale: se combacia → verified. */
+  booking_code: string | null;
+  /** true = il codice prenotazione corrisponde a una prenotazione reale. */
+  verified: boolean;
+  status: "pending" | "published" | "rejected";
+  /** Consenso GDPR alla pubblicazione (obbligatorio per pubblicare). */
+  consent: boolean;
+  /** Diventa datePublished nel markup; valorizzato alla pubblicazione. */
+  published_at: string | null;
+  created_at: string;
+}
+
 export interface Booking {
   id: number;
   code: string;

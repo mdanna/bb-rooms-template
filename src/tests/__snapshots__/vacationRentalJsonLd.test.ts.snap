@@ -1,0 +1,141 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`buildVacationRentalJsonLd — omissione graceful e serializzazione > snapshot dell'output completo per la struttura di esempio 1`] = `
+{
+  "@context": "https://schema.org",
+  "@type": "VacationRental",
+  "additionalType": "Apartment",
+  "address": {
+    "@type": "PostalAddress",
+    "addressCountry": "IT",
+    "addressLocality": "Roma",
+    "addressRegion": "Lazio",
+    "postalCode": "00192",
+    "streetAddress": "Via degli Scipioni 145",
+  },
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "bestRating": 5,
+    "ratingValue": "4.94",
+    "reviewCount": 217,
+    "worstRating": 1,
+  },
+  "checkinTime": "15:00:00",
+  "checkoutTime": "10:00:00",
+  "containsPlace": {
+    "@type": "Accommodation",
+    "additionalType": "EntirePlace",
+    "amenityFeature": [
+      {
+        "@type": "LocationFeatureSpecification",
+        "name": "Wi-Fi ad alta velocità",
+        "value": true,
+      },
+      {
+        "@type": "LocationFeatureSpecification",
+        "name": "Aria condizionata",
+        "value": true,
+      },
+      {
+        "@type": "LocationFeatureSpecification",
+        "name": "Cucina completa",
+        "value": true,
+      },
+    ],
+    "bed": [
+      {
+        "@type": "BedDetails",
+        "numberOfBeds": 1,
+        "typeOfBed": "Queen",
+      },
+      {
+        "@type": "BedDetails",
+        "numberOfBeds": 2,
+        "typeOfBed": "Single",
+      },
+    ],
+    "floorSize": {
+      "@type": "QuantitativeValue",
+      "unitCode": "MTK",
+      "value": 75,
+    },
+    "numberOfBathroomsTotal": 1,
+    "numberOfBedrooms": 2,
+    "numberOfRooms": 3,
+    "occupancy": {
+      "@type": "QuantitativeValue",
+      "value": 4,
+    },
+  },
+  "description": "Elegante appartamento nel cuore di Prati, a due passi dal Vaticano.",
+  "email": "info@esempio.it",
+  "identifier": "IT058091C2KPSZELUL",
+  "image": [
+    "https://esempio.dimorasuite.it/images/casa-01.jpg",
+    "https://esempio.dimorasuite.it/images/casa-02.jpg",
+    "https://esempio.dimorasuite.it/images/casa-03.jpg",
+    "https://esempio.dimorasuite.it/images/casa-04.jpg",
+    "https://esempio.dimorasuite.it/images/casa-05.jpg",
+    "https://esempio.dimorasuite.it/images/casa-06.jpg",
+    "https://esempio.dimorasuite.it/images/casa-07.jpg",
+    "https://esempio.dimorasuite.it/images/casa-08.jpg",
+  ],
+  "knowsLanguage": [
+    "it",
+    "en",
+    "fr",
+  ],
+  "latitude": 41.909069038726436,
+  "longitude": 12.459875591084225,
+  "name": "Appartamento dei Fiori",
+  "review": [
+    {
+      "@type": "Review",
+      "author": {
+        "@type": "Person",
+        "name": "Antonella",
+      },
+      "datePublished": "2026-05-14",
+      "reviewBody": "Soggiorno perfetto.",
+      "reviewRating": {
+        "@type": "Rating",
+        "bestRating": 5,
+        "ratingValue": 5,
+        "worstRating": 1,
+      },
+    },
+    {
+      "@type": "Review",
+      "author": {
+        "@type": "Person",
+        "name": "Yiqi",
+      },
+      "datePublished": "2026-04-02",
+      "reviewBody": "Pulitissimo e ben posizionato.",
+      "reviewRating": {
+        "@type": "Rating",
+        "bestRating": 5,
+        "ratingValue": 5,
+        "worstRating": 1,
+      },
+    },
+    {
+      "@type": "Review",
+      "author": {
+        "@type": "Person",
+        "name": "Valerie",
+      },
+      "datePublished": "2026-03-20",
+      "reviewBody": "Ottima esperienza.",
+      "reviewRating": {
+        "@type": "Rating",
+        "bestRating": 5,
+        "ratingValue": 4,
+        "worstRating": 1,
+      },
+    },
+  ],
+  "telephone": "+39 335 7573294",
+  "url": "https://esempio.dimorasuite.it",
+}
+`;

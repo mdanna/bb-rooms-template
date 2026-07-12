@@ -109,6 +109,50 @@ export async function sendHostNotification(params: {
   });
 }
 
+// Notifica all'host quando arriva una nuova recensione da moderare: sempre in
+// italiano, è uso interno. Non include l'email dell'autore nel corpo pubblico —
+// resta un dato privato in admin.
+export async function sendReviewNotification(params: {
+  author: string;
+  rating: number;
+  body: string;
+  verified: boolean;
+  stayMonth?: string | null;
+}) {
+  const { author, rating, body, verified, stayMonth } = params;
+  const rows: [string, string][] = [
+    ["Autore", author],
+    ["Voto", `${"★".repeat(rating)}${"☆".repeat(5 - rating)} (${rating}/5)`],
+    ...(stayMonth ? [["Soggiorno", stayMonth] as [string, string]] : []),
+    ["Soggiorno verificato", verified ? "Sì" : "No"],
+  ];
+  await send({
+    to: HOST_EMAIL,
+    subject: `Nuova recensione da moderare · ${author}`,
+    text: [
+      `Autore: ${author}`,
+      `Voto: ${rating}/5`,
+      stayMonth ? `Soggiorno: ${stayMonth}` : null,
+      `Verificata: ${verified ? "sì" : "no"}`,
+      "",
+      `"${body}"`,
+      "",
+      `Modera su: ${siteUrl()}/admin/recensioni`,
+    ]
+      .filter(Boolean)
+      .join("\n"),
+    html: buildHtml(
+      title("Nuova recensione da moderare") +
+        dataTable(rows) +
+        divider() +
+        smallPara("TESTO") +
+        para(`"${body}"`, true) +
+        divider() +
+        button("Modera la recensione", `${siteUrl()}/admin/recensioni`),
+    ),
+  });
+}
+
 // Notifica all'host quando un pagamento va a buon fine: sempre in italiano, è uso interno
 // (testo diverso dalla conferma che riceve l'ospite).
 export async function sendHostPaymentNotification(params: {

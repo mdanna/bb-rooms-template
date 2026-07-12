@@ -29,9 +29,25 @@ export interface Translation {
   };
   reviews: {
     title: string;
-    subtitle: string;
-    items: { text: string; author: string }[];
-    readMore: string;
+    subtitleOwn: string;
+    empty: string;
+    verified: string;
+    writeTitle: string;
+    name: string;
+    yourRating: string;
+    yourReview: string;
+    stayMonth: string;
+    stayMonthPh: string;
+    bookingCode: string;
+    bookingCodeHelp: string;
+    email: string;
+    emailHelp: string;
+    consent: string;
+    transparency: string;
+    submit: string;
+    sending: string;
+    success: string;
+    error: string;
   };
   booking: {
     title: string;

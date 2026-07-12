@@ -36,6 +36,21 @@ export default function PrivacyPage() {
           </section>
 
           <section>
+            <h2 className="font-serif-display text-xl italic text-foreground">Recensioni</h2>
+            <p className="mt-2">
+              Se scegli di lasciare una recensione, trattiamo il nome che indichi e il testo
+              della recensione (che, con il tuo consenso esplicito, pubblichiamo sul sito e
+              possono comparire nei risultati dei motori di ricerca), oltre — se le fornisci —
+              a un&apos;email e a un codice di prenotazione, usati solo per verificare che il
+              soggiorno sia reale e mai pubblicati. La base giuridica della pubblicazione è il
+              tuo consenso: puoi revocarlo e chiederne la rimozione in qualsiasi momento
+              scrivendo all&apos;indirizzo indicato sopra. Pubblichiamo solo recensioni di
+              ospiti reali, dopo una verifica manuale, e non rimuoviamo quelle negative
+              autentiche.
+            </p>
+          </section>
+
+          <section>
             <h2 className="font-serif-display text-xl italic text-foreground">Perché li usiamo</h2>
             <p className="mt-2">
               Usiamo questi dati esclusivamente per gestire la tua richiesta di prenotazione:

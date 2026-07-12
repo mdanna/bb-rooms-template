@@ -35,6 +35,7 @@ export default function AdminNav({ userName: _userName }: { userName?: string | 
     { href: "/admin/dashboard", label: t.nav.dashboard },
     { href: "/admin", label: t.nav.calendar },
     { href: "/admin/bookings", label: t.nav.bookings },
+    { href: "/admin/recensioni", label: t.nav.reviews },
     { href: "/admin/contenuti", label: t.nav.contents },
     { href: "/admin/immagini", label: t.nav.images },
     { href: "/admin/impostazioni", label: t.nav.settings },

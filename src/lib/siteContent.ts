@@ -10,11 +10,6 @@ export interface MapBookmark {
   label: string;
 }
 
-export interface Review {
-  text: L10n;
-  author: string;
-}
-
 export interface AreaPlace {
   name: L10n;
   comment: L10n;
@@ -40,9 +35,7 @@ export interface SiteContent {
   cin: string;
   metaDescription: string;
   hostName: string;
-  airbnbUrl?: string; // legacy: l'URL annuncio Airbnb si gestisce ora in Impostazioni
-  airbnbRating: number;
-  airbnbReviewCount: number;
+  airbnbUrl?: string; // legacy: l'URL annuncio Airbnb (canale di prenotazione) si gestisce ora in Impostazioni
   mapLat: number;
   mapLng: number;
   mapBookmarks: MapBookmark[];
@@ -53,7 +46,6 @@ export interface SiteContent {
   // serve al pannello per mantenere la disposizione scelta senza esiliare la copertina.
   imageOrder?: string[];
   amenities: L10n[];
-  reviews: Review[];
   heroSubtitle: L10n;
   storyTitle: L10n;
   storyParagraphs: L10n[];

@@ -1,7 +1,6 @@
 "use client";
 
 import { useLanguage } from "@/i18n/LanguageContext";
-import { format } from "@/i18n/format";
 import { CONTENT } from "@/lib/siteContent";
 
 export default function ServiziPage() {
@@ -18,11 +17,6 @@ export default function ServiziPage() {
           <li>{CONTENT.details.roomInfo[locale] || CONTENT.details.roomInfo.it}</li>
           <li>{CONTENT.details.maxGuests[locale] || CONTENT.details.maxGuests.it}</li>
           <li>{CONTENT.details.neighborhood[locale] || CONTENT.details.neighborhood.it}</li>
-          {CONTENT.airbnbReviewCount > 0 && (
-            <li>
-              {format(t.details.rating, { rating: CONTENT.airbnbRating, count: CONTENT.airbnbReviewCount })}
-            </li>
-          )}
         </ul>
       </div>
       <div>
