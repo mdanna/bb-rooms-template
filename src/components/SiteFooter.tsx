@@ -106,10 +106,11 @@ export default function SiteFooter() {
           </div>
         </div>
 
-        {/* Barra in fondo: copyright + CIN a sinistra, Powered + Gestione (⚙) a destra */}
+        {/* Barra in fondo: copyright + codice identificativo a sinistra, Powered + Gestione (⚙) a destra */}
         <div className="mt-8 flex flex-col items-center gap-2 border-t border-gold/20 pt-4 text-foreground/40 sm:flex-row sm:justify-between">
           <span>
-            © {year} {siteName} · CIN: {CONTENT.cin}
+            © {year} {siteName}
+            {CONTENT.cin ? ` · ${CONTENT.cin}` : ""}
           </span>
           <span className="inline-flex items-center gap-2">
             Powered by{" "}

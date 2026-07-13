@@ -14,7 +14,7 @@ const CJK: LocaleCode[] = ["zh", "ja", "ko"];
 
 type PdfLabels = {
   title: string; subtitle: string;
-  locatore: string; immobile: string; cfLocatore: string;
+  locatore: string; immobile: string; cfLocatore: string; codiceId: string;
   code: string; guest: string; guests: string;
   checkin: string; checkout: string; total: string;
   cityTax: string;
@@ -28,6 +28,7 @@ const PDF_LABELS: Record<string, PdfLabels> = {
     locatore: "Locatore",
     immobile: "Immobile",
     cfLocatore: "P.IVA / C.F.",
+    codiceId: "Codice identificativo",
     code: "Codice prenotazione",
     guest: "Ospite",
     guests: "Numero ospiti",
@@ -46,6 +47,7 @@ const PDF_LABELS: Record<string, PdfLabels> = {
     locatore: "Landlord",
     immobile: "Property",
     cfLocatore: "VAT / Tax ID",
+    codiceId: "Identification code",
     code: "Booking code",
     guest: "Guest",
     guests: "Number of guests",
@@ -64,6 +66,7 @@ const PDF_LABELS: Record<string, PdfLabels> = {
     locatore: "Bailleur",
     immobile: "Bien loué",
     cfLocatore: "TVA / N° fiscal",
+    codiceId: "Code d'identification",
     code: "Code de réservation",
     guest: "Hôte",
     guests: "Nombre de voyageurs",
@@ -82,6 +85,7 @@ const PDF_LABELS: Record<string, PdfLabels> = {
     locatore: "Vermieter",
     immobile: "Mietobjekt",
     cfLocatore: "USt-ID / Steuer-Nr.",
+    codiceId: "Identifikationscode",
     code: "Buchungscode",
     guest: "Gast",
     guests: "Anzahl der Gäste",
@@ -100,6 +104,7 @@ const PDF_LABELS: Record<string, PdfLabels> = {
     locatore: "Arrendador",
     immobile: "Inmueble",
     cfLocatore: "IVA / NIF",
+    codiceId: "Código de identificación",
     code: "Código de reserva",
     guest: "Huésped",
     guests: "Número de huéspedes",
@@ -118,6 +123,7 @@ const PDF_LABELS: Record<string, PdfLabels> = {
     locatore: "Locador",
     immobile: "Imóvel",
     cfLocatore: "NIF / N.º fiscal",
+    codiceId: "Código de identificação",
     code: "Código da reserva",
     guest: "Hóspede",
     guests: "Número de hóspedes",
@@ -265,8 +271,12 @@ export async function GET(
   y -= 14;
   page.drawText(CONTENT.address, { x: left, y, size: 10, font, color: dark });
   y -= 14;
-  page.drawText(`CIN: ${CONTENT.cin}`, { x: left, y, size: 10, font, color: dark });
-  y -= 24;
+  if (CONTENT.cin) {
+    page.drawText(`${L.codiceId}: ${CONTENT.cin}`, { x: left, y, size: 10, font, color: dark });
+    y -= 24;
+  } else {
+    y -= 10;
+  }
 
   // Linea separatrice
   page.drawLine({ start: { x: left, y }, end: { x: pageWidth - left, y }, thickness: 0.5, color: gold });
