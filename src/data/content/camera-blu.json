@@ -18,11 +18,26 @@
       "en": "A cosy, silent room in shades of midnight blue, with direct access to the terrace. Perfect for those seeking quiet and an open view in the morning."
     }
   ],
-  "galleryImages": ["terrazza.jpg", "esterno.jpg"],
+  "galleryImages": [
+    "terrazza.jpg",
+    "esterno.jpg"
+  ],
   "amenities": [
-    { "it": "Accesso alla terrazza", "en": "Terrace access" },
-    { "it": "Letto matrimoniale", "en": "Double bed" },
-    { "it": "Wi-Fi ad alta velocità", "en": "High-speed Wi-Fi" },
-    { "it": "Bagno privato", "en": "Private bathroom" }
+    {
+      "it": "Accesso alla terrazza",
+      "en": "Terrace access"
+    },
+    {
+      "it": "Letto matrimoniale",
+      "en": "Double bed"
+    },
+    {
+      "it": "Wi-Fi ad alta velocità",
+      "en": ""
+    },
+    {
+      "it": "Bagno privato",
+      "en": "Private bathroom"
+    }
   ]
 }

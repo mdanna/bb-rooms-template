@@ -18,11 +18,26 @@
       "en": "A warm, bright room furnished with period pieces and fabrics in shades of dusty pink. The private bathroom and large double bed make it ideal for a couple."
     }
   ],
-  "galleryImages": ["salotto.jpg", "giardino.jpg"],
+  "galleryImages": [
+    "salotto.jpg",
+    "giardino.jpg"
+  ],
   "amenities": [
-    { "it": "Bagno privato", "en": "Private bathroom" },
-    { "it": "Letto matrimoniale", "en": "Double bed" },
-    { "it": "Wi-Fi ad alta velocità", "en": "High-speed Wi-Fi" },
-    { "it": "Aria condizionata", "en": "Air conditioning" }
+    {
+      "it": "Bagno privato",
+      "en": "Private bathroom"
+    },
+    {
+      "it": "Letto matrimoniale",
+      "en": "Double bed"
+    },
+    {
+      "it": "Wi-Fi ad alta velocità",
+      "en": ""
+    },
+    {
+      "it": "Aria condizionata",
+      "en": "Air conditioning"
+    }
   ]
 }
