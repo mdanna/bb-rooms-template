@@ -111,7 +111,7 @@ const de: Translation = {
     error: "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut oder kontaktieren Sie uns direkt.",
     datesUnavailable: "Die ausgewählten Daten sind nicht mehr verfügbar. Bitte wählen Sie einen anderen Zeitraum.",
   },
-  footer: { copyright: "", admin: "Verwaltung" },
+  footer: { copyright: "", contacts: "Kontakt", privacy: "Datenschutzerklärung", admin: "Verwaltung" },
   payment: {
     eyebrow: "Sichere Zahlung",
     title: "Schließen Sie Ihre Buchung ab",

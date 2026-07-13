@@ -110,7 +110,7 @@ const en: Translation = {
     error: "Something went wrong. Please try again or contact us directly.",
     datesUnavailable: "The selected dates are no longer available. Please choose a different period.",
   },
-  footer: { copyright: "", admin: "Manage" },
+  footer: { copyright: "", contacts: "Contacts", privacy: "Privacy policy", admin: "Manage" },
   payment: {
     eyebrow: "Secure payment",
     title: "Complete your booking",

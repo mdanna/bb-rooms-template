@@ -93,7 +93,7 @@ export interface Translation {
     error: string;
     datesUnavailable: string;
   };
-  footer: { copyright: string; admin: string };
+  footer: { copyright: string; contacts: string; privacy: string; admin: string };
   payment: {
     eyebrow: string;
     title: string;

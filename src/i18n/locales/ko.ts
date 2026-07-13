@@ -109,7 +109,7 @@ const ko: Translation = {
     error: "문제가 발생했습니다. 다시 시도하거나 직접 문의해 주세요.",
     datesUnavailable: "선택한 날짜는 더 이상 이용할 수 없습니다. 다른 기간을 선택해 주세요.",
   },
-  footer: { copyright: "", admin: "관리" },
+  footer: { copyright: "", contacts: "연락처", privacy: "개인정보 처리방침", admin: "관리" },
   payment: {
     eyebrow: "안전한 결제",
     title: "예약을 완료하세요",

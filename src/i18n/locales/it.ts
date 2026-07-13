@@ -111,7 +111,7 @@ const it: Translation = {
     error: "Si è verificato un errore. Riprova oppure scrivici direttamente.",
     datesUnavailable: "Le date selezionate non sono più disponibili. Scegli un altro periodo.",
   },
-  footer: { copyright: "", admin: "Gestione" },
+  footer: { copyright: "", contacts: "Contatti", privacy: "Informativa sulla privacy", admin: "Gestione" },
   payment: {
     eyebrow: "Pagamento sicuro",
     title: "Completa la tua prenotazione",
