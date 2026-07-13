@@ -52,7 +52,7 @@ const LABELS = {
     defaultLabel: "Piattaforma predefinita del bottone",
     langTitle: "Lingua del pannello",
     langDesc: "La lingua di questo pannello di amministrazione. Il sito pubblico resta multilingua a parte.",
-    langNote: "In pubblicazione — il pannello cambierà lingua tra 1–2 minuti, al riaggiornamento del sito.",
+    langNote: "Lingua del pannello aggiornata.",
     langSave: "Salva",
     policyCard: "Regole di prenotazione", policyCardDesc: "Acconto, cancellazione, tassa di soggiorno, orari di check-in/out.",
     stripeCard: "Pagamenti (Stripe)", stripeCardDesc: "Chiavi, modalità test/produzione, sicurezza.",
@@ -87,7 +87,7 @@ const LABELS = {
     defaultLabel: "Default platform for the button",
     langTitle: "Panel language",
     langDesc: "The language of this admin panel. The public site stays multilingual separately.",
-    langNote: "Publishing — the panel will switch language within 1–2 minutes, after the site redeploys.",
+    langNote: "Panel language updated.",
     langSave: "Save",
     policyCard: "Booking rules", policyCardDesc: "Deposit, cancellation, city tax, check-in/out times.",
     stripeCard: "Payments (Stripe)", stripeCardDesc: "Keys, test/live mode, security.",
@@ -122,7 +122,7 @@ const LABELS = {
     defaultLabel: "Plataforma predeterminada del botón",
     langTitle: "Idioma del panel",
     langDesc: "El idioma de este panel de administración. El sitio público sigue siendo multilingüe.",
-    langNote: "Publicando — el panel cambiará de idioma en 1–2 minutos, tras la actualización del sitio.",
+    langNote: "Idioma del panel actualizado.",
     langSave: "Guardar",
     policyCard: "Reglas de reserva", policyCardDesc: "Depósito, cancelación, tasa turística, horarios de entrada/salida.",
     stripeCard: "Pagos (Stripe)", stripeCardDesc: "Claves, modo prueba/producción, seguridad.",
@@ -157,7 +157,7 @@ const LABELS = {
     defaultLabel: "Plateforme par défaut du bouton",
     langTitle: "Langue du panneau",
     langDesc: "La langue de ce panneau d'administration. Le site public reste multilingue séparément.",
-    langNote: "Publication — le panneau changera de langue sous 1–2 minutes, après le redéploiement du site.",
+    langNote: "Langue du panneau mise à jour.",
     langSave: "Enregistrer",
     policyCard: "Règles de réservation", policyCardDesc: "Acompte, annulation, taxe de séjour, horaires d'arrivée/départ.",
     stripeCard: "Paiements (Stripe)", stripeCardDesc: "Clés, mode test/production, sécurité.",
@@ -174,7 +174,7 @@ const LABELS = {
 const DEMO = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
 export default function SettingsManager() {
-  const { locale } = useAdminLanguage();
+  const { locale, setLocale } = useAdminLanguage();
   const L = LABELS[locale as keyof typeof LABELS] ?? LABELS.en;
   const UL = UNIT_LABELS[locale] ?? UNIT_LABELS.en;
 
@@ -235,17 +235,20 @@ export default function SettingsManager() {
 
   async function saveLocale() {
     const next = pendingLoc;
+    // Effetto IMMEDIATO: aggiorna il context (tutti i tab, questa pagina inclusa) e scrive
+    // il cookie → la lingua cambia subito e persiste ai reload, senza aspettare il redeploy.
+    setLocale(next);
+    setAdminLoc(next);
     setLocSaveState("saving");
     try {
+      // Persiste anche il DEFAULT del sito (policies.adminLocale) in background.
       const res = await fetch("/api/admin/settings", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ adminLocale: next }),
       });
       if (!res.ok) throw new Error();
-      setAdminLoc(next); // valore salvato ora = selezione
-      // Nota "in pubblicazione" PERSISTENTE: il pannello cambia lingua solo dopo il
-      // redeploy (1–2 min), quindi non la nascondiamo con un timeout.
       setLocSaveState("success");
+      setTimeout(() => setLocSaveState("idle"), 4000);
     } catch { setLocSaveState("error"); }
   }
 
@@ -362,12 +365,7 @@ export default function SettingsManager() {
             {locSaveState === "saving" ? L.saving : L.langSave}
           </button>
         </div>
-        {locSaveState === "success" && (
-          <p className="flex items-center gap-2 text-xs text-foreground/80">
-            <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-gold" aria-hidden />
-            {DEMO ? L.demo : L.langNote}
-          </p>
-        )}
+        {locSaveState === "success" && <p className="text-xs text-green-700">✓ {L.langNote}</p>}
         {locSaveState === "error" && <p className="text-xs text-red-600">{L.saveError}</p>}
       </div>
 

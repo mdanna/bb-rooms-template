@@ -1,5 +1,7 @@
+import { cookies } from "next/headers";
 import { AdminLanguageProvider } from "@/i18n/AdminLanguageContext";
-import { resolveAdminLocale } from "@/lib/policies";
+import { resolveAdminLocale, ADMIN_LOCALES, ADMIN_LOCALE_COOKIE } from "@/lib/policies";
+import type { AdminLocaleCode } from "@/i18n/admin";
 import AdminFooter from "@/components/admin/AdminFooter";
 import { DraftProvider } from "@/components/admin/DraftContext";
 
@@ -9,12 +11,17 @@ import { DraftProvider } from "@/components/admin/DraftContext";
 // la pagina fosse statica.
 export const dynamic = "force-dynamic";
 
-// La lingua del pannello viene dalla configurazione del sito (policies.adminLocale,
-// default "it"), letta lato server e passata al provider. Cambiabile da Impostazioni.
-// Il footer (con link al Manuale) è montato qui → compare su ogni pagina admin.
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+// Lingua iniziale del pannello: se l'operatore l'ha già scelta in questo browser usa il
+// COOKIE (effetto immediato al reload, senza aspettare il redeploy); altrimenti il default
+// del sito (policies.adminLocale). Da lì in poi il cambio è istantaneo via context (vedi
+// AdminLanguageProvider). Il footer (con link al Manuale) è montato qui → su ogni pagina admin.
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const cookieLoc = (await cookies()).get(ADMIN_LOCALE_COOKIE)?.value;
+  const locale = (cookieLoc && (ADMIN_LOCALES as readonly string[]).includes(cookieLoc)
+    ? cookieLoc
+    : resolveAdminLocale()) as AdminLocaleCode;
   return (
-    <AdminLanguageProvider locale={resolveAdminLocale()}>
+    <AdminLanguageProvider locale={locale}>
       {/* Bozze condivise (Salva/Pubblica) tra tutte le sezioni admin per-unità. */}
       <DraftProvider>
         {children}

@@ -44,6 +44,12 @@ export const POLICIES: Policies = rawPolicies as Policies;
 export const ADMIN_LOCALES = ["it", "en", "es", "fr"] as const;
 export type AdminLocale = (typeof ADMIN_LOCALES)[number];
 
+// Nome del cookie con la lingua del pannello scelta dall'operatore (preferenza per-browser,
+// effetto immediato). Definito qui (modulo server+client) così il layout server può leggerlo:
+// una costante esportata da un modulo "use client" arriva ai server component come reference,
+// non come stringa.
+export const ADMIN_LOCALE_COOKIE = "admin_locale";
+
 /** Lingua del pannello admin dalle policy, con default "it". */
 export function resolveAdminLocale(): AdminLocale {
   const l = POLICIES.adminLocale;
