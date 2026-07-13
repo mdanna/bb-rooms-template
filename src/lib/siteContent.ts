@@ -29,6 +29,9 @@ export interface SiteContent {
   city: string;
   address: string;
   phone: string;
+  // Numero WhatsApp della struttura (formato internazionale, es. +39…). Se presente,
+  // mostra i pulsanti "Contattaci su WhatsApp" su sito ed email. Vuoto = niente pulsanti.
+  whatsappNumber?: string;
   email: string;
   bookingEmail: string;
   vatNumber: string;

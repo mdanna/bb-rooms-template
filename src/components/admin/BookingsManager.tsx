@@ -6,6 +6,15 @@ import { DEFAULT_DEPOSIT_RATE } from "@/lib/pricing";
 import { useAdminLanguage } from "@/i18n/AdminLanguageContext";
 import { allUnits, getUnit, rootUnitId } from "@/lib/structure";
 import { CONTENT } from "@/lib/siteContent";
+import { waLink } from "@/lib/whatsapp";
+
+// Etichette + testo precompilato del pulsante "Scrivi su WhatsApp" (verso l'ospite).
+const WA_LABELS: Record<string, { btn: string; text: (n: string, unit: string, ci: string, co: string) => string }> = {
+  it: { btn: "Scrivi su WhatsApp", text: (n, u, ci, co) => `Ciao ${n}, ti scrivo riguardo la tua prenotazione${u ? ` (${u})` : ""} a ${CONTENT.siteTitle.it || "la nostra struttura"} dal ${ci} al ${co}.` },
+  en: { btn: "Message on WhatsApp", text: (n, u, ci, co) => `Hi ${n}, I'm writing about your booking${u ? ` (${u})` : ""} at ${CONTENT.siteTitle.en || CONTENT.siteTitle.it || "our place"} from ${ci} to ${co}.` },
+  es: { btn: "Escribir por WhatsApp", text: (n, u, ci, co) => `Hola ${n}, te escribo sobre tu reserva${u ? ` (${u})` : ""} en ${CONTENT.siteTitle.es || CONTENT.siteTitle.it || "nuestro alojamiento"} del ${ci} al ${co}.` },
+  fr: { btn: "Écrire sur WhatsApp", text: (n, u, ci, co) => `Bonjour ${n}, je vous écris au sujet de votre réservation${u ? ` (${u})` : ""} à ${CONTENT.siteTitle.fr || CONTENT.siteTitle.it || "notre établissement"} du ${ci} au ${co}.` },
+};
 
 interface Booking {
   id: number;
@@ -304,6 +313,24 @@ export default function BookingsManager() {
               <p className="mt-1 text-xs text-foreground/50">
                 {b.email} · {b.phone}
               </p>
+              {waLink(b.phone) && (
+                <a
+                  href={waLink(
+                    b.phone,
+                    (WA_LABELS[locale] ?? WA_LABELS.en).text(
+                      b.first_name,
+                      unitLabel(b.unit_id, locale),
+                      formatStayDate(b.checkin),
+                      formatStayDate(b.checkout),
+                    ),
+                  )}
+                  target="_blank"
+                  rel="noopener"
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-[#25D366]/50 px-3 py-1 text-[11px] font-medium uppercase tracking-widest text-[#128C7E] transition hover:bg-[#25D366]/10"
+                >
+                  <span aria-hidden>✆</span> {(WA_LABELS[locale] ?? WA_LABELS.en).btn}
+                </a>
+              )}
               {b.message && (
                 <p className="mt-2 text-sm italic text-foreground/70">&ldquo;{b.message}&rdquo;</p>
               )}

@@ -4,7 +4,20 @@ import Link from "next/link";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { CONTENT } from "@/lib/siteContent";
 import { PORTAL_LINK } from "@/lib/portalLink";
+import { waLink } from "@/lib/whatsapp";
 import type { LocaleCode } from "@/i18n/index";
+
+// CTA e testo precompilato del pulsante WhatsApp pubblico (verso la struttura).
+const WA_CTA: Partial<Record<LocaleCode, string>> = {
+  it: "Contattaci su WhatsApp", en: "Contact us on WhatsApp", fr: "Contactez-nous sur WhatsApp",
+  es: "Contáctanos por WhatsApp", de: "Über WhatsApp kontaktieren", pt: "Fale connosco no WhatsApp",
+  zh: "通过 WhatsApp 联系我们", ja: "WhatsAppでお問い合わせ", ko: "WhatsApp으로 문의하기",
+};
+const WA_HELLO: Partial<Record<LocaleCode, string>> = {
+  it: "Ciao, vorrei informazioni su", en: "Hi, I'd like information about", fr: "Bonjour, je voudrais des informations sur",
+  es: "Hola, quisiera información sobre", de: "Hallo, ich hätte gerne Informationen über", pt: "Olá, gostaria de informações sobre",
+  zh: "你好，我想了解", ja: "こんにちは、次の物件について知りたいです：", ko: "안녕하세요, 다음 숙소에 대해 문의드립니다:",
+};
 
 // Se questa struttura fa parte di un portale multi-struttura, mostriamo un link che
 // rimanda alla home del portale ("scopri tutte le nostre dimore"). L'appartenenza è
@@ -27,7 +40,8 @@ const PORTAL_LABEL: Record<LocaleCode, string> = {
 
 export default function SiteFooter() {
   const { t, locale } = useLanguage();
-  const siteName = CONTENT.siteTitle[locale] ?? CONTENT.siteTitle.it;
+  // `||` non `??`: una lingua non tradotta ha "" (dopo la pulizia segnaposto) → fallback alla principale.
+  const siteName = CONTENT.siteTitle[locale] || CONTENT.siteTitle.it;
   const portalLabel = PORTAL_LABEL[locale] ?? PORTAL_LABEL.it;
 
   return (
@@ -39,6 +53,18 @@ export default function SiteFooter() {
             className="inline-flex items-center gap-1.5 text-xs uppercase tracking-widest text-gold transition hover:opacity-70"
           >
             {PORTAL_NAME || portalLabel} →
+          </a>
+        </div>
+      )}
+      {waLink(CONTENT.whatsappNumber) && (
+        <div className="mb-5">
+          <a
+            href={waLink(CONTENT.whatsappNumber, `${WA_HELLO[locale] ?? WA_HELLO.it} ${siteName}.`)}
+            target="_blank"
+            rel="noopener"
+            className="inline-flex items-center gap-1.5 rounded-full border border-[#25D366]/60 px-4 py-1.5 text-xs uppercase tracking-widest text-[#128C7E] transition hover:bg-[#25D366]/10"
+          >
+            <span aria-hidden>✆</span> {WA_CTA[locale] ?? WA_CTA.it}
           </a>
         </div>
       )}

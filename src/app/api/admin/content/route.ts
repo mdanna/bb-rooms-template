@@ -51,7 +51,8 @@ function isValidContent(body: unknown): body is SiteContent {
     (!("details" in b) || typeof b.details === "object") &&
     (!("metaDescription" in b) || typeof b.metaDescription === "string") &&
     (!("alternateNames" in b) || (Array.isArray(b.alternateNames) && b.alternateNames.every((n) => typeof n === "string"))) &&
-    (!("seoTitleSuffix" in b) || typeof b.seoTitleSuffix === "string")
+    (!("seoTitleSuffix" in b) || typeof b.seoTitleSuffix === "string") &&
+    (!("whatsappNumber" in b) || typeof b.whatsappNumber === "string")
   );
 }
 
