@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { DEMO_MODE } from "@/lib/demo";
 import { requireBotToken, getFile, putFiles, fileExists, type FileOp } from "@/lib/githubContent";
 import { availPath, stripContained, occupiedNights } from "@/lib/unitAvailability";
-import { pool } from "@/lib/db";
+import { pool, ensureSchema } from "@/lib/db";
 import type { LocaleCode } from "@/i18n/types";
 import type { DayRate, AvailabilityData } from "@/data/availability";
 import availDefault from "@/data/defaults/availability.json";
@@ -144,6 +144,7 @@ export async function PATCH(request: Request) {
       // GUARDIA: niente spegnimento se l'intero ha prenotazioni future attive. Le
       // prenotazioni dell'intero hanno unit_id = radice (o NULL, storiche).
       if (!DEMO_MODE) {
+        await ensureSchema(); // crea la tabella bookings se l'istanza non ne ha ancora (nessuna prenotazione)
         const { rows } = await pool.query(
           `SELECT id, first_name, last_name, checkin, checkout, status
              FROM bookings
@@ -223,6 +224,7 @@ export async function DELETE(request: Request) {
     // confermate). Coerente con la regola niente rimborsi automatici: l'operatore le
     // gestisce prima. Le prenotazioni passate restano nello storico.
     if (!DEMO_MODE) {
+      await ensureSchema(); // crea la tabella bookings se l'istanza non ne ha ancora (nessuna prenotazione)
       const { rows } = await pool.query(
         `SELECT id, first_name, last_name, checkin, checkout, status
            FROM bookings
