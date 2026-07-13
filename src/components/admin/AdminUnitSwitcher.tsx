@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useAdminLanguage } from "@/i18n/AdminLanguageContext";
-import { allUnits, bookableUnits } from "@/lib/structure";
+import { allUnits, bookableUnits, rootUnitId } from "@/lib/structure";
+import { CONTENT } from "@/lib/siteContent";
 
 // Selettore di unità nell'admin: schede appartamento intero + camere. Governa quale
 // calendario/prezzi/impostazioni si stanno modificando, via ?unit=<id>. Con una sola
@@ -26,7 +27,11 @@ export default function AdminUnitSwitcher({
   return (
     <nav className="mb-8 flex flex-wrap gap-2 border-b border-gold/20 pb-4">
       {units.map((u) => {
-        const name = u.name[locale] || u.name.it || u.id;
+        // Unità intera: mostra il titolo dell'appartamento (siteTitle), non "Intero
+        // appartamento". Le camere usano il proprio nome.
+        const name = (u.id === rootUnitId()
+          ? CONTENT.siteTitle[locale] || CONTENT.siteTitle.it
+          : u.name[locale] || u.name.it) || u.id;
         const isActive = u.id === activeUnitId;
         return (
           <Link

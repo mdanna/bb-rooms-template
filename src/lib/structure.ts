@@ -1,6 +1,7 @@
 import rawStructure from "@/data/structure.json";
 import type { LocaleCode } from "@/i18n/types";
 import { localeOrder } from "@/i18n/index";
+import { CONTENT } from "./siteContent";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LA STRUTTURA CON CAMERE — il modello dell'oggetto.
@@ -139,6 +140,13 @@ export function unitLabel(
   if (s.units.length <= 1) return "";
   const u = getUnit(unitId ?? rootUnitId(s), s) ?? getUnit(rootUnitId(s), s);
   if (!u) return "";
+  // Unità INTERA (radice): il nome è il TITOLO dell'appartamento (content.siteTitle), non
+  // l'etichetta generica "Intero appartamento". Le camere usano il proprio nome. Così
+  // "cosa prenoti" nelle email e lo switcher mostrano il nome vero dell'appartamento.
+  if (u.id === rootUnitId(s)) {
+    const title = CONTENT.siteTitle[locale] || CONTENT.siteTitle.it || Object.values(CONTENT.siteTitle).find(Boolean);
+    if (title) return title;
+  }
   return u.name[locale] || u.name.it || u.id;
 }
 

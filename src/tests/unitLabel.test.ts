@@ -10,15 +10,16 @@ describe("unitLabel — nome dell'unità nelle email", () => {
     expect(unitLabel("camera-blu", "it")).toBe("Camera Blu");
   });
 
-  it("appartamento intero (unità radice)", () => {
-    expect(unitLabel("appartamento", "it")).toBe("Intero appartamento");
-    expect(unitLabel("appartamento", "en")).toBe("Whole apartment");
+  it("appartamento intero: il nome è il TITOLO (siteTitle), non l'etichetta generica", () => {
+    // siteTitle dell'esempio: it "Villa dei Tigli", en "" (vuoto → fallback all'italiano).
+    expect(unitLabel("appartamento", "it")).toBe("Villa dei Tigli");
+    expect(unitLabel("appartamento", "en")).toBe("Villa dei Tigli");
   });
 
-  it("unit_id nullo o ignoto ricade sull'unità radice", () => {
-    expect(unitLabel(null, "it")).toBe("Intero appartamento");
-    expect(unitLabel(undefined, "it")).toBe("Intero appartamento");
-    expect(unitLabel("inesistente", "it")).toBe("Intero appartamento");
+  it("unit_id nullo o ignoto ricade sull'unità radice (→ titolo)", () => {
+    expect(unitLabel(null, "it")).toBe("Villa dei Tigli");
+    expect(unitLabel(undefined, "it")).toBe("Villa dei Tigli");
+    expect(unitLabel("inesistente", "it")).toBe("Villa dei Tigli");
   });
 
   it("lingua mancante nel nome → fallback all'italiano", () => {

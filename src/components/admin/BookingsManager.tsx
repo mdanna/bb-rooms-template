@@ -5,6 +5,7 @@ import { formatDateOnly } from "@/lib/dateOnly";
 import { DEFAULT_DEPOSIT_RATE } from "@/lib/pricing";
 import { useAdminLanguage } from "@/i18n/AdminLanguageContext";
 import { allUnits, getUnit, rootUnitId } from "@/lib/structure";
+import { CONTENT } from "@/lib/siteContent";
 
 interface Booking {
   id: number;
@@ -37,6 +38,11 @@ function unitLabel(unitId: string | null, locale: string): string {
   if (allUnits().length <= 1) return "";
   const u = getUnit(unitId ?? rootUnitId()) ?? getUnit(rootUnitId());
   if (!u) return "";
+  // Unità intera: il nome è il titolo dell'appartamento (siteTitle), non "Intero appartamento".
+  if (u.id === rootUnitId()) {
+    const title = CONTENT.siteTitle[locale as keyof typeof CONTENT.siteTitle] || CONTENT.siteTitle.it;
+    if (title) return title;
+  }
   return u.name[locale as keyof typeof u.name] || u.name.it || u.id;
 }
 
