@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { CONTENT } from "@/lib/siteContent";
+import { CONTENT, HOST_WHATSAPP } from "@/lib/siteContent";
 import { PORTAL_LINK } from "@/lib/portalLink";
 import { waLink } from "@/lib/whatsapp";
 import type { LocaleCode } from "@/i18n/index";
@@ -56,10 +56,10 @@ export default function SiteFooter() {
           </a>
         </div>
       )}
-      {waLink(CONTENT.whatsappNumber) && (
+      {waLink(HOST_WHATSAPP) && (
         <div className="mb-5">
           <a
-            href={waLink(CONTENT.whatsappNumber, `${WA_HELLO[locale] ?? WA_HELLO.it} ${siteName}.`)}
+            href={waLink(HOST_WHATSAPP, `${WA_HELLO[locale] ?? WA_HELLO.it} ${siteName}.`)}
             target="_blank"
             rel="noopener"
             className="inline-flex items-center gap-1.5 rounded-full border border-[#25D366]/60 px-4 py-1.5 text-xs uppercase tracking-widest text-[#128C7E] transition hover:bg-[#25D366]/10"

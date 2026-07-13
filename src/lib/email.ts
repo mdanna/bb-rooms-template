@@ -7,7 +7,7 @@ import {
   button, linkButton, infoBox,
 } from "./emailHtml";
 
-import { CONTENT } from "./siteContent";
+import { CONTENT, HOST_WHATSAPP } from "./siteContent";
 import { POLICIES, } from "./policies";
 import { MIN_DEPOSIT_RATE } from "./pricing";
 import { unitLabel } from "./structure";
@@ -46,7 +46,7 @@ const FROM = `${CONTENT.siteTitle.it} <${MAIL_FROM_ADDRESS || CONTENT.bookingEma
 const HOST_EMAIL = CONTENT.email;
 const HOST_PHONE = CONTENT.phone;
 // Suffisso "· WhatsApp" per le righe contatto delle email (se il numero è configurato).
-const HOST_WA = waLink(CONTENT.whatsappNumber);
+const HOST_WA = waLink(HOST_WHATSAPP);
 const WA_SUFFIX = HOST_WA ? ` · <a href="${HOST_WA}" style="color:#128C7E;">WhatsApp</a>` : "";
 
 async function send(payload: { to: string; subject: string; text: string; html?: string; replyTo?: string }) {

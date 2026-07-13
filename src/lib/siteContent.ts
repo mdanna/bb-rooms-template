@@ -68,6 +68,15 @@ export const CONTENT: SiteContent = rawContent as SiteContent;
 // struttura non l'ha personalizzata, resta questo testo generico.
 const DEFAULT_META_DESCRIPTION = ((defaultsRaw as { metaDescription?: string }).metaDescription ?? "").trim();
 
+// Numero WhatsApp della struttura per i pulsanti pubblici/email: il campo dedicato
+// (whatsappNumber) se impostato, altrimenti il TELEFONO — ma solo se è un numero vero,
+// non il segnaposto di default (così un'istanza appena creata non mostra un numero finto).
+// "" = nessun pulsante.
+const DEFAULT_PHONE = ((defaultsRaw as { phone?: string }).phone ?? "").trim();
+export const HOST_WHATSAPP: string =
+  (CONTENT.whatsappNumber ?? "").trim() ||
+  ((CONTENT.phone ?? "").trim() && (CONTENT.phone ?? "").trim() !== DEFAULT_PHONE ? CONTENT.phone : "");
+
 function firstL10n(m: L10n | undefined): string {
   if (!m) return "";
   return (m.it || Object.values(m).find(Boolean) || "").trim();
