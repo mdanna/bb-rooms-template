@@ -12,7 +12,7 @@ export default async function CameraPage({ params }: { params: Promise<{ slug: s
   const unit = unitBySlug(slug);
   if (!unit || !unit.slug || !isBookable(unit)) notFound();
 
-  const content = getUnitContent(unit.id);
+  const content = await getUnitContent(unit.id);
   return (
     <CameraClient
       unitId={unit.id}

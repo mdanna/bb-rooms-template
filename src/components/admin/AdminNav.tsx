@@ -7,7 +7,7 @@ import { signOut } from "next-auth/react";
 import { useAdminLanguage } from "@/i18n/AdminLanguageContext";
 import StructureSwitcher from "@/components/admin/StructureSwitcher";
 import { CONTENT } from "@/lib/siteContent";
-import { getUnit } from "@/lib/structure";
+import { getUnit, allUnits } from "@/lib/structure";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export default function AdminNav({ userName: _userName }: { userName?: string | null }) {
@@ -31,6 +31,8 @@ export default function AdminNav({ userName: _userName }: { userName?: string | 
   // Ordine per frequenza d'uso: operatività (Dashboard, Calendario, Prenotazioni),
   // poi aspetto del sito (Contenuti, Immagini), poi Impostazioni.
   // Policy, Colori e Stripe non sono più voci di menu: card-link in Impostazioni.
+  // "Camere" compare solo per le strutture con camere (quelle che hanno unità "room").
+  const isRoomsStructure = allUnits().some((u) => u.kind === "room");
   const links = [
     { href: "/admin/dashboard", label: t.nav.dashboard },
     { href: "/admin", label: t.nav.calendar },
@@ -38,6 +40,7 @@ export default function AdminNav({ userName: _userName }: { userName?: string | 
     { href: "/admin/recensioni", label: t.nav.reviews },
     { href: "/admin/contenuti", label: t.nav.contents },
     { href: "/admin/immagini", label: t.nav.images },
+    ...(isRoomsStructure ? [{ href: "/admin/camere", label: t.nav.rooms }] : []),
     { href: "/admin/impostazioni", label: t.nav.settings },
   ];
 

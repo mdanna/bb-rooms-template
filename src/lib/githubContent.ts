@@ -1,36 +1,10 @@
 import { DEMO_MODE } from "@/lib/demo";
-import availabilityData from "@/data/availability.json";
-import structureData from "@/data/structure.json";
-import availApartment from "@/data/availability/appartamento.json";
-import availRosa from "@/data/availability/camera-rosa.json";
-import availBlu from "@/data/availability/camera-blu.json";
-import contentData from "@/data/content.json";
-import contentRosa from "@/data/content/camera-rosa.json";
-import contentBlu from "@/data/content/camera-blu.json";
-import policiesData from "@/data/policies.json";
-import themeData from "@/data/theme.json";
-import stripeData from "@/data/stripe.json";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 const REPO_OWNER = process.env.GITHUB_REPO_OWNER ?? "your-github-username";
 const REPO_NAME = process.env.GITHUB_REPO_NAME ?? "your-repo-name";
 const DATA_BRANCH = process.env.GITHUB_DATA_BRANCH ?? "main";
-
-// In demo non si legge/scrive da GitHub: le letture restituiscono i JSON già in
-// bundle (committati nel repo) e le scritture sono no-op. Così il pannello e il
-// calendario ospite funzionano usando i dati demo, senza credenziali GitHub.
-const DEMO_FILES: Record<string, unknown> = {
-  "src/data/availability.json": availabilityData,
-  "src/data/structure.json": structureData,
-  "src/data/availability/appartamento.json": availApartment,
-  "src/data/availability/camera-rosa.json": availRosa,
-  "src/data/availability/camera-blu.json": availBlu,
-  "src/data/content.json": contentData,
-  "src/data/content/camera-rosa.json": contentRosa,
-  "src/data/content/camera-blu.json": contentBlu,
-  "src/data/policies.json": policiesData,
-  "src/data/theme.json": themeData,
-  "src/data/stripe.json": stripeData,
-};
 
 function headers(token: string) {
   return {
@@ -42,9 +16,15 @@ function headers(token: string) {
 
 export async function getFile(path: string, token: string) {
   if (DEMO_MODE) {
-    const bundled = DEMO_FILES[path];
-    const content = bundled !== undefined ? JSON.stringify(bundled, null, 2) : "";
-    return { content, sha: "demo" };
+    // In demo si legge dal FILESYSTEM del deployment (i JSON di src/data sono nel bundle,
+    // committati), non da GitHub: nessuna credenziale. Letto per path → nessuna camera è
+    // cablata (l'insieme delle unità resta dinamico). Le scritture restano no-op.
+    try {
+      const content = readFileSync(join(process.cwd(), path), "utf-8");
+      return { content, sha: "demo" };
+    } catch {
+      return { content: "", sha: "demo" };
+    }
   }
   const res = await fetch(
     `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}?ref=${DATA_BRANCH}`,
@@ -85,6 +65,71 @@ export async function putFile(
   }
   const data = await res.json();
   return { commitSha: data.commit?.sha as string | undefined };
+}
+
+/** True se il file esiste sul branch dati (in demo: se è leggibile da filesystem). */
+export async function fileExists(path: string, token: string): Promise<boolean> {
+  try {
+    const { content } = await getFile(path, token);
+    return content !== "";
+  } catch {
+    return false;
+  }
+}
+
+// Operazione su un file per il commit multi-file: scrittura (content) o eliminazione.
+export type FileOp = { path: string; content: string } | { path: string; remove: true };
+
+/**
+ * Committa PIÙ file in UN SOLO commit (Git Trees API) → un solo redeploy. Usato per le
+ * operazioni "strutturali" (aggiungere/rimuovere una camera tocca structure.json + i file
+ * per-unità insieme). In demo è no-op. Restituisce lo sha del commit creato.
+ */
+export async function putFiles(
+  ops: FileOp[],
+  message: string,
+  token: string
+): Promise<{ commitSha: string | undefined }> {
+  if (DEMO_MODE || ops.length === 0) return { commitSha: undefined };
+  const api = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}`;
+  const jsonHeaders = { ...headers(token), "Content-Type": "application/json" };
+
+  const refRes = await fetch(`${api}/git/ref/heads/${DATA_BRANCH}`, { headers: headers(token), cache: "no-store" });
+  if (!refRes.ok) throw new Error(`Impossibile leggere il ref: ${await refRes.text()}`);
+  const baseCommitSha = (await refRes.json()).object.sha as string;
+
+  const commitRes = await fetch(`${api}/git/commits/${baseCommitSha}`, { headers: headers(token), cache: "no-store" });
+  if (!commitRes.ok) throw new Error(`Impossibile leggere il commit base: ${await commitRes.text()}`);
+  const baseTreeSha = (await commitRes.json()).tree.sha as string;
+
+  const tree = ops.map((op) =>
+    "remove" in op
+      ? { path: op.path, mode: "100644" as const, type: "blob" as const, sha: null }
+      : { path: op.path, mode: "100644" as const, type: "blob" as const, content: op.content }
+  );
+  const treeRes = await fetch(`${api}/git/trees`, {
+    method: "POST",
+    headers: jsonHeaders,
+    body: JSON.stringify({ base_tree: baseTreeSha, tree }),
+  });
+  if (!treeRes.ok) throw new Error(`Impossibile creare il tree: ${await treeRes.text()}`);
+  const newTreeSha = (await treeRes.json()).sha as string;
+
+  const newCommitRes = await fetch(`${api}/git/commits`, {
+    method: "POST",
+    headers: jsonHeaders,
+    body: JSON.stringify({ message, tree: newTreeSha, parents: [baseCommitSha] }),
+  });
+  if (!newCommitRes.ok) throw new Error(`Impossibile creare il commit: ${await newCommitRes.text()}`);
+  const newCommitSha = (await newCommitRes.json()).sha as string;
+
+  const updRes = await fetch(`${api}/git/refs/heads/${DATA_BRANCH}`, {
+    method: "PATCH",
+    headers: jsonHeaders,
+    body: JSON.stringify({ sha: newCommitSha }),
+  });
+  if (!updRes.ok) throw new Error(`Impossibile aggiornare il ref: ${await updRes.text()}`);
+  return { commitSha: newCommitSha };
 }
 
 export async function deleteFile(
