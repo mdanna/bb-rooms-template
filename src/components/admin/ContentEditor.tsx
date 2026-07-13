@@ -111,10 +111,9 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
   const L = CONTENT_LABELS[locale as keyof typeof CONTENT_LABELS] ?? CONTENT_LABELS.en;
   const S = SEO_LABELS[locale as keyof typeof SEO_LABELS] ?? SEO_LABELS.en;
   const CL = CHIP_LABELS[locale as keyof typeof CHIP_LABELS] ?? CHIP_LABELS.en;
-  // Lingua VISUALIZZATA/modificata dalle chip. Default = lingua del pannello, e la segue
-  // se questa cambia; le chip permettono di sbirciare/ritoccare le altre lingue.
+  // Lingua VISUALIZZATA/modificata dalle chip. Default = lingua del pannello; le chip
+  // permettono di sbirciare/ritoccare le altre lingue (la sorgente resta il pannello).
   const [editLocale, setEditLocale] = useState<keyof L10n>(locale as keyof L10n);
-  useEffect(() => { setEditLocale(locale as keyof L10n); }, [locale]);
   const srcLang = editLocale;
   // Lingua SORGENTE delle traduzioni = lingua del pannello (★). «Traduci tutto» traduce
   // sempre da qui verso le altre lingue, a prescindere dalla chip visualizzata.
