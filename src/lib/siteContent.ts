@@ -1,6 +1,7 @@
 import rawContent from "@/data/content.json";
 import defaultsRaw from "@/data/defaults/content.json";
 import type { LocaleCode } from "@/i18n/index";
+import { PRIMARY_LANG } from "./l10n";
 
 export type L10n = Record<LocaleCode, string>;
 
@@ -79,7 +80,7 @@ export const HOST_WHATSAPP: string =
 
 function firstL10n(m: L10n | undefined): string {
   if (!m) return "";
-  return (m.it || Object.values(m).find(Boolean) || "").trim();
+  return (m[PRIMARY_LANG] || m.it || Object.values(m).find(Boolean) || "").trim();
 }
 
 /**

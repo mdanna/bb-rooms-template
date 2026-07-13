@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { pickL10n } from "@/lib/l10n";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { CONTENT } from "@/lib/siteContent";
 
@@ -24,7 +25,7 @@ export default function ZonaPage() {
         <div className="mx-auto mt-4 max-w-xs">
           <Diamond />
         </div>
-        <p className="mx-auto mt-6 max-w-xl text-foreground/80">{CONTENT.areaDescription[locale] || CONTENT.areaDescription.it}</p>
+        <p className="mx-auto mt-6 max-w-xl text-foreground/80">{pickL10n(CONTENT.areaDescription, locale)}</p>
 
         <div className="mx-auto mt-10 overflow-hidden rounded-lg border border-gold/40">
           <AreaMap
@@ -49,8 +50,8 @@ export default function ZonaPage() {
 
         <div className="mt-10 grid gap-6 sm:grid-cols-2">
           {CONTENT.areaPlaces.map((place) => {
-            const name = place.name[locale] || place.name.it;
-            const distance = place.comment[locale] || place.comment.it;
+            const name = pickL10n(place.name, locale);
+            const distance = pickL10n(place.comment, locale);
             return (
               <div
                 key={place.name.it}

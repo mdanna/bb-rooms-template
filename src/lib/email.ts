@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { PRIMARY_LANG } from "@/lib/l10n";
 import type { LocaleCode } from "@/i18n/index";
 import { getEmailTemplates, getExtraEmailStrings } from "./emailTemplates";
 import { generateAccessToken, generateManagementToken } from "./accessToken";
@@ -42,7 +43,7 @@ function accText(unit: string, locale: LocaleCode): string {
 // (mittente = bookingEmail della struttura), così le istanze esistenti non cambiano.
 const MAIL_FROM_ADDRESS = process.env.MAIL_FROM_ADDRESS?.trim();
 const MODEL_D = !!MAIL_FROM_ADDRESS;
-const FROM = `${CONTENT.siteTitle.it} <${MAIL_FROM_ADDRESS || CONTENT.bookingEmail}>`;
+const FROM = `${CONTENT.siteTitle[PRIMARY_LANG] || CONTENT.siteTitle.it} <${MAIL_FROM_ADDRESS || CONTENT.bookingEmail}>`;
 const HOST_EMAIL = CONTENT.email;
 const HOST_PHONE = CONTENT.phone;
 // Suffisso "· WhatsApp" per le righe contatto delle email (se il numero è configurato).
@@ -51,7 +52,7 @@ const WA_SUFFIX = HOST_WA ? ` · <a href="${HOST_WA}" style="color:#128C7E;">Wha
 
 async function send(payload: { to: string; subject: string; text: string; html?: string; replyTo?: string }) {
   const { replyTo, subject, ...rest } = payload;
-  const finalSubject = MODEL_D ? `${CONTENT.siteTitle.it} · ${subject}` : subject;
+  const finalSubject = MODEL_D ? `${CONTENT.siteTitle[PRIMARY_LANG] || CONTENT.siteTitle.it} · ${subject}` : subject;
   const result = await resend.emails.send({
     from: FROM,
     ...(replyTo ? { replyTo } : {}),

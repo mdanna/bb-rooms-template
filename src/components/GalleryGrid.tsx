@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { pickL10n } from "@/lib/l10n";
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { CONTENT } from "@/lib/siteContent";
@@ -49,7 +50,7 @@ export default function GalleryGrid({ photos }: { photos: string[] }) {
           >
             <Image
               src={src}
-              alt={CONTENT.siteTitle[locale] || CONTENT.siteTitle.it}
+              alt={pickL10n(CONTENT.siteTitle, locale)}
               fill
               className="object-cover"
               onError={() => setBroken((b) => (b.includes(src) ? b : [...b, src]))}
@@ -69,7 +70,7 @@ export default function GalleryGrid({ photos }: { photos: string[] }) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={zoomed}
-            alt={CONTENT.siteTitle[locale] || CONTENT.siteTitle.it}
+            alt={pickL10n(CONTENT.siteTitle, locale)}
             className="max-h-[92vh] max-w-[92vw] rounded-lg object-contain shadow-2xl"
           />
         </div>

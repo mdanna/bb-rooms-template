@@ -1,4 +1,5 @@
 import { CONTENT, resolveDescription } from "@/lib/siteContent";
+import { PRIMARY_LANG } from "@/lib/l10n";
 import { POLICIES } from "@/lib/policies";
 import { localeOrder } from "@/i18n/index";
 import {
@@ -42,7 +43,7 @@ export default function JsonLd() {
   const streetAddress = CONTENT.address.replace(new RegExp(`,?\\s*${CONTENT.city}\\s*$`, "i"), "").trim();
 
   const input: VacationRentalInput = {
-    name: CONTENT.siteTitle.it,
+    name: CONTENT.siteTitle[PRIMARY_LANG] || CONTENT.siteTitle.it,
     identifier,
     id: vacationRentalId(SITE_URL),
     url: SITE_URL,
@@ -64,7 +65,7 @@ export default function JsonLd() {
     knowsLanguage: [...localeOrder],
     accommodation: {
       additionalType: "EntirePlace",
-      amenities: CONTENT.amenities.map((a) => a.it).filter(Boolean),
+      amenities: CONTENT.amenities.map((a) => a[PRIMARY_LANG] || a.it).filter(Boolean),
     },
   };
 

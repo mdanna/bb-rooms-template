@@ -8,16 +8,16 @@ import { useDrafts } from "@/components/admin/DraftContext";
 import AdminSaveBar from "@/components/admin/AdminSaveBar";
 import { localeOrder, translations } from "@/i18n/index";
 
-// Lingua principale del contenuto (★): sorgente/fallback del sito pubblico. I testi si
-// editano per-lingua tramite le chip (editLocale), indipendentemente dalla lingua del pannello.
-const PRIMARY: keyof L10n = "it";
+// Lingua principale = lingua del pannello (scelta in Impostazioni): è la sorgente delle
+// traduzioni e il fallback pubblico. Le chip servono a visualizzare/ritoccare una lingua
+// specifica, ma la sorgente resta sempre la lingua del pannello.
 
 // Testo d'aiuto della barra chip, nella lingua del PANNELLO (non del contenuto).
 const CHIP_LABELS = {
-  it: { fillMain: "Compila almeno la lingua principale (★). Le lingue lasciate vuote mostrano il testo della principale — oppure usa «Traduci tutto».", editing: "Stai modificando" },
-  en: { fillMain: "Fill at least the main language (★). Empty languages fall back to the main text — or use «Translate all».", editing: "Editing" },
-  es: { fillMain: "Rellena al menos el idioma principal (★). Los idiomas vacíos muestran el texto principal — o usa «Traducir todo».", editing: "Editando" },
-  fr: { fillMain: "Remplissez au moins la langue principale (★). Les langues vides affichent le texte principal — ou utilisez «Tout traduire».", editing: "Modification" },
+  it: { fillMain: "★ = lingua del pannello: è la sorgente delle traduzioni e ciò che vedono i visitatori quando una lingua è vuota. Clicca una chip per vedere o ritoccare un'altra lingua; «Traduci tutto» traduce dalla lingua del pannello.", editing: "Stai modificando" },
+  en: { fillMain: "★ = panel language: it's the translation source and what visitors see when a language is empty. Click a chip to view or tweak another language; «Translate all» translates from the panel language.", editing: "Editing" },
+  es: { fillMain: "★ = idioma del panel: es la fuente de las traducciones y lo que ven los visitantes cuando un idioma está vacío. Haz clic en una ficha para ver o retocar otro idioma; «Traducir todo» traduce desde el idioma del panel.", editing: "Editando" },
+  fr: { fillMain: "★ = langue du panneau : c'est la source des traductions et ce que voient les visiteurs quand une langue est vide. Cliquez sur une puce pour voir ou ajuster une autre langue ; « Tout traduire » traduit depuis la langue du panneau.", editing: "Modification" },
 } as const;
 
 type TranslateState = "idle" | "translating" | "done" | "error";
@@ -111,12 +111,15 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
   const L = CONTENT_LABELS[locale as keyof typeof CONTENT_LABELS] ?? CONTENT_LABELS.en;
   const S = SEO_LABELS[locale as keyof typeof SEO_LABELS] ?? SEO_LABELS.en;
   const CL = CHIP_LABELS[locale as keyof typeof CHIP_LABELS] ?? CHIP_LABELS.en;
-  // Lingua in modifica, scelta dalle chip (indipendente dalla lingua del pannello).
-  // Tutti i campi L10n leggono/scrivono questa lingua. Default = principale (★).
-  const [editLocale, setEditLocale] = useState<keyof L10n>(PRIMARY);
+  // Lingua VISUALIZZATA/modificata dalle chip. Default = lingua del pannello, e la segue
+  // se questa cambia; le chip permettono di sbirciare/ritoccare le altre lingue.
+  const [editLocale, setEditLocale] = useState<keyof L10n>(locale as keyof L10n);
+  useEffect(() => { setEditLocale(locale as keyof L10n); }, [locale]);
   const srcLang = editLocale;
-  // Testo sorgente per la traduzione: lingua in modifica, con fallback alla principale.
-  const src = (field: L10n): string => field[srcLang] || field.it || Object.values(field).find(Boolean) || "";
+  // Lingua SORGENTE delle traduzioni = lingua del pannello (★). «Traduci tutto» traduce
+  // sempre da qui verso le altre lingue, a prescindere dalla chip visualizzata.
+  const sourceLang = locale as keyof L10n;
+  const src = (field: L10n): string => field[sourceLang] || field.it || Object.values(field).find(Boolean) || "";
 
   const [content, setContent] = useState<SiteContent | null>(null);
   const [loadError, setLoadError] = useState("");
@@ -191,7 +194,7 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
             storyTitle: src(content.storyTitle),
             ...paragraphTexts,
           },
-          sourceLang: srcLang,
+          sourceLang,
         }),
       });
       const data = (await res.json()) as { translations?: Record<string, Record<string, string>>; error?: string };
@@ -240,7 +243,7 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
       const res = await fetch("/api/admin/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texts: { areaDescription: src(content.areaDescription) }, sourceLang: srcLang }),
+        body: JSON.stringify({ texts: { areaDescription: src(content.areaDescription) }, sourceLang }),
       });
       const data = (await res.json()) as { translations?: Record<string, Record<string, string>>; error?: string };
       if (!res.ok || !data.translations) throw new Error(data.error ?? t.common.error);
@@ -267,7 +270,7 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
       const res = await fetch("/api/admin/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texts, sourceLang: srcLang }),
+        body: JSON.stringify({ texts, sourceLang }),
       });
       const data = (await res.json()) as { translations?: Record<string, Record<string, string>>; error?: string };
       if (!res.ok || !data.translations) throw new Error(data.error ?? t.common.error);
@@ -297,7 +300,7 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
       const res = await fetch("/api/admin/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texts, sourceLang: srcLang }),
+        body: JSON.stringify({ texts, sourceLang }),
       });
       const data = (await res.json()) as { translations?: Record<string, Record<string, string>>; error?: string };
       if (!res.ok || !data.translations) throw new Error(data.error ?? t.common.error);
@@ -330,7 +333,7 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
             maxGuests: src(content.details.maxGuests),
             neighborhood: src(content.details.neighborhood),
           },
-          sourceLang: srcLang,
+          sourceLang,
         }),
       });
       const data = (await res.json()) as { translations?: Record<string, Record<string, string>>; error?: string };
@@ -391,7 +394,7 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
         const res = await fetch("/api/admin/translate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ texts, sourceLang: srcLang }),
+          body: JSON.stringify({ texts, sourceLang }),
         });
         const data = (await res.json()) as { translations?: Record<string, Record<string, string>>; error?: string };
         if (!res.ok || !data.translations) throw new Error(data.error ?? t.common.error);
@@ -1046,7 +1049,7 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
                     : "border-foreground/15 text-foreground/70 hover:text-gold"
                 }`}
               >
-                {translations[code].langName}{code === PRIMARY ? " ★" : filled ? " •" : ""}
+                {translations[code].langName}{code === sourceLang ? " ★" : filled ? " •" : ""}
               </button>
             );
           })}

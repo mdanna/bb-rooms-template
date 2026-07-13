@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { pickL10n } from "@/lib/l10n";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { format } from "@/i18n/format";
 
@@ -41,7 +42,7 @@ export default function RecensioniClient({ reviews, aggregate }: Props) {
   const { t, locale } = useLanguage();
 
   function textOf(r: PublicReview): string {
-    return (r.translations?.[locale] || r.translations?.it || "").trim() || r.body;
+    return pickL10n(r.translations, locale).trim() || r.body;
   }
 
   return (

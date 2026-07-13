@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { pickL10n } from "@/lib/l10n";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { bookableUnits, rootUnitId, type Unit } from "@/lib/structure";
 
@@ -24,7 +25,7 @@ export default function UnitSwitcher({ activeUnitId }: { activeUnitId?: string }
   return (
     <nav className="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-3 px-6">
       {units.map((u) => {
-        const name = u.name[locale] || u.name.it || u.id;
+        const name = pickL10n(u.name, locale) || u.id;
         const isActive = u.id === active;
         return (
           <Link

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { pickL10n } from "@/lib/l10n";
 import { translations, type LocaleCode } from "@/i18n/index";
 import { format } from "@/i18n/format";
 import { formatDateOnly } from "@/lib/dateOnly";
@@ -128,7 +129,7 @@ export default function ConfirmationPage({ code }: { code: string }) {
         {format(t.confirmation.title, { name: booking.first_name })}
       </h1>
       <p className="mt-4 max-w-md text-foreground/80">
-        {format(t.confirmation.subtitle, { site: CONTENT.siteTitle[locale] || CONTENT.siteTitle.it })}
+        {format(t.confirmation.subtitle, { site: pickL10n(CONTENT.siteTitle, locale) })}
       </p>
 
       <div className="mt-8 w-full max-w-md rounded-lg border border-gold/40 bg-card p-6 text-left">

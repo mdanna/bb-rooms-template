@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { pickL10n } from "@/lib/l10n";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { CONTENT, HOST_WHATSAPP } from "@/lib/siteContent";
 import { PORTAL_LINK } from "@/lib/portalLink";
@@ -42,7 +43,7 @@ const PORTAL_LABEL: Record<LocaleCode, string> = {
 export default function SiteFooter() {
   const { t, locale } = useLanguage();
   // `||` non `??`: una lingua non tradotta ha "" (dopo la pulizia segnaposto) → fallback alla principale.
-  const siteName = CONTENT.siteTitle[locale] || CONTENT.siteTitle.it;
+  const siteName = pickL10n(CONTENT.siteTitle, locale);
   const portalLabel = PORTAL_NAME || PORTAL_LABEL[locale] || PORTAL_LABEL.it;
   const waCta = WA_CTA[locale] ?? WA_CTA.it;
   const year = new Date().getFullYear();

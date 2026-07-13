@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { pickL10n } from "@/lib/l10n";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -105,7 +106,7 @@ export default function NavBar() {
           href="/"
           className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap font-serif-display text-sm italic text-foreground"
         >
-          {CONTENT.siteTitle[locale] || CONTENT.siteTitle.it}
+          {pickL10n(CONTENT.siteTitle, locale)}
         </Link>
         <LanguagePicker locale={locale} setLocale={setLocale} open={langOpen} setOpen={setLangOpen} />
       </div>
@@ -113,7 +114,7 @@ export default function NavBar() {
       {/* Desktop toolbar */}
       <div className="hidden items-center justify-between px-6 py-3 lg:flex">
         <Link href="/" className="whitespace-nowrap font-serif-display text-base italic text-foreground">
-          {CONTENT.siteTitle[locale] || CONTENT.siteTitle.it}
+          {pickL10n(CONTENT.siteTitle, locale)}
         </Link>
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-6">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { pickL10n } from "@/lib/l10n";
 import Image from "next/image";
 import AvailabilityCalendar from "@/components/AvailabilityCalendar";
 import BookingForm from "@/components/BookingForm";
@@ -26,8 +27,8 @@ export default function CameraClient({ unitId, content, minAdvanceDays }: Props)
     totalPrice: number;
   } | null>(null);
 
-  const title = content.siteTitle[locale] || content.siteTitle.it;
-  const subtitle = content.heroSubtitle[locale] || content.heroSubtitle.it;
+  const title = pickL10n(content.siteTitle, locale);
+  const subtitle = pickL10n(content.heroSubtitle, locale);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -71,14 +72,14 @@ export default function CameraClient({ unitId, content, minAdvanceDays }: Props)
       {/* Descrizione + servizi */}
       <section className="mx-auto max-w-3xl px-6 py-16 text-center">
         <h2 className="font-serif-display text-3xl italic text-foreground sm:text-4xl">
-          {content.storyTitle[locale] || content.storyTitle.it}
+          {pickL10n(content.storyTitle, locale)}
         </h2>
         <div className="mx-auto mt-6 max-w-xs">
           <Diamond />
         </div>
         {content.storyParagraphs.map((p, i) => (
           <p key={i} className="mt-6 text-left text-base leading-8 text-foreground/80 sm:text-lg">
-            {p[locale] || p.it}
+            {pickL10n(p, locale)}
           </p>
         ))}
 
@@ -87,7 +88,7 @@ export default function CameraClient({ unitId, content, minAdvanceDays }: Props)
             {content.amenities.map((a, i) => (
               <li key={i} className="flex items-center gap-2 text-foreground/80">
                 <span className="text-gold">◆</span>
-                {a[locale] || a.it}
+                {pickL10n(a, locale)}
               </li>
             ))}
           </ul>

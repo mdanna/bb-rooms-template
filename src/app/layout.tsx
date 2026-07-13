@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PRIMARY_LANG } from "@/lib/l10n";
 import { Playfair_Display, Inter } from "next/font/google";
 import "./globals.css";
 import { CONTENT, resolveDescription } from "@/lib/siteContent";
@@ -17,7 +18,7 @@ const inter = Inter({
 });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://your-domain.com";
-const SITE_TITLE = CONTENT.siteTitle.it;
+const SITE_TITLE = CONTENT.siteTitle[PRIMARY_LANG] || CONTENT.siteTitle.it;
 const SITE_DESCRIPTION = resolveDescription(CONTENT);
 const TITLE_SUFFIX = CONTENT.seoTitleSuffix ? ` · ${CONTENT.seoTitleSuffix}` : "";
 

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { pickL10n } from "@/lib/l10n";
 import Link from "next/link";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { CONTENT } from "@/lib/siteContent";
@@ -27,7 +28,7 @@ export default function Home() {
       <header className="relative flex min-h-[80vh] flex-col items-center justify-center overflow-hidden px-6 py-24 text-center">
         <Image
           src={`/images/${CONTENT.heroImage}`}
-          alt={CONTENT.siteTitle[locale] || CONTENT.siteTitle.it}
+          alt={pickL10n(CONTENT.siteTitle, locale)}
           fill
           priority
           className="object-cover"
@@ -38,13 +39,13 @@ export default function Home() {
             {CONTENT.locationDisplay}
           </p>
           <h1 className="font-serif-display mt-6 max-w-3xl text-4xl italic leading-tight text-foreground sm:text-6xl">
-            {CONTENT.siteTitle[locale] || CONTENT.siteTitle.it}
+            {pickL10n(CONTENT.siteTitle, locale)}
           </h1>
           <div className="mx-auto mt-8 w-full max-w-xs">
             <Diamond />
           </div>
           <p className="mx-auto mt-8 max-w-xl text-base text-foreground sm:text-lg">
-            {CONTENT.heroSubtitle[locale] || CONTENT.heroSubtitle.it}
+            {pickL10n(CONTENT.heroSubtitle, locale)}
           </p>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             {wholeBookable && (
@@ -90,14 +91,14 @@ export default function Home() {
       {/* Racconto */}
       <section className="mx-auto max-w-3xl px-6 py-20 text-center">
         <h2 className="font-serif-display text-3xl italic text-foreground sm:text-4xl">
-          {CONTENT.storyTitle[locale] || CONTENT.storyTitle.it}
+          {pickL10n(CONTENT.storyTitle, locale)}
         </h2>
         <div className="mx-auto mt-6 max-w-xs">
           <Diamond />
         </div>
         {CONTENT.storyParagraphs.map((p, i) => (
           <p key={i} className="mt-6 text-left text-base leading-8 text-foreground/80 sm:text-lg">
-            {p[locale] || p.it}
+            {pickL10n(p, locale)}
           </p>
         ))}
       </section>
