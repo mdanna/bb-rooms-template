@@ -52,7 +52,8 @@ const LABELS = {
     defaultLabel: "Piattaforma predefinita del bottone",
     langTitle: "Lingua del pannello",
     langDesc: "La lingua di questo pannello di amministrazione. Il sito pubblico resta multilingua a parte.",
-    langNote: "Lingua aggiornata — avrà effetto tra qualche secondo, al riaggiornamento del sito.",
+    langNote: "In pubblicazione — il pannello cambierà lingua tra 1–2 minuti, al riaggiornamento del sito.",
+    langSave: "Salva",
     policyCard: "Regole di prenotazione", policyCardDesc: "Acconto, cancellazione, tassa di soggiorno, orari di check-in/out.",
     stripeCard: "Pagamenti (Stripe)", stripeCardDesc: "Chiavi, modalità test/produzione, sicurezza.",
     themeCard: "Colori", themeCardDesc: "Palette e colori del sito, con anteprima e controllo di contrasto.",
@@ -86,7 +87,8 @@ const LABELS = {
     defaultLabel: "Default platform for the button",
     langTitle: "Panel language",
     langDesc: "The language of this admin panel. The public site stays multilingual separately.",
-    langNote: "Language updated — it takes effect in a few seconds, after the site redeploys.",
+    langNote: "Publishing — the panel will switch language within 1–2 minutes, after the site redeploys.",
+    langSave: "Save",
     policyCard: "Booking rules", policyCardDesc: "Deposit, cancellation, city tax, check-in/out times.",
     stripeCard: "Payments (Stripe)", stripeCardDesc: "Keys, test/live mode, security.",
     themeCard: "Colors", themeCardDesc: "Site palette and colors, with preview and contrast check.",
@@ -120,7 +122,8 @@ const LABELS = {
     defaultLabel: "Plataforma predeterminada del botón",
     langTitle: "Idioma del panel",
     langDesc: "El idioma de este panel de administración. El sitio público sigue siendo multilingüe.",
-    langNote: "Idioma actualizado — tendrá efecto en unos segundos, tras la actualización del sitio.",
+    langNote: "Publicando — el panel cambiará de idioma en 1–2 minutos, tras la actualización del sitio.",
+    langSave: "Guardar",
     policyCard: "Reglas de reserva", policyCardDesc: "Depósito, cancelación, tasa turística, horarios de entrada/salida.",
     stripeCard: "Pagos (Stripe)", stripeCardDesc: "Claves, modo prueba/producción, seguridad.",
     themeCard: "Colores", themeCardDesc: "Paleta y colores del sitio, con vista previa y control de contraste.",
@@ -154,7 +157,8 @@ const LABELS = {
     defaultLabel: "Plateforme par défaut du bouton",
     langTitle: "Langue du panneau",
     langDesc: "La langue de ce panneau d'administration. Le site public reste multilingue séparément.",
-    langNote: "Langue mise à jour — effet dans quelques secondes, après le redéploiement du site.",
+    langNote: "Publication — le panneau changera de langue sous 1–2 minutes, après le redéploiement du site.",
+    langSave: "Enregistrer",
     policyCard: "Règles de réservation", policyCardDesc: "Acompte, annulation, taxe de séjour, horaires d'arrivée/départ.",
     stripeCard: "Paiements (Stripe)", stripeCardDesc: "Clés, mode test/production, sécurité.",
     themeCard: "Couleurs", themeCardDesc: "Palette et couleurs du site, avec aperçu et contrôle du contraste.",
@@ -188,6 +192,9 @@ export default function SettingsManager() {
   const [ext, setExt] = useState<{ airbnbUrl: string; bookingUrl: string; vrboUrl: string; defaultBookingPlatform: OtaPlatform }>({ airbnbUrl: "", bookingUrl: "", vrboUrl: "", defaultBookingPlatform: "airbnb" });
   const [extSaveState, setExtSaveState] = useState<State>("idle");
   const [adminLoc, setAdminLoc] = useState<AdminLocaleCode>(locale as AdminLocaleCode);
+  // Lingua SELEZIONATA nel menu ma non ancora salvata (il salvataggio è esplicito, col
+  // pulsante, e fa un redeploy → notifica "in pubblicazione").
+  const [pendingLoc, setPendingLoc] = useState<AdminLocaleCode>(locale as AdminLocaleCode);
   const [portalState, setPortalState] = useState<State>("idle");
   const [portalMsg, setPortalMsg] = useState("");
   const [locSaveState, setLocSaveState] = useState<State>("idle");
@@ -226,8 +233,8 @@ export default function SettingsManager() {
     } catch { setExtSaveState("error"); }
   }
 
-  async function saveLocale(next: AdminLocaleCode) {
-    setAdminLoc(next);
+  async function saveLocale() {
+    const next = pendingLoc;
     setLocSaveState("saving");
     try {
       const res = await fetch("/api/admin/settings", {
@@ -235,8 +242,10 @@ export default function SettingsManager() {
         body: JSON.stringify({ adminLocale: next }),
       });
       if (!res.ok) throw new Error();
+      setAdminLoc(next); // valore salvato ora = selezione
+      // Nota "in pubblicazione" PERSISTENTE: il pannello cambia lingua solo dopo il
+      // redeploy (1–2 min), quindi non la nascondiamo con un timeout.
       setLocSaveState("success");
-      setTimeout(() => setLocSaveState("idle"), 5000);
     } catch { setLocSaveState("error"); }
   }
 
@@ -334,17 +343,31 @@ export default function SettingsManager() {
           <h2 className="font-serif-display text-2xl italic text-foreground">{L.langTitle}</h2>
           <p className="mt-1 text-sm text-foreground/60">{L.langDesc}</p>
         </div>
-        <select
-          value={adminLoc}
-          onChange={(e) => saveLocale(e.target.value as AdminLocaleCode)}
-          disabled={locSaveState === "saving" || DEMO}
-          className="block rounded border border-gold/40 bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-gold disabled:opacity-50"
-        >
-          {adminLocaleOrder.map((code) => (
-            <option key={code} value={code}>{adminTranslations[code].langName}</option>
-          ))}
-        </select>
-        {locSaveState === "success" && <p className="text-xs text-green-700">{DEMO ? L.demo : L.langNote}</p>}
+        <div className="flex flex-wrap items-center gap-3">
+          <select
+            value={pendingLoc}
+            onChange={(e) => { setPendingLoc(e.target.value as AdminLocaleCode); setLocSaveState("idle"); }}
+            disabled={locSaveState === "saving"}
+            className="rounded border border-gold/40 bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-gold disabled:opacity-50"
+          >
+            {adminLocaleOrder.map((code) => (
+              <option key={code} value={code}>{adminTranslations[code].langName}</option>
+            ))}
+          </select>
+          <button
+            onClick={saveLocale}
+            disabled={pendingLoc === adminLoc || locSaveState === "saving"}
+            className="rounded-full border border-gold bg-gold px-6 py-2 text-xs font-medium uppercase tracking-widest text-[#faf6ec] transition hover:bg-transparent hover:text-gold disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-gold disabled:hover:text-[#faf6ec]"
+          >
+            {locSaveState === "saving" ? L.saving : L.langSave}
+          </button>
+        </div>
+        {locSaveState === "success" && (
+          <p className="flex items-center gap-2 text-xs text-foreground/80">
+            <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-gold" aria-hidden />
+            {DEMO ? L.demo : L.langNote}
+          </p>
+        )}
         {locSaveState === "error" && <p className="text-xs text-red-600">{L.saveError}</p>}
       </div>
 
