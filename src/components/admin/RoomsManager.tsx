@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAdminLanguage } from "@/i18n/AdminLanguageContext";
-import { allUnits, rootUnitId, type Unit } from "@/lib/structure";
+import { allUnits, rootUnitId, getUnit, isBookable, type Unit } from "@/lib/structure";
 import type { LocaleCode } from "@/i18n/types";
 
 // Etichette UI nella lingua del pannello.
@@ -10,6 +10,7 @@ const LABELS = {
   it: {
     title: "Camere", intro: "Aggiungi o rimuovi le camere di questo appartamento. Ogni camera ha un suo calendario, prezzi, contenuti e pagina pubblica. Le modifiche vanno online in 1–2 minuti.",
     yourRooms: "Le tue camere", whole: "Intero appartamento", noRooms: "Nessuna camera.",
+    wholeOn: "Prenotabile per intero", wholeOff: "Solo camere (intero non prenotabile)", makeOnlyRooms: "Rendi solo camere", makeBookable: "Rendi prenotabile", toggling: "Aggiornamento…",
     addTitle: "Aggiungi una camera", namePh: "Nome della camera (es. Camera Verde)", add: "Aggiungi camera", adding: "Creazione…",
     remove: "Rimuovi", removing: "Rimozione…", confirmRemove: (n: string) => `Rimuovere “${n}”? La sua pagina, il calendario e i contenuti verranno eliminati.`,
     publishing: "In pubblicazione — la struttura si aggiornerà tra 1–2 minuti. Ricarica la pagina tra poco per vederla aggiornata.",
@@ -20,6 +21,7 @@ const LABELS = {
   en: {
     title: "Rooms", intro: "Add or remove the rooms of this apartment. Each room has its own calendar, prices, content and public page. Changes go live in 1–2 minutes.",
     yourRooms: "Your rooms", whole: "Whole apartment", noRooms: "No rooms.",
+    wholeOn: "Bookable as a whole", wholeOff: "Rooms only (whole not bookable)", makeOnlyRooms: "Switch to rooms only", makeBookable: "Make bookable", toggling: "Updating…",
     addTitle: "Add a room", namePh: "Room name (e.g. Green Room)", add: "Add room", adding: "Creating…",
     remove: "Remove", removing: "Removing…", confirmRemove: (n: string) => `Remove “${n}”? Its page, calendar and content will be deleted.`,
     publishing: "Publishing — the structure will update in 1–2 minutes. Reload the page shortly to see it updated.",
@@ -30,6 +32,7 @@ const LABELS = {
   es: {
     title: "Habitaciones", intro: "Añade o quita las habitaciones de este apartamento. Cada habitación tiene su calendario, precios, contenido y página pública. Los cambios se publican en 1–2 minutos.",
     yourRooms: "Tus habitaciones", whole: "Apartamento entero", noRooms: "Sin habitaciones.",
+    wholeOn: "Reservable entero", wholeOff: "Solo habitaciones (entero no reservable)", makeOnlyRooms: "Solo habitaciones", makeBookable: "Hacer reservable", toggling: "Actualizando…",
     addTitle: "Añadir una habitación", namePh: "Nombre de la habitación (p. ej. Habitación Verde)", add: "Añadir habitación", adding: "Creando…",
     remove: "Quitar", removing: "Quitando…", confirmRemove: (n: string) => `¿Quitar “${n}”? Se eliminarán su página, calendario y contenido.`,
     publishing: "Publicando — la estructura se actualizará en 1–2 minutos. Recarga la página en breve para verla actualizada.",
@@ -40,6 +43,7 @@ const LABELS = {
   fr: {
     title: "Chambres", intro: "Ajoutez ou retirez les chambres de cet appartement. Chaque chambre a son calendrier, ses prix, son contenu et sa page publique. Les modifications sont en ligne en 1–2 minutes.",
     yourRooms: "Vos chambres", whole: "Appartement entier", noRooms: "Aucune chambre.",
+    wholeOn: "Réservable en entier", wholeOff: "Chambres uniquement (entier non réservable)", makeOnlyRooms: "Chambres uniquement", makeBookable: "Rendre réservable", toggling: "Mise à jour…",
     addTitle: "Ajouter une chambre", namePh: "Nom de la chambre (ex. Chambre Verte)", add: "Ajouter une chambre", adding: "Création…",
     remove: "Retirer", removing: "Suppression…", confirmRemove: (n: string) => `Retirer « ${n} » ? Sa page, son calendrier et son contenu seront supprimés.`,
     publishing: "Publication — la structure se mettra à jour dans 1–2 minutes. Rechargez la page bientôt pour la voir à jour.",
@@ -62,13 +66,15 @@ export default function RoomsManager() {
   // Stato iniziale dalla struttura DEPLOYATA (STRUCTURE). Dopo un'azione aggiorniamo la
   // lista in modo ottimistico e mostriamo l'avviso "in pubblicazione".
   const root = rootUnitId();
+  const rootUnit = getUnit(root);
   const initialRooms = allUnits().filter((u) => u.id !== root && u.kind === "room");
 
   const [rooms, setRooms] = useState<{ id: string; name: string; slug: string }[]>(
     initialRooms.map((u) => ({ id: u.id, name: roomName(u, locale as LocaleCode), slug: u.slug }))
   );
+  const [wholeBookable, setWholeBookable] = useState(rootUnit ? isBookable(rootUnit) : true);
   const [name, setName] = useState("");
-  const [busy, setBusy] = useState<"add" | string | null>(null);
+  const [busy, setBusy] = useState<"add" | "whole" | string | null>(null);
   const [published, setPublished] = useState(false);
   const [error, setError] = useState("");
   const [blocked, setBlocked] = useState<{ msg: string; bookings: BlockedBooking[] } | null>(null);
@@ -93,6 +99,31 @@ export default function RoomsManager() {
       if (!res.ok) { setError(data.error || L.genericErr); return; }
       setRooms((r) => [...r, { id: data.unit.id, name: n, slug: data.unit.slug }]);
       setName("");
+      setPublished(true);
+    } catch {
+      setError(L.genericErr);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function toggleWhole() {
+    setError(""); setBlocked(null);
+    const next = !wholeBookable;
+    setBusy("whole");
+    try {
+      const res = await fetch("/api/admin/rooms", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookable: next }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 409 && data.error === "future_bookings") {
+        setBlocked({ msg: data.message, bookings: data.bookings ?? [] });
+        return;
+      }
+      if (!res.ok) { setError(data.error || L.genericErr); return; }
+      setWholeBookable(next);
       setPublished(true);
     } catch {
       setError(L.genericErr);
@@ -152,8 +183,18 @@ export default function RoomsManager() {
       {/* Lista camere */}
       <div className={box}>
         <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-foreground/50">{L.yourRooms}</h2>
-        <div className="mb-4 flex items-center justify-between border-b border-gold/15 pb-3 text-sm text-foreground/50">
-          <span>★ {L.whole}</span>
+        <div className="mb-4 flex items-center justify-between gap-3 border-b border-gold/15 pb-3">
+          <div>
+            <p className="text-sm text-foreground">★ {L.whole}</p>
+            <p className="text-xs text-foreground/40">{wholeBookable ? L.wholeOn : L.wholeOff}</p>
+          </div>
+          <button
+            onClick={toggleWhole}
+            disabled={busy === "whole"}
+            className="rounded-full border border-gold/40 px-4 py-1.5 text-xs uppercase tracking-widest text-foreground/70 transition hover:bg-gold/10 disabled:opacity-40"
+          >
+            {busy === "whole" ? L.toggling : wholeBookable ? L.makeOnlyRooms : L.makeBookable}
+          </button>
         </div>
         {rooms.length === 0 ? (
           <p className="text-sm text-foreground/50">{L.noRooms}</p>
