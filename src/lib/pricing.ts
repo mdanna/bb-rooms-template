@@ -26,5 +26,8 @@ export function computePricingBreakdown(
 
 /** Importo incassato online per una prenotazione pagata: soggiorno + tassa se online. */
 export function chargedAmount(totalPrice: number, cityTax: number, cityTaxOnline: boolean): number {
-  return totalPrice + (cityTaxOnline ? cityTax : 0);
+  // I valori arrivano dal DB tipizzati number ma a runtime spesso sono stringhe:
+  // senza coercizione `+` fa concatenazione (es. "600" + "48" → "60048"). Number() è
+  // identità per i number veri e parsa le stringhe numeriche.
+  return Number(totalPrice) + (cityTaxOnline ? Number(cityTax) : 0);
 }

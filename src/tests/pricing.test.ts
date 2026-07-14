@@ -50,4 +50,9 @@ describe("chargedAmount", () => {
   it("esclude la tassa di soggiorno quando è riscossa al check-in", () => {
     expect(chargedAmount(400, 24, false)).toBe(400);
   });
+
+  it("somma numericamente anche con input stringa dal DB (no concat)", () => {
+    // Regressione: "600" + "48" concatenava in "60048" nell'email di conferma.
+    expect(chargedAmount("600" as unknown as number, "48" as unknown as number, true)).toBe(648);
+  });
 });
