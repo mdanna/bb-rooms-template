@@ -16,8 +16,6 @@ interface BookingSummary {
   checkin: string;
   checkout: string;
   total_price: string | null;
-  deposit_amount: string | null;
-  balance_due: string | null;
   city_tax: string | null;
   city_tax_online: boolean | null;
   status: "pending" | "approved" | "rejected" | "completed";

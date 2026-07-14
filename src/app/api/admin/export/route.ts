@@ -50,11 +50,13 @@ export async function GET(request: Request) {
     params
   );
 
+  // Modello a pagamento intero: niente più acconto/saldo. Le colonne rilevanti sono
+  // ora la policy di rimborso congelata, l'eventuale rimborso dovuto e la data di rimborso.
   const headers = [
     "Codice", "Nome", "Cognome", "Email", "Telefono", "Ospiti",
-    "Check-in", "Check-out", "Stato", "Prezzo totale", "Anticipo",
-    "Saldo", "Tassa soggiorno", "Metodo pagamento",
-    "Pagato il", "Saldo pagato il", "Lingua", "Creato il",
+    "Check-in", "Check-out", "Stato", "Prezzo totale", "Tassa soggiorno",
+    "Metodo pagamento", "Policy rimborso", "Rimborso dovuto",
+    "Pagato il", "Rimborsato il", "Lingua", "Creato il",
   ];
 
   const lines = [
@@ -71,12 +73,12 @@ export async function GET(request: Request) {
         typeof b.checkout === "object" ? (b.checkout as Date).toISOString().slice(0, 10) : String(b.checkout).slice(0, 10),
         b.status,
         b.total_price != null ? Number(b.total_price).toFixed(2) : "",
-        b.deposit_amount != null ? Number(b.deposit_amount).toFixed(2) : "",
-        b.balance_due != null ? Number(b.balance_due).toFixed(2) : "",
         b.city_tax != null ? Number(b.city_tax).toFixed(2) : "",
         b.payment_method ?? "",
+        b.refund_policy ?? "",
+        b.refund_due != null ? Number(b.refund_due).toFixed(2) : "",
         b.paid_at ? new Date(b.paid_at).toISOString().slice(0, 10) : "",
-        b.balance_paid_at ? new Date(b.balance_paid_at).toISOString().slice(0, 10) : "",
+        b.refunded_at ? new Date(b.refunded_at).toISOString().slice(0, 10) : "",
         b.locale,
         new Date(b.created_at).toISOString().slice(0, 10),
       ])

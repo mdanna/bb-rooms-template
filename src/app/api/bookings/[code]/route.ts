@@ -30,8 +30,6 @@ export async function GET(
       checkin: booking.checkin,
       checkout: booking.checkout,
       total_price: booking.total_price,
-      deposit_amount: booking.deposit_amount,
-      balance_due: booking.balance_due,
       city_tax: booking.city_tax,
       city_tax_online: booking.city_tax_online,
       status: booking.status,

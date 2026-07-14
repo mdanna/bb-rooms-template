@@ -47,12 +47,9 @@ interface BookingData {
   checkin: string;
   checkout: string;
   total_price: number | null;
-  deposit_amount: number | null;
-  balance_due: number | null;
   city_tax: number | null;
   city_tax_online: boolean | null;
   paid_at: string | null;
-  balance_paid_at: string | null;
   stripe_payment_intent_id: string | null;
   // Nuovo modello rimborsi: livello congelato + data prenotazione (per la finestra di grazia).
   // Opzionali: l'endpoint /api/bookings/[code]/data non li espone ancora (stima lato client
