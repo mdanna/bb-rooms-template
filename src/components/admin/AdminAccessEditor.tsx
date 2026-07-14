@@ -13,7 +13,8 @@ const LABELS = {
   it: {
     title: "Accessi amministratore",
     intro: "Chi può accedere al pannello. Le email valgono per il link via email e per l'accesso con Google; gli username per l'accesso con GitHub. Le modifiche diventano attive dopo il breve aggiornamento del sito (come per contenuti e colori).",
-    listLabel: "Email autorizzate (link email + Google)",
+    listLabel: "Email autorizzate",
+    emailsHelp: "Ogni email qui autorizzata può accedere sia col link via email sia con Google: è chi accede a scegliere il metodo col pulsante corrispondente.",
     placeholder: "nome@esempio.com",
     add: "Aggiungi",
     remove: "Rimuovi",
@@ -31,7 +32,8 @@ const LABELS = {
   en: {
     title: "Admin access",
     intro: "Who can sign in to the panel. Emails work for the email link and for Google sign-in; usernames for GitHub sign-in. Changes take effect after the site's brief update (like content and colors).",
-    listLabel: "Authorized emails (email link + Google)",
+    listLabel: "Authorized emails",
+    emailsHelp: "Each authorized email can sign in via the email link or with Google — whoever signs in picks the method with the matching button.",
     placeholder: "name@example.com",
     add: "Add",
     remove: "Remove",
@@ -49,7 +51,8 @@ const LABELS = {
   es: {
     title: "Accesos de administrador",
     intro: "Quién puede entrar en el panel. Los correos valen para el enlace por email y para el acceso con Google; los usuarios para el acceso con GitHub. Los cambios se aplican tras la breve actualización del sitio (como contenidos y colores).",
-    listLabel: "Correos autorizados (enlace email + Google)",
+    listLabel: "Correos autorizados",
+    emailsHelp: "Cada correo autorizado puede acceder con el enlace por email o con Google: quien accede elige el método con el botón correspondiente.",
     placeholder: "nombre@ejemplo.com",
     add: "Añadir",
     remove: "Quitar",
@@ -67,7 +70,8 @@ const LABELS = {
   fr: {
     title: "Accès administrateur",
     intro: "Qui peut se connecter au panneau. Les e-mails valent pour le lien par e-mail et pour la connexion avec Google ; les identifiants pour la connexion avec GitHub. Les changements prennent effet après la brève mise à jour du site (comme les contenus et les couleurs).",
-    listLabel: "E-mails autorisés (lien e-mail + Google)",
+    listLabel: "E-mails autorisés",
+    emailsHelp: "Chaque e-mail autorisé peut se connecter via le lien par e-mail ou avec Google — c'est la personne qui se connecte qui choisit la méthode avec le bouton correspondant.",
     placeholder: "nom@exemple.com",
     add: "Ajouter",
     remove: "Retirer",
@@ -180,6 +184,7 @@ export default function AdminAccessEditor() {
 
       <div className="space-y-3">
         <h2 className="text-xs font-bold uppercase tracking-widest text-foreground/50">{L.listLabel}</h2>
+        <p className="text-xs text-foreground/45">{L.emailsHelp}</p>
 
         {emails.length === 0 ? (
           <p className="text-sm text-foreground/50">{L.empty}</p>
