@@ -18,6 +18,8 @@ const ko: Translation = {
     bookAirbnb: "에어비앤비에서 예약하기",
     bookOn: "{platform}에서 예약하기",
     alsoOn: "다음에서도 예약 가능:",
+    roomsTitle: "객실을 선택하세요",
+    roomsSubtitle: "아파트 전체는 예약할 수 없습니다 — 객실 중 하나를 선택하세요.",
   },
   story: {
     title: "우리의 이야기",

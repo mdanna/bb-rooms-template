@@ -12,7 +12,7 @@ export interface Translation {
     booking: string;
     manage: string;
   };
-  hero: { subtitle: string; bookDirect: string; bookAirbnb: string; bookOn: string; alsoOn: string };
+  hero: { subtitle: string; bookDirect: string; bookAirbnb: string; bookOn: string; alsoOn: string; roomsTitle: string; roomsSubtitle: string };
   story: { title: string; p1: string; p2: string };
   gallery: { title: string };
   details: {

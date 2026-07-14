@@ -18,6 +18,8 @@ const ja: Translation = {
     bookAirbnb: "Airbnbで予約する",
     bookOn: "{platform}で予約する",
     alsoOn: "こちらでも予約可能:",
+    roomsTitle: "お部屋をお選びください",
+    roomsSubtitle: "アパート全体はご予約いただけません — お部屋のいずれかをお選びください。",
   },
   story: {
     title: "私たちのストーリー",

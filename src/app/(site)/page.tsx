@@ -8,7 +8,7 @@ import { CONTENT } from "@/lib/siteContent";
 import { getBookingLinks } from "@/lib/bookingLinks";
 import { format } from "@/i18n/format";
 import UnitSwitcher from "@/components/UnitSwitcher";
-import { rootUnitId, getUnit, isBookable } from "@/lib/structure";
+import { rootUnitId, getUnit, isBookable, bookableUnits } from "@/lib/structure";
 
 function Diamond() {
   return <div className="divider-diamond text-gold">◆</div>;
@@ -21,6 +21,9 @@ export default function Home() {
   // la scelta passa dalle camere (selettore sotto l'hero) e la home non linka /prenota.
   const rootU = getUnit(rootUnitId());
   const wholeBookable = rootU ? isBookable(rootU) : true;
+  // Modalità "solo camere": l'intero non è prenotabile → la home elenca le camere
+  // prenotabili (senza dipendere dallo UnitSwitcher, che si nasconde con ≤1 unità).
+  const rooms = wholeBookable ? [] : bookableUnits().filter((u) => u.slug);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -83,10 +86,40 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Selettore unità: intero appartamento + singole camere */}
-      <section className="bg-card py-8">
-        <UnitSwitcher activeUnitId={rootUnitId()} />
-      </section>
+      {/* Intero prenotabile: selettore unità (intero + camere). Solo camere:
+          elenco delle camere prenotabili, così restano sempre raggiungibili. */}
+      {wholeBookable ? (
+        <section className="bg-card py-8">
+          <UnitSwitcher activeUnitId={rootUnitId()} />
+        </section>
+      ) : (
+        rooms.length > 0 && (
+          <section className="bg-card px-6 py-16">
+            <div className="mx-auto max-w-3xl text-center">
+              <h2 className="font-serif-display text-3xl italic text-foreground sm:text-4xl">
+                {t.hero.roomsTitle}
+              </h2>
+              <div className="mx-auto mt-6 max-w-xs">
+                <Diamond />
+              </div>
+              <p className="mx-auto mt-4 max-w-xl text-base text-foreground/70">
+                {t.hero.roomsSubtitle}
+              </p>
+            </div>
+            <div className="mx-auto mt-10 grid max-w-4xl gap-4 sm:grid-cols-2">
+              {rooms.map((u) => (
+                <Link
+                  key={u.id}
+                  href={`/camera/${u.slug}`}
+                  className="rounded-lg border border-gold/40 bg-background p-8 text-center font-serif-display text-xl italic text-foreground transition hover:border-gold"
+                >
+                  {pickL10n(u.name, locale) || u.id}
+                </Link>
+              ))}
+            </div>
+          </section>
+        )
+      )}
 
       {/* Racconto */}
       <section className="mx-auto max-w-3xl px-6 py-20 text-center">

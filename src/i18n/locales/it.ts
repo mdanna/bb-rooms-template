@@ -18,6 +18,8 @@ const it: Translation = {
     bookAirbnb: "Prenota su Airbnb",
     bookOn: "Prenota su {platform}",
     alsoOn: "Disponibile anche su",
+    roomsTitle: "Scegli la tua camera",
+    roomsSubtitle: "L'intero appartamento non è disponibile alla prenotazione: scegli una delle nostre camere.",
   },
   story: {
     title: "La nostra storia",
