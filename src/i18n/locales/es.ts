@@ -43,6 +43,10 @@ const es: Translation = {
     mapMetroLabel: "Transporte público",
   },
   reviews: {
+    writtenIn: "Escrita en {lang}",
+    translated: "traducido",
+    original: "Ver original",
+    autoTranslate: "Tu reseña se traducirá automáticamente a todos los idiomas admitidos.",
     title: "Lo que dicen los huéspedes",
     subtitleOwn: "★ {rating} · {count} reseñas de huéspedes",
     aggregateReviews: "{count} reseñas",

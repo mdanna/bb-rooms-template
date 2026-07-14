@@ -28,6 +28,10 @@ export interface Translation {
     mapMetroLabel: string;
   };
   reviews: {
+    writtenIn: string;
+    translated: string;
+    original: string;
+    autoTranslate: string;
     title: string;
     subtitleOwn: string;
     aggregateReviews: string;

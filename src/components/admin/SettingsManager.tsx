@@ -63,6 +63,14 @@ const LABELS = {
     portalNotLinked: "Questo sito non è collegato a nessun portale (funziona in autonomia).",
     portalHint: "Un sito può appartenere a un solo portale. Per collegarlo, avvia l'associazione dal pannello del portale.",
     portalUnlink: "Scollega", portalUnlinking: "Scollegamento…", portalUnlinked: "Scollegato — il portale si aggiornerà tra 1-2 minuti.", portalUnlinkErr: "Scollegamento fallito.",
+    anthropicTitle: "Traduzione automatica (chiave Anthropic)",
+    anthropicDesc: "Le traduzioni dei contenuti e delle recensioni usano l'AI. Puoi usare una tua chiave Anthropic; se non la imposti, viene usata la chiave predefinita del gestore.",
+    anthropicSet: "Chiave personale impostata ✓",
+    anthropicUnset: "Nessuna chiave personale: si usa quella predefinita del gestore.",
+    anthropicPh: "sk-ant-…",
+    anthropicSaveBtn: "Salva chiave",
+    anthropicRemove: "Rimuovi",
+    anthropicSaved: "Chiave salvata.",
   },
   en: {
     title: "Calendar sync",
@@ -98,6 +106,14 @@ const LABELS = {
     portalNotLinked: "This site isn't linked to any portal (it works on its own).",
     portalHint: "A site can belong to only one portal. To link it, start the association from the portal's panel.",
     portalUnlink: "Unlink", portalUnlinking: "Unlinking…", portalUnlinked: "Unlinked — the portal will update in 1–2 minutes.", portalUnlinkErr: "Unlink failed.",
+    anthropicTitle: "Automatic translation (Anthropic key)",
+    anthropicDesc: "Content and review translations use AI. You can use your own Anthropic key; if you don't set one, the provider's default key is used.",
+    anthropicSet: "Personal key set ✓",
+    anthropicUnset: "No personal key: the provider's default is used.",
+    anthropicPh: "sk-ant-…",
+    anthropicSaveBtn: "Save key",
+    anthropicRemove: "Remove",
+    anthropicSaved: "Key saved.",
   },
   es: {
     title: "Sincronización de calendarios",
@@ -133,6 +149,14 @@ const LABELS = {
     portalNotLinked: "Este sitio no está vinculado a ningún portal (funciona por su cuenta).",
     portalHint: "Un sitio puede pertenecer a un solo portal. Para vincularlo, inicia la asociación desde el panel del portal.",
     portalUnlink: "Desvincular", portalUnlinking: "Desvinculando…", portalUnlinked: "Desvinculado — el portal se actualizará en 1-2 minutos.", portalUnlinkErr: "Error al desvincular.",
+    anthropicTitle: "Traducción automática (clave Anthropic)",
+    anthropicDesc: "Las traducciones de contenidos y reseñas usan IA. Puedes usar tu propia clave Anthropic; si no configuras ninguna, se usa la clave predeterminada del gestor.",
+    anthropicSet: "Clave personal configurada ✓",
+    anthropicUnset: "Sin clave personal: se usa la predeterminada del gestor.",
+    anthropicPh: "sk-ant-…",
+    anthropicSaveBtn: "Guardar clave",
+    anthropicRemove: "Quitar",
+    anthropicSaved: "Clave guardada.",
   },
   fr: {
     title: "Synchronisation des calendriers",
@@ -168,6 +192,14 @@ const LABELS = {
     portalNotLinked: "Ce site n'est associé à aucun portail (il fonctionne seul).",
     portalHint: "Un site ne peut appartenir qu'à un seul portail. Pour l'associer, lancez l'association depuis le panneau du portail.",
     portalUnlink: "Dissocier", portalUnlinking: "Dissociation…", portalUnlinked: "Dissocié — le portail se mettra à jour dans 1 à 2 minutes.", portalUnlinkErr: "Échec de la dissociation.",
+    anthropicTitle: "Traduction automatique (clé Anthropic)",
+    anthropicDesc: "Les traductions des contenus et des avis utilisent l'IA. Vous pouvez utiliser votre propre clé Anthropic ; sans clé, la clé par défaut du gestionnaire est utilisée.",
+    anthropicSet: "Clé personnelle configurée ✓",
+    anthropicUnset: "Aucune clé personnelle : la clé par défaut du gestionnaire est utilisée.",
+    anthropicPh: "sk-ant-…",
+    anthropicSaveBtn: "Enregistrer la clé",
+    anthropicRemove: "Retirer",
+    anthropicSaved: "Clé enregistrée.",
   },
 } as const;
 
@@ -301,6 +333,50 @@ export default function SettingsManager() {
     } catch {
       setPortalState("error");
       setPortalMsg(L.portalUnlinkErr);
+    }
+  }
+
+  // --- Chiave Anthropic per-sito (opzionale, cifrata nel DB) ------------------
+  const [anthSet, setAnthSet] = useState<boolean | null>(null);
+  const [anthDraft, setAnthDraft] = useState("");
+  const [anthState, setAnthState] = useState<State>("idle");
+
+  useEffect(() => {
+    fetch("/api/admin/anthropic-key")
+      .then((r) => r.json())
+      .then((d: { set?: boolean }) => setAnthSet(!!d.set))
+      .catch(() => setAnthSet(false));
+  }, []);
+
+  async function saveAnth() {
+    const key = anthDraft.trim();
+    if (!key) return;
+    setAnthState("saving");
+    try {
+      const res = await fetch("/api/admin/anthropic-key", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key }),
+      });
+      if (!res.ok) throw new Error();
+      setAnthSet(true);
+      setAnthDraft("");
+      setAnthState("success");
+      setTimeout(() => setAnthState("idle"), 3000);
+    } catch {
+      setAnthState("error");
+    }
+  }
+
+  async function removeAnth() {
+    setAnthState("saving");
+    try {
+      const res = await fetch("/api/admin/anthropic-key", { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setAnthSet(false);
+      setAnthState("idle");
+    } catch {
+      setAnthState("error");
     }
   }
 
@@ -553,6 +629,43 @@ export default function SettingsManager() {
           {extSaveState === "success" && <span className="text-xs text-green-700">{DEMO ? L.demo : L.saved}</span>}
           {extSaveState === "error" && <span className="text-xs text-red-600">{L.saveError}</span>}
         </div>
+      </div>
+
+      {/* Chiave Anthropic per-sito (traduzione contenuti + recensioni) */}
+      <div className="rounded-lg border border-gold/40 bg-card p-6">
+        <h2 className="font-serif-display text-2xl italic text-foreground">{L.anthropicTitle}</h2>
+        <p className="mt-2 max-w-2xl text-sm text-foreground/60">{L.anthropicDesc}</p>
+        <p className="mt-3 text-xs text-foreground/50">
+          {anthSet === null ? "…" : anthSet ? L.anthropicSet : L.anthropicUnset}
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <input
+            type="password"
+            value={anthDraft}
+            autoComplete="off"
+            onChange={(e) => { setAnthDraft(e.target.value); setAnthState("idle"); }}
+            placeholder={L.anthropicPh}
+            className="min-w-0 flex-1 rounded border border-gold/30 bg-background px-3 py-2 font-mono text-sm text-foreground outline-none focus:border-gold"
+          />
+          <button
+            onClick={saveAnth}
+            disabled={anthState === "saving" || !anthDraft.trim()}
+            className="rounded-full border border-gold bg-gold px-5 py-2 text-xs uppercase tracking-widest text-[#faf6ec] transition hover:bg-transparent hover:text-gold disabled:opacity-50"
+          >
+            {anthState === "saving" ? L.saving : L.anthropicSaveBtn}
+          </button>
+          {anthSet && (
+            <button
+              onClick={removeAnth}
+              disabled={anthState === "saving"}
+              className="rounded-full border border-foreground/30 px-4 py-2 text-xs text-foreground/60 transition hover:border-red-400 hover:text-red-600 disabled:opacity-50"
+            >
+              {L.anthropicRemove}
+            </button>
+          )}
+        </div>
+        {anthState === "success" && <p className="mt-2 text-xs text-green-700">{DEMO ? L.demo : L.anthropicSaved}</p>}
+        {anthState === "error" && <p className="mt-2 text-xs text-red-600">{L.saveError}</p>}
       </div>
     </div>
   );

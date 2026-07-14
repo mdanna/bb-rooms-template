@@ -34,6 +34,8 @@ const L: Record<string, Record<string, string>> = {
     notVerified: "Non verificato",
     publish: "Pubblica",
     publishing: "Pubblicazione…",
+    retranslate: "Rigenera traduzioni",
+    retranslating: "Traduzione…",
     reject: "Rifiuta",
     unpublish: "Rimuovi dalla pubblicazione",
     del: "Elimina",
@@ -57,6 +59,8 @@ const L: Record<string, Record<string, string>> = {
     notVerified: "Not verified",
     publish: "Publish",
     publishing: "Publishing…",
+    retranslate: "Regenerate translations",
+    retranslating: "Translating…",
     reject: "Reject",
     unpublish: "Unpublish",
     del: "Delete",
@@ -80,6 +84,8 @@ const L: Record<string, Record<string, string>> = {
     notVerified: "No verificado",
     publish: "Publicar",
     publishing: "Publicando…",
+    retranslate: "Regenerar traducciones",
+    retranslating: "Traduciendo…",
     reject: "Rechazar",
     unpublish: "Retirar de publicación",
     del: "Eliminar",
@@ -103,6 +109,8 @@ const L: Record<string, Record<string, string>> = {
     notVerified: "Non vérifié",
     publish: "Publier",
     publishing: "Publication…",
+    retranslate: "Régénérer les traductions",
+    retranslating: "Traduction…",
     reject: "Refuser",
     unpublish: "Dépublier",
     del: "Supprimer",
@@ -170,27 +178,16 @@ export default function ReviewsManager() {
     }
   }
 
-  // Pubblica: prima traduce il testo nelle 9 lingue (riuso dell'API admin/translate),
-  // poi salva stato + traduzioni. Se la traduzione fallisce, pubblica comunque:
-  // la pagina pubblica farà fallback al testo originale.
+  // Pubblica: il server rileva la lingua e traduce il testo nelle 9 lingue in
+  // automatico (vedi /api/admin/reviews). Se la traduzione fallisce, pubblica
+  // comunque: la pagina pubblica farà fallback al testo originale.
   async function publish(r: AdminReview) {
-    setBusyId(r.id);
-    let translations: Record<string, string> | undefined;
-    try {
-      const res = await fetch("/api/admin/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texts: { body: r.body }, sourceLang: r.locale }),
-      });
-      const data = (await res.json()) as { translations?: Record<string, Record<string, string>> };
-      if (res.ok && data.translations?.body) {
-        translations = { [r.locale]: r.body, ...data.translations.body };
-      }
-    } catch {
-      // ignora: pubblica senza traduzioni
-    }
-    setBusyId(null);
-    await patch(r.id, { status: "published", ...(translations ? { translations } : {}) });
+    await patch(r.id, { status: "published" });
+  }
+
+  // Rigenera le traduzioni on-demand (autodetect + ritraduzione del testo originale).
+  async function retranslate(id: number) {
+    await patch(id, { retranslate: true });
   }
 
   async function remove(id: number) {
@@ -292,6 +289,15 @@ export default function ReviewsManager() {
                       className="rounded-full border border-foreground/30 px-4 py-1.5 text-xs text-foreground/70 transition hover:bg-foreground/5 disabled:opacity-50"
                     >
                       {M.unpublish}
+                    </button>
+                  )}
+                  {r.status === "published" && (
+                    <button
+                      onClick={() => retranslate(r.id)}
+                      disabled={busyId === r.id}
+                      className="rounded-full border border-gold/40 px-4 py-1.5 text-xs text-foreground/70 transition hover:bg-gold/10 disabled:opacity-50"
+                    >
+                      {busyId === r.id ? M.retranslating : M.retranslate}
                     </button>
                   )}
                   <button

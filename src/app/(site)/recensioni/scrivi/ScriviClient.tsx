@@ -127,6 +127,7 @@ export default function ScriviClient({
                 minLength={10}
                 maxLength={2000}
               />
+              <span className="mt-1 block text-[10px] text-foreground/40">{t.reviews.autoTranslate}</span>
             </label>
 
             <div className="grid gap-4 sm:grid-cols-2">

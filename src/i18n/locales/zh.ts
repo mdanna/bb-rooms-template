@@ -43,6 +43,10 @@ const zh: Translation = {
     mapMetroLabel: "公共交通",
   },
   reviews: {
+    writtenIn: "以{lang}撰写",
+    translated: "已翻译",
+    original: "查看原文",
+    autoTranslate: "您的评价将自动翻译成所有支持的语言。",
     title: "客人评价",
     subtitleOwn: "★ {rating} · {count} 条住客评价",
     aggregateReviews: "{count} 条评价",

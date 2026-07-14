@@ -43,6 +43,10 @@ const ja: Translation = {
     mapMetroLabel: "公共交通機関",
   },
   reviews: {
+    writtenIn: "{lang}で書かれています",
+    translated: "翻訳済み",
+    original: "原文を見る",
+    autoTranslate: "レビューは対応するすべての言語に自動的に翻訳されます。",
     title: "ゲストの声",
     subtitleOwn: "★ {rating} · {count}件のゲストレビュー",
     aggregateReviews: "{count}件のレビュー",

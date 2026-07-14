@@ -43,6 +43,10 @@ const ko: Translation = {
     mapMetroLabel: "대중교통",
   },
   reviews: {
+    writtenIn: "{lang}로 작성됨",
+    translated: "번역됨",
+    original: "원문 보기",
+    autoTranslate: "리뷰는 지원되는 모든 언어로 자동 번역됩니다.",
     title: "게스트 후기",
     subtitleOwn: "★ {rating} · 게스트 후기 {count}개",
     aggregateReviews: "리뷰 {count}개",

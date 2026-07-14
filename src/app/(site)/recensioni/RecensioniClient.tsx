@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { pickL10n } from "@/lib/l10n";
+import { useState } from "react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { format } from "@/i18n/format";
+import { translations as I18N, type LocaleCode } from "@/i18n/index";
 
 function Diamond() {
   return <div className="divider-diamond text-gold">◆</div>;
@@ -38,12 +39,76 @@ function Stars({ rating }: { rating: number }) {
   );
 }
 
-export default function RecensioniClient({ reviews, aggregate }: Props) {
-  const { t, locale } = useLanguage();
+/** Nome nativo di una lingua (es. "Italiano", "English") dal suo codice. */
+function langName(code: string): string {
+  return I18N[code as LocaleCode]?.langName ?? code.toUpperCase();
+}
 
-  function textOf(r: PublicReview): string {
-    return pickL10n(r.translations, locale).trim() || r.body;
-  }
+function ReviewCard({ r }: { r: PublicReview }) {
+  const { t, locale } = useLanguage();
+  // Lingue in cui la recensione è disponibile (la sorgente è sempre inclusa).
+  const available = r.translations
+    ? Object.keys(r.translations).filter((k) => (r.translations as Record<string, string>)[k]?.trim())
+    : [];
+  const source = r.bodyLocale;
+  // Default: la lingua del visitatore se disponibile, altrimenti l'originale.
+  const initial = available.includes(locale) ? locale : source;
+  const [display, setDisplay] = useState<string>(initial);
+
+  const text = (r.translations && r.translations[display]?.trim()) || r.body;
+  const isTranslated = display !== source;
+
+  return (
+    <blockquote className="rounded-lg border border-gold/40 bg-card p-6 text-sm leading-7 text-foreground/80">
+      <div className="mb-2 flex items-center justify-between">
+        <Stars rating={r.rating} />
+        {r.verified && (
+          <span className="rounded-full bg-gold/10 px-2 py-0.5 text-[10px] text-gold">
+            ✓ {t.reviews.verified}
+          </span>
+        )}
+      </div>
+
+      <p>&ldquo;{text}&rdquo;</p>
+
+      {/* Lingua d'origine + eventuale indicatore "tradotto" + scelta lingua */}
+      <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-foreground/45">
+        <span>{format(t.reviews.writtenIn, { lang: langName(source) })}</span>
+        {isTranslated && <span className="text-gold/70">· {t.reviews.translated}</span>}
+        {isTranslated && (
+          <button
+            onClick={() => setDisplay(source)}
+            className="underline underline-offset-2 transition hover:text-gold"
+          >
+            {t.reviews.original}
+          </button>
+        )}
+        {available.length > 1 && (
+          <select
+            value={display}
+            onChange={(e) => setDisplay(e.target.value)}
+            aria-label={t.reviews.original}
+            className="ml-auto rounded border border-gold/30 bg-background px-1.5 py-0.5 text-[10px] text-foreground/70 outline-none focus:border-gold"
+          >
+            {available.map((l) => (
+              <option key={l} value={l}>
+                {langName(l)}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+
+      <footer className="label-gold mt-4 text-[10px]">
+        {r.author}
+        {r.stayMonth ? ` · ${r.stayMonth}` : ""}
+      </footer>
+    </blockquote>
+  );
+}
+
+export default function RecensioniClient({ reviews, aggregate }: Props) {
+  const { t } = useLanguage();
 
   return (
     <section className="px-6 py-20">
@@ -72,24 +137,7 @@ export default function RecensioniClient({ reviews, aggregate }: Props) {
       ) : (
         <div className="mx-auto grid max-w-5xl gap-6 sm:grid-cols-3">
           {reviews.map((r) => (
-            <blockquote
-              key={r.id}
-              className="rounded-lg border border-gold/40 bg-card p-6 text-sm leading-7 text-foreground/80"
-            >
-              <div className="mb-2 flex items-center justify-between">
-                <Stars rating={r.rating} />
-                {r.verified && (
-                  <span className="rounded-full bg-gold/10 px-2 py-0.5 text-[10px] text-gold">
-                    ✓ {t.reviews.verified}
-                  </span>
-                )}
-              </div>
-              <p>&ldquo;{textOf(r)}&rdquo;</p>
-              <footer className="label-gold mt-4 text-[10px]">
-                {r.author}
-                {r.stayMonth ? ` · ${r.stayMonth}` : ""}
-              </footer>
-            </blockquote>
+            <ReviewCard key={r.id} r={r} />
           ))}
         </div>
       )}

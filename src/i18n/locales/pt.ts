@@ -43,6 +43,10 @@ const pt: Translation = {
     mapMetroLabel: "Transportes públicos",
   },
   reviews: {
+    writtenIn: "Escrita em {lang}",
+    translated: "traduzido",
+    original: "Ver original",
+    autoTranslate: "A sua avaliação será traduzida automaticamente para todos os idiomas suportados.",
     title: "O que os hóspedes dizem",
     subtitleOwn: "★ {rating} · {count} avaliações dos hóspedes",
     aggregateReviews: "{count} avaliações",
