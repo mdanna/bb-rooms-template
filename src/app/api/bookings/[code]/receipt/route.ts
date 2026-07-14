@@ -7,6 +7,7 @@ import type { LocaleCode } from "@/i18n/index";
 import { verifyAccessToken } from "@/lib/accessToken";
 import { CONTENT } from "@/lib/siteContent";
 import { THEME } from "@/lib/theme";
+import { chargedAmount } from "@/lib/pricing";
 
 // pdf-lib's standard fonts only support Latin (WinAnsi) glyphs, quindi per le lingue
 // CJK la ricevuta PDF usa le etichette in inglese invece di rompersi con testo non renderizzabile.
@@ -17,7 +18,7 @@ type PdfLabels = {
   locatore: string; immobile: string; cfLocatore: string; codiceId: string;
   code: string; guest: string; guests: string;
   checkin: string; checkout: string; total: string;
-  cityTax: string;
+  stay: string; cityTax: string; totalPaid: string;
   method: string; paidOn: string; thanks: string; na: string;
 };
 
@@ -35,7 +36,9 @@ const PDF_LABELS: Record<string, PdfLabels> = {
     checkin: "Check-in",
     checkout: "Check-out",
     total: "Importo totale",
+    stay: "Soggiorno",
     cityTax: "Tassa di soggiorno",
+    totalPaid: "Totale pagato",
     method: "Metodo di pagamento",
     paidOn: "Data pagamento",
     thanks: `Grazie per aver scelto ${CONTENT.siteTitle.it}.`,
@@ -54,7 +57,9 @@ const PDF_LABELS: Record<string, PdfLabels> = {
     checkin: "Check-in",
     checkout: "Check-out",
     total: "Total amount",
+    stay: "Accommodation",
     cityTax: "City tax",
+    totalPaid: "Total paid",
     method: "Payment method",
     paidOn: "Payment date",
     thanks: `Thank you for choosing ${CONTENT.siteTitle.en}.`,
@@ -73,7 +78,9 @@ const PDF_LABELS: Record<string, PdfLabels> = {
     checkin: "Arrivée",
     checkout: "Départ",
     total: "Montant total",
+    stay: "Hébergement",
     cityTax: "Taxe de séjour",
+    totalPaid: "Total payé",
     method: "Méthode de paiement",
     paidOn: "Date de paiement",
     thanks: `Merci d'avoir choisi ${CONTENT.siteTitle.fr}.`,
@@ -92,7 +99,9 @@ const PDF_LABELS: Record<string, PdfLabels> = {
     checkin: "Anreise",
     checkout: "Abreise",
     total: "Gesamtbetrag",
+    stay: "Unterkunft",
     cityTax: "Kurtaxe",
+    totalPaid: "Gesamt bezahlt",
     method: "Zahlungsmethode",
     paidOn: "Zahlungsdatum",
     thanks: `Vielen Dank, dass Sie sich für ${CONTENT.siteTitle.de} entschieden haben.`,
@@ -111,7 +120,9 @@ const PDF_LABELS: Record<string, PdfLabels> = {
     checkin: "Llegada",
     checkout: "Salida",
     total: "Importe total",
+    stay: "Alojamiento",
     cityTax: "Tasa turística",
+    totalPaid: "Total pagado",
     method: "Método de pago",
     paidOn: "Fecha de pago",
     thanks: `Gracias por elegir ${CONTENT.siteTitle.es}.`,
@@ -130,7 +141,9 @@ const PDF_LABELS: Record<string, PdfLabels> = {
     checkin: "Check-in",
     checkout: "Check-out",
     total: "Valor total",
+    stay: "Alojamento",
     cityTax: "Taxa turística",
+    totalPaid: "Total pago",
     method: "Método de pagamento",
     paidOn: "Data do pagamento",
     thanks: `Obrigado por escolher ${CONTENT.siteTitle.pt}.`,
@@ -293,14 +306,26 @@ export async function GET(
   // riscossa al check-in con ricevuta dedicata, quindi qui non compare (comportamento storico).
   const showCityTax = booking.city_tax_online === true && Number(booking.city_tax) > 0;
 
+  // Quando la tassa è incassata online il totale pagato = soggiorno + tassa. In quel caso
+  // scomponiamo (Soggiorno / Tassa / Totale pagato) così il documento quadra con l'importo
+  // realmente addebitato; altrimenti la sola quota soggiorno È l'importo totale (tassa al check-in).
+  const amountRows: [string, string][] = booking.total_price
+    ? showCityTax
+      ? [
+          [L.stay, `€ ${booking.total_price}`],
+          [L.cityTax, `€ ${booking.city_tax}`],
+          [L.totalPaid, `€ ${chargedAmount(Number(booking.total_price), Number(booking.city_tax), true)}`],
+        ]
+      : [[L.total, `€ ${booking.total_price}`]]
+    : [[L.total, L.na]];
+
   const rows: [string, string][] = [
     [L.code, booking.code],
     [L.guest, `${booking.first_name} ${booking.last_name}`],
     [L.guests, String(booking.guests)],
     [L.checkin, formatFriendlyDateOnly(booking.checkin, dateLocale)],
     [L.checkout, formatFriendlyDateOnly(booking.checkout, dateLocale)],
-    [L.total, booking.total_price ? `€ ${booking.total_price}` : L.na],
-    ...(showCityTax ? [[L.cityTax, `€ ${booking.city_tax}`] as [string, string]] : []),
+    ...amountRows,
     [L.method, method],
     [L.paidOn, booking.paid_at ? formatFriendlyDate(booking.paid_at, dateLocale) : L.na],
   ];
