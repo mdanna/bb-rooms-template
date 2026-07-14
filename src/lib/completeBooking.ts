@@ -34,12 +34,11 @@ export async function completeBookingPayment(
       checkin: booking.checkin,
       checkout: booking.checkout,
       totalPrice: booking.total_price,
-      depositAmount: booking.deposit_amount,
-      balanceDue: booking.balance_due,
       cityTax: booking.city_tax,
       cityTaxOnline: booking.city_tax_online,
       guests: booking.guests,
       paymentMethod: methodLabel,
+      refundPolicy: booking.refund_policy,
       locale,
     });
   } catch (err) {
@@ -57,8 +56,6 @@ export async function completeBookingPayment(
       checkin: booking.checkin,
       checkout: booking.checkout,
       totalPrice: booking.total_price,
-      depositAmount: booking.deposit_amount,
-      balanceDue: booking.balance_due,
       cityTax: booking.city_tax,
       cityTaxOnline: booking.city_tax_online,
       paymentMethod: methodLabel,

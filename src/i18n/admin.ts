@@ -47,8 +47,6 @@ export const adminTranslations = {
       guests: "ospiti",
       status: "Stato",
       price: "Prezzo",
-      deposit: "Anticipo",
-      balance: "Saldo",
       cityTax: "Tassa soggiorno",
       payment: "Pagamento",
       message: "Messaggio",
@@ -68,13 +66,11 @@ export const adminTranslations = {
       cancelReason: "Motivo dell'annullamento",
       receiptLink: "Ricevuta",
       paidAt: "Pagato il",
-      balancePaidAt: "Saldo pagato il",
       paymentMethod: "Metodo",
       card: "Carta di credito",
       paypal: "PayPal",
       cash: "Contanti",
       transfer: "Bonifico",
-      markBalancePaid: "Segna saldo pagato",
       loginTitle: "Richieste di prenotazione",
       loginSubtitle: "Accedi con il tuo account GitHub autorizzato per gestire le richieste.",
       statusLabels: {
@@ -239,8 +235,6 @@ export const adminTranslations = {
       guests: "guests",
       status: "Status",
       price: "Price",
-      deposit: "Deposit",
-      balance: "Balance",
       cityTax: "City tax",
       payment: "Payment",
       message: "Message",
@@ -260,13 +254,11 @@ export const adminTranslations = {
       cancelReason: "Cancellation reason",
       receiptLink: "Receipt",
       paidAt: "Paid on",
-      balancePaidAt: "Balance paid on",
       paymentMethod: "Method",
       card: "Credit card",
       paypal: "PayPal",
       cash: "Cash",
       transfer: "Bank transfer",
-      markBalancePaid: "Mark balance as paid",
       loginTitle: "Booking requests",
       loginSubtitle: "Sign in with your authorized GitHub account to manage booking requests.",
       statusLabels: {
@@ -425,8 +417,6 @@ export const adminTranslations = {
       guests: "huéspedes",
       status: "Estado",
       price: "Precio",
-      deposit: "Anticipo",
-      balance: "Saldo",
       cityTax: "Tasa turística",
       payment: "Pago",
       message: "Mensaje",
@@ -446,13 +436,11 @@ export const adminTranslations = {
       cancelReason: "Motivo de la cancelación",
       receiptLink: "Recibo",
       paidAt: "Pagado el",
-      balancePaidAt: "Saldo pagado el",
       paymentMethod: "Método",
       card: "Tarjeta de crédito",
       paypal: "PayPal",
       cash: "Efectivo",
       transfer: "Transferencia bancaria",
-      markBalancePaid: "Marcar saldo como pagado",
       loginTitle: "Solicitudes de reserva",
       loginSubtitle: "Inicia sesión con tu cuenta GitHub autorizada para gestionar las solicitudes de reserva.",
       statusLabels: {
@@ -611,8 +599,6 @@ export const adminTranslations = {
       guests: "voyageurs",
       status: "Statut",
       price: "Prix",
-      deposit: "Acompte",
-      balance: "Solde",
       cityTax: "Taxe de séjour",
       payment: "Paiement",
       message: "Message",
@@ -632,13 +618,11 @@ export const adminTranslations = {
       cancelReason: "Motif de l'annulation",
       receiptLink: "Reçu",
       paidAt: "Payé le",
-      balancePaidAt: "Solde payé le",
       paymentMethod: "Méthode",
       card: "Carte de crédit",
       paypal: "PayPal",
       cash: "Espèces",
       transfer: "Virement bancaire",
-      markBalancePaid: "Marquer le solde comme payé",
       loginTitle: "Demandes de réservation",
       loginSubtitle: "Connectez-vous avec votre compte GitHub autorisé pour gérer les demandes de réservation.",
       statusLabels: {
@@ -768,7 +752,7 @@ export const adminTranslations = {
 export type AdminTranslation = {
   langName: string;
   nav: { title: string; calendar: string; rooms: string; policy: string; contents: string; images: string; bookings: string; reviews: string; dashboard: string; stripe: string; theme: string; settings: string; manual: string; publicSite: string; signOut: string; structures: string };
-  bookings: { title: string; loading: string; error: string; showArchived: string; hideArchived: string; noBookings: string; code: string; guest: string; period: string; guests: string; status: string; price: string; deposit: string; balance: string; cityTax: string; payment: string; message: string; customPrice: string; approve: string; approving: string; reject: string; rejecting: string; cancel: string; cancelling: string; archive: string; unarchive: string; archiving: string; rejectionReason: string; confirmReject: string; confirmCancel: string; cancelReason: string; receiptLink: string; paidAt: string; balancePaidAt: string; paymentMethod: string; card: string; paypal: string; cash: string; transfer: string; markBalancePaid: string; loginTitle: string; loginSubtitle: string; statusLabels: Record<string, string> };
+  bookings: { title: string; loading: string; error: string; showArchived: string; hideArchived: string; noBookings: string; code: string; guest: string; period: string; guests: string; status: string; price: string; cityTax: string; payment: string; message: string; customPrice: string; approve: string; approving: string; reject: string; rejecting: string; cancel: string; cancelling: string; archive: string; unarchive: string; archiving: string; rejectionReason: string; confirmReject: string; confirmCancel: string; cancelReason: string; receiptLink: string; paidAt: string; paymentMethod: string; card: string; paypal: string; cash: string; transfer: string; loginTitle: string; loginSubtitle: string; statusLabels: Record<string, string> };
   calendar: { title: string; syncAirbnb: string; syncing: string; syncDone: string; blockDays: string; unblockDays: string; addBooking: string; price: string; pricePerNight: string; setPrice: string; guestName: string; save: string; saving: string; cancel: string; confirmBlock: string; confirmUnblock: string; nights: string; selectDates: string; from: string; to: string; type: string; directBooking: string; manualBlock: string };
   contents: { title: string; intro: string; save: string; saving: string; saved: string; translate: string; translating: string; translated: string; translateAll: string; field: string; preview: string; addItem: string; removeItem: string; moveUp: string; moveDown: string };
   policy: { title: string; intro: string; save: string; saving: string; saved: string };

@@ -19,19 +19,15 @@ export interface Policies {
   defaultBookingPlatform?: OtaPlatform;
   cityTaxPerPersonPerNight: number;
   cityTaxMaxNights: number;
-  defaultDepositRate: number;
-  minDepositRate: number;
-  balanceDueDays: number;
-  cancelFullRefundDays: number;
-  cancelHalfRefundDays: number;
-  cancelPartialRefundPct: number;
-  cancelFeePercent: number;
+  // Politica di rimborso attiva (stile Airbnb, a livelli). Scelta dall'host; viene
+  // CONGELATA su ogni prenotazione al momento della creazione (vedi refund.ts).
+  refundPolicy: "flexible" | "moderate" | "strict";
+  // Franchigia (%) trattenuta sui rimborsi TOTALI da guest (copre i costi di transazione).
+  franchiseRefundPct: number;
   minAdvanceBookingDays: number;
   minNights: number;
   maxNights: number;
   maxGuests: number;
-  balanceReminderDaysFirst: number;
-  balanceReminderDaysSecond: number;
   checkinTime: string;
   checkoutTime: string;
   // Lingua del pannello di amministrazione: scelta in configurazione, modificabile

@@ -3,8 +3,7 @@ import type Stripe from "stripe";
 import { pool, ensureSchema, type Booking } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
 import { checkRateLimit } from "@/lib/rateLimit";
-import { computePricingBreakdown, MIN_DEPOSIT_RATE, MAX_DEPOSIT_RATE, DEFAULT_DEPOSIT_RATE, CITY_TAX_MAX_NIGHTS } from "@/lib/pricing";
-import { POLICIES } from "@/lib/policies";
+import { computePricingBreakdown, CITY_TAX_MAX_NIGHTS } from "@/lib/pricing";
 import { CONTENT } from "@/lib/siteContent";
 import { verifyAccessToken } from "@/lib/accessToken";
 import { nightsBetween } from "@/lib/dateOnly";
@@ -32,15 +31,6 @@ export async function POST(
     return NextResponse.json({ error: "Accesso non autorizzato" }, { status: 401 });
   }
 
-  // Parse optional depositRate from body
-  let bodyDepositRate: number | undefined;
-  try {
-    const body = await request.json();
-    if (typeof body?.depositRate === "number") {
-      bodyDepositRate = Math.min(Math.max(body.depositRate, MIN_DEPOSIT_RATE), MAX_DEPOSIT_RATE);
-    }
-  } catch { /* body is optional */ }
-
   await ensureSchema();
 
   const result = await pool.query<Booking>(
@@ -58,30 +48,21 @@ export async function POST(
     return NextResponse.json({ error: "Importo non valido per il pagamento" }, { status: 400 });
   }
 
-  // Always recompute pricing with the chosen deposit rate (or fall back to stored rate / default)
-  const depositRate =
-    bodyDepositRate ??
-    (booking.deposit_rate != null ? Number(booking.deposit_rate) : undefined);
-
+  // Modello a pagamento intero: si incassa online l'intero importo del soggiorno.
   const pricing = computePricingBreakdown(
     Number(booking.total_price),
     booking.guests,
     booking.checkin,
     booking.checkout,
-    depositRate
   );
 
   await pool.query(
-    `UPDATE bookings SET deposit_amount = $2, city_tax = $3, balance_due = $4, deposit_rate = $5 WHERE id = $1`,
-    [booking.id, pricing.depositAmount, pricing.cityTax, pricing.balanceDue, pricing.depositRate]
+    `UPDATE bookings SET city_tax = $2 WHERE id = $1`,
+    [booking.id, pricing.cityTax]
   );
 
-  const depositPct = Math.round((pricing.depositRate ?? DEFAULT_DEPOSIT_RATE) * 100);
-  const isFullPayment = depositPct >= 100;
-
-  // Opzione A: la tassa di soggiorno viaggia con l'anticipo online come voce
-  // separata. Le prenotazioni vecchie (flag null) mantengono il vecchio testo
-  // "riscossa al check-in" e NON hanno la seconda riga.
+  // La tassa di soggiorno viaggia insieme al pagamento online come voce separata,
+  // quando il flag della prenotazione lo prevede (default per le nuove prenotazioni).
   const cityTaxOnline = booking.city_tax_online === true && pricing.cityTax > 0;
   const locale = (booking.locale as LocaleCode) ?? "it";
   const t = translations[locale] ?? translations.it;
@@ -89,27 +70,20 @@ export async function POST(
   const nights = nightsBetween(booking.checkin, booking.checkout);
   const cityTaxNights = Math.min(nights, CITY_TAX_MAX_NIGHTS);
 
-  const depositBaseDesc = isFullPayment
-    ? `Check-in ${booking.checkin} → Check-out ${booking.checkout}`
-    : `Check-in ${booking.checkin} → Check-out ${booking.checkout} · Saldo di €${pricing.balanceDue} da versare entro ${POLICIES.balanceDueDays} giorni prima del check-in`;
-
-  // Vecchio comportamento (flag null/false): la tassa resta annotata come
-  // riscossa al check-in nella riga dell'anticipo. Online: nessuna menzione qui,
-  // perché è una line item separata pagata ora.
-  const depositDescription = cityTaxOnline
-    ? depositBaseDesc
-    : `${depositBaseDesc} · Tassa di soggiorno €${pricing.cityTax} riscossa separatamente al check-in`;
+  const stayBaseDesc = `Check-in ${booking.checkin} → Check-out ${booking.checkout}`;
+  // Se la tassa NON è online (prenotazioni vecchie), resta annotata come riscossa al check-in.
+  const stayDescription = cityTaxOnline
+    ? stayBaseDesc
+    : `${stayBaseDesc} · Tassa di soggiorno €${pricing.cityTax} riscossa separatamente al check-in`;
 
   const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
     {
       price_data: {
         currency: "eur",
-        unit_amount: Math.round(pricing.depositAmount * 100),
+        unit_amount: Math.round(Number(booking.total_price) * 100),
         product_data: {
-          name: isFullPayment
-            ? `Pagamento completo · ${CONTENT.siteTitle.it} · ${booking.code}`
-            : `Anticipo ${depositPct}% · ${CONTENT.siteTitle.it} · ${booking.code}`,
-          description: depositDescription,
+          name: `Pagamento soggiorno · ${CONTENT.siteTitle.it} · ${booking.code}`,
+          description: stayDescription,
         },
       },
       quantity: 1,

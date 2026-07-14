@@ -116,34 +116,11 @@ export interface Translation {
     notFound: string;
     loading: string;
     totalStayPrice: string;
-    depositDueNow: string;
-    balanceDueAtCheckin: string; // template, use {amount}
     cityTaxNote: string; // template, use {amount}
     cityTaxLineItem: string; // nome voce tassa di soggiorno (line item Stripe / ricevuta PDF)
     cityTaxOnlineNote: string; // template {amount} — variante online: tassa inclusa nel pagamento come voce separata
-    refundPolicy: string;
-    depositOnlyButton: string;
-    fullAmountButton: string;
-    howMuchTitle: string;
-    depositLabel: string;
-    sliderMin: string;
-    sliderMax: string;
     totalDueNow: string;
-    balanceLabel: string;
     secureNote: string;
-  };
-  payBalance: {
-    title: string;
-    bookingCode: string; // template {code}
-    alreadyPaidTitle: string;
-    alreadyPaidMsg: string; // template {code}
-    cityTaxLabel: string; // template {guests}
-    totalLabel: string;
-    redirecting: string;
-    payButton: string; // template {amount}
-    successTitle: string;
-    successMsg: string; // template {code}
-    backHome: string;
   };
   manageLinkPage: {
     title: string;
@@ -176,25 +153,12 @@ export interface Translation {
     labelCheckout: string;
     labelTotalStay: string;
     labelTotalPaid: string;
-    labelDepositPaid: string;
-    labelBalance: string;
-    labelBalanceDue: string; // template {amount}
     labelCityTax: string; // etichetta cella tassa di soggiorno nel riepilogo
     proceedToPayment: string;
     downloadReceipt: string;
-    balanceSectionTitle: string;
-    balanceDueText: string; // template {amount}
-    balanceCityTax: string; // template {amount}
-    balanceCityTaxOnline: string; // template {amount} — variante online: tassa già inclusa nell'anticipo online
-    payBalanceButton: string;
     cancelSectionTitle: string;
     cancelPolicyTitle: string;
     cancelFreeMsg: string;
-    cancelFullRefundMsg: string; // template {days, threshold, fee_pct}
-    cancelFullRefundDetail: string; // template {paid, fee_pct, fee, refund}
-    cancelHalfRefundMsg: string; // template {days, halfThreshold, fullThreshold}
-    cancelHalfRefundDetail: string; // template {paid, refund}
-    cancelNoneMsg: string; // template {days, threshold}
     cancelNoneContactBefore: string;
     cancelNoneContactAfter: string;
     cancelRefundCredit: string;
@@ -225,11 +189,8 @@ export interface Translation {
     notFound: string;
     loading: string;
     totalStayPrice: string;
-    depositPaid: string;
-    balanceDueAtCheckin: string; // template, use {amount}
     cityTaxNote: string; // template, use {amount}
     cityTaxOnlineNote: string; // template {amount} — variante online: tassa inclusa nel pagamento online come voce separata
-    refundPolicy: string;
     cityTaxLine: string; // etichetta neutra della voce tassa nel breakdown importi
     totalPaidOnline: string; // totale effettivamente addebitato online (alloggio + tassa se online)
   };

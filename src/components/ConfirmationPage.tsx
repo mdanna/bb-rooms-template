@@ -6,6 +6,7 @@ import { translations, type LocaleCode } from "@/i18n/index";
 import { format } from "@/i18n/format";
 import { formatDateOnly } from "@/lib/dateOnly";
 import { CONTENT } from "@/lib/siteContent";
+import { refundPolicyText } from "@/lib/refundPolicyText";
 
 interface BookingSummary {
   code: string;
@@ -22,6 +23,7 @@ interface BookingSummary {
   status: "pending" | "approved" | "rejected" | "completed";
   payment_method: string | null;
   paid_at: string | null;
+  refund_policy?: string | null;
   locale: LocaleCode;
 }
 
@@ -139,24 +141,18 @@ export default function ConfirmationPage({ code }: { code: string }) {
           {format(t.confirmation.guests, { count: booking.guests })}
         </p>
         {(() => {
-          const total = Number(booking.total_price ?? 0);
-          const deposit = Number(booking.deposit_amount ?? 0);
-          const balance = Number(booking.balance_due ?? 0);
+          // Nuovo modello: importo INTERO del soggiorno pagato online in un'unica soluzione
+          // (niente più acconto/saldo). La tassa, se incassata online, è una voce distinta e
+          // additiva. Le colonne legacy deposit_amount/balance_due non sono più usate.
+          const stayFigure = Number(booking.total_price ?? 0);
           const tax = Number(booking.city_tax ?? 0);
           const taxOnline = booking.city_tax_online === true && tax > 0;
-          const hasBalance = balance > 0;
-          // Importo alloggio di questa riga: anticipo se c'è ancora un saldo, altrimenti l'intero soggiorno.
-          const stayFigure = hasBalance ? deposit : (total || deposit);
-          // Totale effettivamente addebitato online ORA: alloggio pagato + tassa (se incassata online
-          // come voce separata). NON è "inclusa nel prezzo del soggiorno": è aggiunta sopra.
-          const paidOnline = deposit + (taxOnline ? tax : 0);
+          const paidOnline = stayFigure + (taxOnline ? tax : 0);
           return (
             <>
               <dl className="mt-4 space-y-1.5 text-sm">
                 <div className="flex items-center justify-between">
-                  <dt className="text-foreground/70">
-                    {hasBalance ? t.confirmation.depositPaid : t.confirmation.totalStayPrice}
-                  </dt>
+                  <dt className="text-foreground/70">{t.confirmation.totalStayPrice}</dt>
                   <dd className="text-foreground">€{stayFigure.toFixed(2)}</dd>
                 </div>
                 {taxOnline && (
@@ -170,11 +166,6 @@ export default function ConfirmationPage({ code }: { code: string }) {
                   <dd className="font-medium text-green-700">€{paidOnline.toFixed(2)} ✓</dd>
                 </div>
               </dl>
-              {hasBalance && (
-                <p className="mt-3 text-sm text-foreground/80">
-                  {format(t.confirmation.balanceDueAtCheckin, { amount: balance.toFixed(2) })}
-                </p>
-              )}
               {/* Tassa NON incassata online → riscossa al check-in (nota grigia, non entra nel totale). */}
               {tax > 0 && !taxOnline && (
                 <p className="mt-1 text-sm text-foreground/60">
@@ -192,8 +183,8 @@ export default function ConfirmationPage({ code }: { code: string }) {
             {t.confirmation.paidOn} {formatTimestamp(booking.paid_at)}
           </p>
         )}
-        {booking.deposit_amount && (
-          <p className="mt-3 text-xs text-foreground/50">{t.confirmation.refundPolicy}</p>
+        {booking.total_price && (
+          <p className="mt-3 text-xs text-foreground/50">{refundPolicyText(booking.refund_policy, locale)}</p>
         )}
       </div>
 

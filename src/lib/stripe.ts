@@ -28,3 +28,27 @@ export const stripeLive: Stripe | null = LIVE_KEY_CONFIGURED ? new Stripe(LIVE_K
 export const WEBHOOK_SECRET_TEST =
   process.env.STRIPE_WEBHOOK_SECRET_TEST ?? process.env.STRIPE_WEBHOOK_SECRET ?? "";
 export const WEBHOOK_SECRET_LIVE = process.env.STRIPE_WEBHOOK_SECRET_LIVE ?? "";
+
+// Individua l'AMBIENTE (test/live) che possiede un PaymentIntent, provando a leggerlo con
+// ciascun client. Operazione di sola lettura: serve a eseguire un rimborso SEMPRE nell'ambiente
+// che ha incassato, indipendentemente dalla modalità globale attiva. Così un PaymentIntent di
+// test viene rimborsato col client di test (nessun denaro reale) e uno live col client live —
+// e un cambio di modalità non può mai deviare un rimborso sull'ambiente sbagliato.
+// Ritorna null se il PaymentIntent non esiste in nessuno dei due ambienti.
+export async function resolvePaymentIntentClient(
+  paymentIntentId: string,
+): Promise<{ client: Stripe; mode: StripeMode; paymentIntent: Stripe.PaymentIntent } | null> {
+  const candidates: { client: Stripe; mode: StripeMode }[] = [
+    { client: stripeTest, mode: "test" },
+    ...(stripeLive ? [{ client: stripeLive, mode: "live" as StripeMode }] : []),
+  ];
+  for (const { client, mode } of candidates) {
+    try {
+      const paymentIntent = await client.paymentIntents.retrieve(paymentIntentId);
+      return { client, mode, paymentIntent };
+    } catch {
+      // Non appartiene a questo ambiente (o chiave assente): prova il successivo.
+    }
+  }
+  return null;
+}

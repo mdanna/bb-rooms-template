@@ -6,7 +6,8 @@ import { localeOrder, type LocaleCode } from "@/i18n/index";
 import { hasOverlappingBooking } from "@/lib/bookingOverlap";
 import { bookableUnits, rootUnitId } from "@/lib/structure";
 import { checkRateLimit } from "@/lib/rateLimit";
-import { computePricingBreakdown, MIN_DEPOSIT_RATE, MAX_DEPOSIT_RATE, DEFAULT_DEPOSIT_RATE } from "@/lib/pricing";
+import { computePricingBreakdown } from "@/lib/pricing";
+import { refundPolicyOf } from "@/lib/refund";
 import { nightsBetween } from "@/lib/dateOnly";
 import { POLICIES } from "@/lib/policies";
 import { DEMO_MODE } from "@/lib/demo";
@@ -78,10 +79,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: `Soggiorno massimo: ${POLICIES.maxNights} notti` }, { status: 400 });
   }
 
-  // Validate deposit rate
-  const rawRate = typeof body.depositRate === "number" ? body.depositRate : DEFAULT_DEPOSIT_RATE;
-  const depositRate = Math.min(Math.max(rawRate, MIN_DEPOSIT_RATE), MAX_DEPOSIT_RATE);
-
   const locale: LocaleCode = (localeOrder as string[]).includes(body.locale)
     ? (body.locale as LocaleCode)
     : "it";
@@ -135,13 +132,17 @@ export async function POST(request: Request) {
   const code = generateBookingCode();
 
   const pricing = body.totalPrice
-    ? computePricingBreakdown(body.totalPrice, body.guests, body.checkin, body.checkout, depositRate)
+    ? computePricingBreakdown(body.totalPrice, body.guests, body.checkin, body.checkout)
     : null;
+
+  // Congela la politica di rimborso corrente dell'host su QUESTA prenotazione: un
+  // eventuale cambio successivo di policy non tocca le prenotazioni già create.
+  const frozenRefundPolicy = refundPolicyOf(POLICIES.refundPolicy);
 
   await pool.query(
     `INSERT INTO bookings
-      (code, first_name, last_name, email, phone, guests, checkin, checkout, total_price, message, status, locale, deposit_amount, city_tax, balance_due, deposit_rate, city_tax_online, unit_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'pending',$11,$12,$13,$14,$15,true,$16)`,
+      (code, first_name, last_name, email, phone, guests, checkin, checkout, total_price, message, status, locale, city_tax, city_tax_online, refund_policy, unit_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'pending',$11,$12,true,$13,$14)`,
     [
       code,
       body.firstName,
@@ -154,10 +155,8 @@ export async function POST(request: Request) {
       body.totalPrice,
       body.message || null,
       locale,
-      pricing?.depositAmount ?? null,
       pricing?.cityTax ?? null,
-      pricing?.balanceDue ?? null,
-      pricing ? depositRate : null,
+      frozenRefundPolicy,
       unitId,
     ]
   );

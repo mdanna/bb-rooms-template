@@ -36,13 +36,15 @@ export async function GET(
       checkin: booking.checkin,
       checkout: booking.checkout,
       total_price: booking.total_price,
-      deposit_amount: booking.deposit_amount,
-      balance_due: booking.balance_due,
       city_tax: booking.city_tax,
       city_tax_online: booking.city_tax_online,
       paid_at: booking.paid_at,
       stripe_payment_intent_id: booking.stripe_payment_intent_id,
-      balance_paid_at: booking.balance_paid_at,
+      payment_method: booking.payment_method,
+      // Servono al preventivo di rimborso lato client (policy congelata + finestra di grazia 48h).
+      refund_policy: booking.refund_policy,
+      refunded_at: booking.refunded_at,
+      created_at: booking.created_at,
       locale: booking.locale,
     },
   });

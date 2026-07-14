@@ -2,11 +2,53 @@
 
 import { useEffect, useState } from "react";
 import { formatDateOnly } from "@/lib/dateOnly";
-import { DEFAULT_DEPOSIT_RATE } from "@/lib/pricing";
 import { useAdminLanguage } from "@/i18n/AdminLanguageContext";
 import { allUnits, getUnit, rootUnitId } from "@/lib/structure";
 import { CONTENT } from "@/lib/siteContent";
 import { waLink } from "@/lib/whatsapp";
+
+// Etichette Blocco 2 (azioni pagamenti) per la lingua del pannello (it/en/es/fr), come WA_LABELS.
+const PAY_LABELS: Record<string, {
+  checkinToggle: string;
+  checkinHint: string;
+  refund: (amount: string) => string;
+  refunding: string;
+  refunded: string;
+  refundConfirm: (amount: string) => string;
+}> = {
+  it: {
+    checkinToggle: "Fa pagare al check-in",
+    checkinHint: "Nessun pagamento online: la prenotazione è confermata subito e l'ospite salda all'arrivo.",
+    refund: (a) => `Rimborsa €${a}`,
+    refunding: "Rimborso…",
+    refunded: "Rimborsato ✓",
+    refundConfirm: (a) => `Confermi il rimborso di €${a} all'ospite tramite Stripe? L'operazione è definitiva.`,
+  },
+  en: {
+    checkinToggle: "Pay at check-in",
+    checkinHint: "No online payment: the booking is confirmed right away and the guest settles on arrival.",
+    refund: (a) => `Refund €${a}`,
+    refunding: "Refunding…",
+    refunded: "Refunded ✓",
+    refundConfirm: (a) => `Confirm the €${a} refund to the guest via Stripe? This cannot be undone.`,
+  },
+  es: {
+    checkinToggle: "Pagar al llegar",
+    checkinHint: "Sin pago online: la reserva se confirma de inmediato y el huésped paga al llegar.",
+    refund: (a) => `Reembolsar €${a}`,
+    refunding: "Reembolsando…",
+    refunded: "Reembolsado ✓",
+    refundConfirm: (a) => `¿Confirmas el reembolso de €${a} al huésped por Stripe? Es definitivo.`,
+  },
+  fr: {
+    checkinToggle: "Payer à l'arrivée",
+    checkinHint: "Aucun paiement en ligne : la réservation est confirmée aussitôt et le voyageur règle à l'arrivée.",
+    refund: (a) => `Rembourser €${a}`,
+    refunding: "Remboursement…",
+    refunded: "Remboursé ✓",
+    refundConfirm: (a) => `Confirmer le remboursement de €${a} au voyageur via Stripe ? Cette action est définitive.`,
+  },
+};
 
 // Etichette + testo precompilato del pulsante "Scrivi su WhatsApp" (verso l'ospite).
 const WA_LABELS: Record<string, { btn: string; text: (n: string, unit: string, ci: string, co: string) => string }> = {
@@ -40,6 +82,10 @@ interface Booking {
   archived: boolean;
   // Struttura con camere: unità prenotata (NULL = unità radice / prenotazioni antecedenti).
   unit_id: string | null;
+  // Rimborso semi-automatico: importo calcolato alla cancellazione ed esecuzione (refunded_at).
+  refund_due: string | null;
+  refunded_at: string | null;
+  stripe_payment_intent_id: string | null;
 }
 
 // Nome dell'unità prenotata, o "" per un sito a unità singola (nessuna etichetta da mostrare).
@@ -79,6 +125,8 @@ export default function BookingsManager() {
   const [reason, setReason] = useState("");
   const [showArchived, setShowArchived] = useState(false);
   const [customPrices, setCustomPrices] = useState<Record<number, string>>({});
+  const [checkinIds, setCheckinIds] = useState<Record<number, boolean>>({});
+  const pl = PAY_LABELS[locale] ?? PAY_LABELS.en;
   const DEMO = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
   function patchBooking(id: number, changes: Partial<Booking>) {
     setBookings((bs) => (bs ? bs.map((b) => (b.id === id ? { ...b, ...changes } : b)) : bs));
@@ -161,13 +209,33 @@ export default function BookingsManager() {
     const customPrice = rawPrice && !isNaN(Number(rawPrice)) && Number(rawPrice) > 0
       ? Number(rawPrice)
       : null;
-    if (DEMO) { patchBooking(id, { status: "approved", ...(customPrice ? { total_price: String(customPrice) } : {}) }); setBusyId(null); return; }
+    const payAtCheckin = !!checkinIds[id];
+    if (DEMO) { patchBooking(id, { status: payAtCheckin ? "completed" : "approved", ...(payAtCheckin ? { payment_method: "checkin" } : {}), ...(customPrice ? { total_price: String(customPrice) } : {}) }); setBusyId(null); return; }
     try {
       const res = await fetch(`/api/admin/bookings/${id}/approve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customPrice }),
+        body: JSON.stringify({ customPrice, payAtCheckin }),
       });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? t.common.error);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t.common.error);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  // Rimborso semi-automatico: esegue davvero il rimborso su Stripe per l'importo già
+  // calcolato alla cancellazione (refund_due). Idempotente lato server via refunded_at.
+  async function refund(id: number, amount: string) {
+    if (!window.confirm(pl.refundConfirm(Number(amount).toFixed(2)))) return;
+    setBusyId(id);
+    setError("");
+    if (DEMO) { patchBooking(id, { refunded_at: new Date().toISOString() }); setBusyId(null); return; }
+    try {
+      const res = await fetch(`/api/admin/bookings/${id}/refund`, { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? t.common.error);
       await load();
@@ -346,31 +414,16 @@ export default function BookingsManager() {
                   </div>
                 </div>
               )}
-              {b.status === "completed" && b.deposit_amount != null && (
+              {b.status === "completed" && (
                 <div className="mt-3 rounded-md border border-gold/30 bg-background px-4 py-3 text-sm space-y-1">
-                  <div className="flex justify-between">
-                    <span className="text-foreground/60">{tb.price}</span>
-                    <span className="font-medium text-foreground">€{b.total_price ?? "—"}</span>
-                  </div>
+                  {/* Nuovo modello: importo intero pagato in un'unica soluzione (o "paga al
+                      check-in" → nulla incassato online). Mostriamo la cifra del soggiorno. */}
                   <div className="flex justify-between">
                     <span className="text-foreground/60">
-                      {tb.deposit} <span className="ml-1 text-green-700 font-semibold">✓</span>
+                      {tb.price} <span className="ml-1 text-green-700 font-semibold">✓</span>
                     </span>
-                    <span className="font-semibold text-green-700">€{b.deposit_amount}</span>
+                    <span className="font-semibold text-green-700">€{b.total_price ?? "—"}</span>
                   </div>
-                  {b.balance_due != null && Number(b.balance_due) > 0 && (
-                    <div className="flex justify-between border-t border-gold/20 pt-1">
-                      <span className="text-foreground/60">
-                        {tb.balance}{" "}
-                        {b.balance_paid_at
-                          ? <span className="text-green-700 font-semibold">✓ {tb.balancePaidAt} {formatTimestamp(b.balance_paid_at)}</span>
-                          : <span className="text-amber-600 font-semibold">—</span>}
-                      </span>
-                      <span className={`font-semibold ${b.balance_paid_at ? "text-green-700" : "text-foreground"}`}>
-                        €{b.balance_due}
-                      </span>
-                    </div>
-                  )}
                   {b.city_tax != null && Number(b.city_tax) > 0 && (
                     <div className="flex justify-between text-foreground/50 text-xs pt-0.5">
                       <span>{tb.cityTax}</span>
@@ -420,10 +473,22 @@ export default function BookingsManager() {
                 )}
                 <span className="text-xs text-foreground/40">
                   {customPrices[b.id] && !isNaN(Number(customPrices[b.id])) && Number(customPrices[b.id]) > 0
-                    ? `${tb.deposit}: €${Math.round(Number(customPrices[b.id]) * DEFAULT_DEPOSIT_RATE).toFixed(2)}`
+                    ? `${tb.price}: €${Number(customPrices[b.id]).toFixed(2)}`
                     : ""}
                 </span>
               </div>
+              <label className="flex items-start gap-2 text-xs text-foreground/70" title={pl.checkinHint}>
+                <input
+                  type="checkbox"
+                  checked={!!checkinIds[b.id]}
+                  onChange={(e) => setCheckinIds((prev) => ({ ...prev, [b.id]: e.target.checked }))}
+                  className="mt-0.5 accent-gold"
+                />
+                <span>
+                  <span className="uppercase tracking-widest">{pl.checkinToggle}</span>
+                  <span className="block text-[11px] normal-case tracking-normal text-foreground/45">{pl.checkinHint}</span>
+                </span>
+              </label>
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   onClick={() => approve(b.id)}
@@ -468,6 +533,23 @@ export default function BookingsManager() {
           )}
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
+            {/* Rimborso semi-automatico: solo prenotazioni annullate con un incasso online e un
+                rimborso dovuto non ancora eseguito. Se già rimborsato, mostra lo stato. */}
+            {b.status === "cancelled" && b.refunded_at && (
+              <span className="rounded-full border border-green-600/40 bg-green-50 px-4 py-1.5 text-xs uppercase tracking-widest text-green-700 dark:bg-green-950/30">
+                {pl.refunded}
+              </span>
+            )}
+            {b.status === "cancelled" && !b.refunded_at && b.stripe_payment_intent_id &&
+              b.refund_due != null && Number(b.refund_due) > 0 && (
+                <button
+                  onClick={() => refund(b.id, b.refund_due!)}
+                  disabled={busyId === b.id}
+                  className="rounded-full border border-gold bg-gold px-5 py-2 text-xs uppercase tracking-widest text-[#faf6ec] transition hover:bg-transparent hover:text-gold disabled:opacity-50"
+                >
+                  {busyId === b.id ? pl.refunding : pl.refund(Number(b.refund_due).toFixed(2))}
+                </button>
+              )}
             {(b.status === "cancelled" || b.status === "rejected") && (
               <button
                 onClick={() => deleteBooking(b.id)}

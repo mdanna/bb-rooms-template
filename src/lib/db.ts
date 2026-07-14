@@ -73,6 +73,14 @@ export async function ensureSchema() {
   // riferisce la prenotazione. NULL = prenotazioni antecedenti / struttura a unità
   // singola → trattate come l'unità radice (vedi rootUnitId()).
   await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS unit_id TEXT;`);
+  // Politica di rimborso CONGELATA al momento della prenotazione (flexible|moderate|strict):
+  // il calcolo del rimborso usa sempre questa, non la policy corrente dell'host.
+  await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refund_policy TEXT;`);
+  // Importo di rimborso CALCOLATO alla cancellazione (secondo la policy congelata e chi
+  // cancella). L'host lo esegue poi dal pannello (refund semi-automatico) → refunded_at.
+  await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refund_due NUMERIC;`);
+  // Le colonne deposit_amount/balance_due/deposit_rate/balance_* restano per compatibilità
+  // ma non sono più usate (modello a pagamento intero). refunded_at ora è attivo (rimborsi).
   initialized = true;
 }
 
@@ -240,4 +248,8 @@ export interface Booking {
   // Unità prenotata (appartamento intero o singola camera). NULL = unità radice.
   unit_id: string | null;
   review_request_sent_at: string | null;
+  // Politica di rimborso CONGELATA alla prenotazione (flexible|moderate|strict).
+  refund_policy: string | null;
+  // Importo di rimborso calcolato alla cancellazione; eseguito dall'host (→ refunded_at).
+  refund_due: number | null;
 }

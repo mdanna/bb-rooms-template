@@ -6,7 +6,8 @@ import { translations, type LocaleCode } from "@/i18n/index";
 import { format } from "@/i18n/format";
 import { formatDateOnly } from "@/lib/dateOnly";
 
-import { CANCEL_FULL_REFUND_DAYS, CANCEL_HALF_REFUND_DAYS, CANCEL_FEE_PERCENT, CANCEL_PARTIAL_REFUND_PCT } from "@/lib/pricing";
+import { quoteRefund, refundPolicyOf } from "@/lib/refund";
+import { refundPolicyText } from "@/lib/refundPolicyText";
 import { CONTENT } from "@/lib/siteContent";
 
 const INTL_LOCALE: Record<LocaleCode, string> = {
@@ -29,6 +30,13 @@ function daysUntil(iso: string): number {
   return Math.round((checkin.getTime() - today.getTime()) / 86_400_000);
 }
 
+// Ore trascorse dalla prenotazione (per la finestra di grazia 48h). Se manca `created_at`
+// (la rotta data non lo espone ancora) → valore molto grande = fuori dalla grazia.
+function hoursSince(iso: string | null | undefined): number {
+  if (!iso) return Number.MAX_SAFE_INTEGER;
+  return (new Date().getTime() - new Date(iso).getTime()) / 3_600_000;
+}
+
 interface BookingData {
   code: string;
   status: string;
@@ -46,6 +54,11 @@ interface BookingData {
   paid_at: string | null;
   balance_paid_at: string | null;
   stripe_payment_intent_id: string | null;
+  // Nuovo modello rimborsi: livello congelato + data prenotazione (per la finestra di grazia).
+  // Opzionali: l'endpoint /api/bookings/[code]/data non li espone ancora (stima lato client
+  // con fallback — policy corrente e nessuna grazia — finché la rotta non li aggiunge).
+  refund_policy?: string | null;
+  created_at?: string | null;
   locale: LocaleCode | null;
 }
 
@@ -155,37 +168,30 @@ export default function BookingManagementPage({ code, token }: { code: string; t
   if (!booking) return null;
 
   const isCancellable = ["pending", "approved", "completed"].includes(booking.status);
-  const wasPaid = booking.status === "completed";
+  // Nuovo modello: "pagato online" = completed CON PaymentIntent Stripe (le prenotazioni
+  // paga-al-check-in sono completed ma senza PI → nulla incassato online).
+  const wasPaidOnline = booking.status === "completed" && !!booking.stripe_payment_intent_id;
   const days = daysUntil(booking.checkin);
-  const depositNum = Number(booking.deposit_amount ?? 0);
-  const balancePaid = !!booking.balance_paid_at && Number(booking.balance_due ?? 0) > 0;
-  // Importo alloggio effettivamente incassato (anticipo [+ saldo]) — SENZA tassa di soggiorno.
-  const accommodationPaid = balancePaid
-    ? depositNum + Number(booking.balance_due ?? 0)
-    : depositNum;
-  // Opzione A: se city_tax_online la tassa è stata incassata online con l'anticipo → concorre al
-  // totale pagato ed è interamente rimborsabile (non dovuta per notti non godute). Vecchie
-  // prenotazioni (null/false): tassa mai incassata online → nessun impatto (comportamento invariato).
+  // Importo soggiorno incassato online = prezzo intero (niente più acconto/saldo).
+  const stayPaid = wasPaidOnline ? Number(booking.total_price ?? 0) : 0;
+  // La tassa di soggiorno, se incassata online, è una voce distinta interamente rimborsabile.
   const cityTaxOnline = booking.city_tax_online === true;
   const cityTaxNum = Number(booking.city_tax ?? 0);
-  const totalPaid = accommodationPaid + (cityTaxOnline ? cityTaxNum : 0);
+  const cityTaxPaid = wasPaidOnline && cityTaxOnline ? cityTaxNum : 0;
+  const totalPaid = stayPaid + cityTaxPaid;
 
-  const refundReason: "full" | "half" | "none" =
-    !wasPaid ? "none"
-    : days > CANCEL_FULL_REFUND_DAYS ? "full"
-    : days >= CANCEL_HALF_REFUND_DAYS ? "half"
-    : "none";
-  // La policy di cancellazione (trattenuta / quota parziale) si applica SOLO all'alloggio.
-  const fee = refundReason !== "none" ? Math.round(accommodationPaid * CANCEL_FEE_PERCENT) / 100 : 0;
-  const grossHalf = Math.round(accommodationPaid * CANCEL_PARTIAL_REFUND_PCT) / 100; // rimborso lordo alloggio (prima della trattenuta)
-  const accommodationRefund =
-    refundReason === "full" ? accommodationPaid - fee
-    : refundReason === "half" ? grossHalf - fee
-    : 0;
-  // La tassa di soggiorno incassata online viene rimborsata per intero (mai ridotta dalla policy),
-  // in TUTTE le finestre — anche "none" — coerentemente col backend (computeRefund/guest-cancel).
-  const cityTaxRefund = wasPaid && cityTaxOnline ? cityTaxNum : 0;
-  const refundAmount = accommodationRefund + cityTaxRefund;
+  // Stima del rimborso col nuovo motore a livelli (identico al backend guest-cancel).
+  // created_at/refund_policy possono mancare dalla rotta → fallback: policy corrente,
+  // e "nessuna finestra di grazia" (hoursSinceBooking molto grande).
+  const hoursSinceBooking = hoursSince(booking.created_at);
+  const quote = quoteRefund({
+    stayPaid,
+    cityTaxPaid,
+    policy: refundPolicyOf(booking.refund_policy),
+    daysUntilCheckin: days,
+    hoursSinceBooking,
+    byHost: false,
+  });
 
   const statusLabel: Record<string, string> = {
     pending: m.statusPending,
@@ -233,44 +239,22 @@ export default function BookingManagementPage({ code, token }: { code: string; t
               <p className="mt-0.5 text-foreground">€{Number(booking.total_price).toFixed(2)}</p>
             </div>
           )}
-          {booking.status === "completed" && (() => {
-            const hasBalance = booking.balance_due != null && Number(booking.balance_due) > 0;
-            const fullyPaid = balancePaid || !hasBalance;
-            if (fullyPaid) {
-              // Pagamento completo (intero anticipo o saldo già versato): la tassa, se incassata
-              // online, è una voce DISTINTA e ADDIZIONALE → mostrata a parte e sommata nel totale
-              // pagato (non "inclusa nel prezzo del soggiorno").
-              return (
-                <>
-                  {cityTaxOnline && cityTaxNum > 0 && (
-                    <div>
-                      <p className="text-[11px] uppercase tracking-widest text-foreground/40">{m.labelCityTax}</p>
-                      <p className="mt-0.5 text-foreground">€{cityTaxNum.toFixed(2)}</p>
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-[11px] uppercase tracking-widest text-foreground/40">{m.labelTotalPaid}</p>
-                    <p className="mt-0.5 font-medium text-green-700">€{totalPaid.toFixed(2)} ✓</p>
-                  </div>
-                </>
-              );
-            }
-            // Anticipo versato, saldo ancora dovuto.
-            return booking.deposit_amount ? (
-              <>
+          {booking.status === "completed" && wasPaidOnline && (
+            // Nuovo modello: importo intero pagato online in un'unica soluzione. La tassa, se
+            // incassata online, è una voce distinta e additiva, mostrata a parte.
+            <>
+              {cityTaxPaid > 0 && (
                 <div>
-                  <p className="text-[11px] uppercase tracking-widest text-foreground/40">{m.labelDepositPaid}</p>
-                  <p className="mt-0.5 text-foreground">€{depositNum.toFixed(2)}</p>
+                  <p className="text-[11px] uppercase tracking-widest text-foreground/40">{m.labelCityTax}</p>
+                  <p className="mt-0.5 text-foreground">€{cityTaxPaid.toFixed(2)}</p>
                 </div>
-                <div>
-                  <p className="text-[11px] uppercase tracking-widest text-foreground/40">{m.labelBalance}</p>
-                  <p className="mt-0.5 font-medium text-amber-600">
-                    {format(m.labelBalanceDue, { amount: Number(booking.balance_due).toFixed(2) })}
-                  </p>
-                </div>
-              </>
-            ) : null;
-          })()}
+              )}
+              <div>
+                <p className="text-[11px] uppercase tracking-widest text-foreground/40">{m.labelTotalPaid}</p>
+                <p className="mt-0.5 font-medium text-green-700">€{totalPaid.toFixed(2)} ✓</p>
+              </div>
+            </>
+          )}
         </div>
 
         {booking.status === "approved" && (
@@ -302,32 +286,6 @@ export default function BookingManagementPage({ code, token }: { code: string; t
         <CheckinInfoCard locale={locale} />
       )}
 
-      {/* Balance payment section */}
-      {booking.status === "completed" && booking.balance_due != null && Number(booking.balance_due) > 0 && !booking.balance_paid_at && (
-        <div className="mt-6 rounded-lg border border-gold/40 bg-card p-6 space-y-4">
-          <h2 className="font-serif-display text-lg italic text-foreground">
-            {m.balanceSectionTitle}
-          </h2>
-          <p className="text-sm text-foreground/70">
-            {format(m.balanceDueText, { amount: Number(booking.balance_due).toFixed(2) })}
-          </p>
-          {booking.city_tax != null && Number(booking.city_tax) > 0 && (
-            <p className="text-xs text-foreground/50">
-              {format(
-                cityTaxOnline ? m.balanceCityTaxOnline : m.balanceCityTax,
-                { amount: Number(booking.city_tax).toFixed(2) },
-              )}
-            </p>
-          )}
-          <Link
-            href={`/pay-balance/${code}?t=${encodeURIComponent(token)}`}
-            className="inline-flex items-center gap-2 rounded-full border border-gold bg-gold/10 px-6 py-2.5 text-xs uppercase tracking-widest text-gold transition hover:bg-gold/20"
-          >
-            {m.payBalanceButton}
-          </Link>
-        </div>
-      )}
-
       {/* Cancellation section */}
       {isCancellable && (
         <div className="mt-6 rounded-lg border border-gold/20 bg-card p-6 space-y-4">
@@ -337,76 +295,30 @@ export default function BookingManagementPage({ code, token }: { code: string; t
 
           <div className="rounded-md bg-foreground/5 p-4 text-sm text-foreground/70 space-y-2">
             <p className="font-medium text-foreground">{m.cancelPolicyTitle}</p>
-            {wasPaid ? (
-              refundReason === "full" ? (
-                <>
-                  <p>
-                    {format(m.cancelFullRefundMsg, {
-                      days: String(days),
-                      threshold: String(CANCEL_FULL_REFUND_DAYS),
-                      fee_pct: String(CANCEL_FEE_PERCENT),
-                    })}
-                  </p>
-                  <p>
-                    {format(m.cancelFullRefundDetail, {
-                      paid: accommodationPaid.toFixed(2),
-                      fee_pct: String(CANCEL_FEE_PERCENT),
-                      fee: fee.toFixed(2),
-                      refund: accommodationRefund.toFixed(2),
-                    })}
-                  </p>
-                  {cityTaxRefund > 0 && (
-                    <p>{format(m.cancelCityTaxRefund, { amount: cityTaxRefund.toFixed(2) })}</p>
-                  )}
-                  <p className="text-foreground/50 text-xs">{m.cancelRefundCredit}</p>
-                </>
-              ) : refundReason === "half" ? (
-                <>
-                  <p>
-                    {format(m.cancelHalfRefundMsg, {
-                      days: String(days),
-                      halfThreshold: String(CANCEL_HALF_REFUND_DAYS),
-                      fullThreshold: String(CANCEL_FULL_REFUND_DAYS),
-                      pct: String(CANCEL_PARTIAL_REFUND_PCT),
-                    })}
-                  </p>
-                  <p>
-                    {format(m.cancelHalfRefundDetail, {
-                      paid: accommodationPaid.toFixed(2),
-                      pct: String(CANCEL_PARTIAL_REFUND_PCT),
-                      gross: grossHalf.toFixed(2),
-                      fee_pct: String(CANCEL_FEE_PERCENT),
-                      fee: fee.toFixed(2),
-                      refund: accommodationRefund.toFixed(2),
-                    })}
-                  </p>
-                  {cityTaxRefund > 0 && (
-                    <p>{format(m.cancelCityTaxRefund, { amount: cityTaxRefund.toFixed(2) })}</p>
-                  )}
-                  <p className="text-foreground/50 text-xs">{m.cancelRefundCredit}</p>
-                </>
-              ) : (
-                <>
-                  <p>
-                    {format(m.cancelNoneMsg, {
-                      days: String(days),
-                      threshold: String(CANCEL_HALF_REFUND_DAYS),
-                    })}
-                  </p>
-                  {cityTaxRefund > 0 && (
-                    <p>{format(m.cancelCityTaxRefund, { amount: cityTaxRefund.toFixed(2) })}</p>
-                  )}
-                  <p className="text-foreground/50 text-xs">
-                    {m.cancelNoneContactBefore}{" "}
-                    <a href={`mailto:${CONTENT.email}`} className="text-gold underline">
-                      {CONTENT.email}
-                    </a>
-                    {m.cancelNoneContactAfter}
-                  </p>
-                </>
-              )
-            ) : (
+            {/* Termini della policy congelata sulla prenotazione, nella lingua dell'ospite. */}
+            <p className="text-xs text-foreground/60">{refundPolicyText(booking.refund_policy, locale)}</p>
+            {/* Stima del rimborso dal motore a livelli (identica al backend). */}
+            {!wasPaidOnline ? (
               <p>{m.cancelFreeMsg}</p>
+            ) : quote.amount > 0 ? (
+              <>
+                <p className="font-medium text-foreground">€{quote.amount.toFixed(2)}</p>
+                {quote.cityTaxRefund > 0 && (
+                  <p>{format(m.cancelCityTaxRefund, { amount: quote.cityTaxRefund.toFixed(2) })}</p>
+                )}
+                <p className="text-foreground/50 text-xs">{m.cancelRefundCredit}</p>
+              </>
+            ) : (
+              <>
+                <p>{m.cancelledNoRefundMsg}</p>
+                <p className="text-foreground/50 text-xs">
+                  {m.cancelNoneContactBefore}{" "}
+                  <a href={`mailto:${CONTENT.email}`} className="text-gold underline">
+                    {CONTENT.email}
+                  </a>
+                  {m.cancelNoneContactAfter}
+                </p>
+              </>
             )}
           </div>
 

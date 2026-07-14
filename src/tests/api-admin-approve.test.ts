@@ -13,6 +13,7 @@ vi.mock("@/lib/db", () => ({
 }));
 vi.mock("@/lib/email", () => ({
   sendApprovalEmail: vi.fn(),
+  sendCheckinRecapEmail: vi.fn(),
 }));
 vi.mock("@/lib/bookingOverlap", () => ({
   hasOverlappingBooking: vi.fn().mockResolvedValue(false),
@@ -50,19 +51,20 @@ const MOCK_BOOKING = {
   paid_at: null,
   created_at: new Date().toISOString(),
   archived: false,
-  deposit_amount: 200,
-  balance_due: 224,
+  custom_price: null,
   city_tax: 24,
+  city_tax_online: true,
+  unit_id: null,
+  refund_policy: "moderate",
+  refund_due: null,
   stripe_payment_intent_id: null,
   refunded_at: null,
-  balance_reminder_sent_at: null,
-  balance_paid_at: null,
-  balance_payment_intent_id: null,
 };
 
-function makeRequest(id: string) {
+function makeRequest(id: string, body?: unknown) {
   return new Request(`http://localhost/api/admin/bookings/${id}/approve`, {
     method: "POST",
+    ...(body ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {}),
   });
 }
 
@@ -95,6 +97,20 @@ describe("POST /api/admin/bookings/[id]/approve", () => {
     const data = await res.json();
     expect(res.status).toBe(200);
     expect(data.ok).toBe(true);
+  });
+
+  it("paga-al-check-in: porta la prenotazione a 'completed' (payment_method='checkin')", async () => {
+    vi.mocked(auth).mockResolvedValueOnce(MOCK_SESSION as never);
+    vi.mocked(pool.query)
+      .mockResolvedValueOnce({ rows: [MOCK_BOOKING] } as never)
+      .mockResolvedValueOnce({ rows: [{ ...MOCK_BOOKING, status: "completed", payment_method: "checkin" }] } as never);
+
+    const { POST } = await import("@/app/api/admin/bookings/[id]/approve/route");
+    const res = await POST(makeRequest("1", { payAtCheckin: true }), makeContext("1"));
+    const data = await res.json();
+    expect(res.status).toBe(200);
+    expect(data.ok).toBe(true);
+    expect(data.status).toBe("completed");
   });
 
   it("risponde 404 se la prenotazione non esiste", async () => {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getFile, putFile, requireBotToken } from "@/lib/githubContent";
 import { POLICIES, type Policies } from "@/lib/policies";
+import { isRefundPolicy } from "@/lib/refund";
 
 const FILE_PATH = "src/data/policies.json";
 
@@ -11,19 +12,12 @@ function isValidPolicies(body: unknown): body is Policies {
   return (
     typeof b.cityTaxPerPersonPerNight === "number" &&
     typeof b.cityTaxMaxNights === "number" &&
-    typeof b.defaultDepositRate === "number" &&
-    typeof b.minDepositRate === "number" &&
-    typeof b.balanceDueDays === "number" &&
-    typeof b.cancelFullRefundDays === "number" &&
-    typeof b.cancelHalfRefundDays === "number" &&
-    typeof b.cancelPartialRefundPct === "number" &&
-    typeof b.cancelFeePercent === "number" &&
+    isRefundPolicy(b.refundPolicy) &&
+    typeof b.franchiseRefundPct === "number" &&
     typeof b.minAdvanceBookingDays === "number" &&
     typeof b.minNights === "number" &&
     typeof b.maxNights === "number" &&
     typeof b.maxGuests === "number" &&
-    typeof b.balanceReminderDaysFirst === "number" &&
-    typeof b.balanceReminderDaysSecond === "number" &&
     typeof b.checkinTime === "string" &&
     typeof b.checkoutTime === "string"
   );

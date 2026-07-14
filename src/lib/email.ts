@@ -9,8 +9,8 @@ import {
 } from "./emailHtml";
 
 import { CONTENT, HOST_WHATSAPP } from "./siteContent";
-import { POLICIES, } from "./policies";
-import { MIN_DEPOSIT_RATE } from "./pricing";
+import { franchisePct, type RefundQuote, type RefundPolicy } from "./refund";
+import { chargedAmount } from "./pricing";
 import { unitLabel } from "./structure";
 import { waLink } from "./whatsapp";
 
@@ -169,8 +169,6 @@ export async function sendHostPaymentNotification(params: {
   checkin: string | Date;
   checkout: string | Date;
   totalPrice: number | null;
-  depositAmount: number | null;
-  balanceDue: number | null;
   cityTax: number | null;
   cityTaxOnline?: boolean | null;
   paymentMethod: string;
@@ -185,20 +183,16 @@ export async function sendHostPaymentNotification(params: {
     checkin,
     checkout,
     totalPrice,
-    depositAmount,
-    balanceDue,
     cityTax,
     cityTaxOnline,
     paymentMethod,
   } = params;
-  // Opzione A: se la tassa è stata incassata online (voce separata dell'anticipo) la mostriamo
-  // come già pagata; altrimenti resta da riscuotere al check-in (comportamento storico).
+  // Modello nuovo: l'ospite paga l'INTERO importo del soggiorno online. La tassa di soggiorno,
+  // se incassata online, è una voce separata già pagata; altrimenti si riscuote al check-in.
   const cityTaxLabel = cityTaxOnline
     ? "Tassa di soggiorno (inclusa nel pagamento)"
     : "Tassa di soggiorno (al check-in)";
-  const balanceRow: [string, string, "amber"?][] = balanceDue != null && balanceDue > 0
-    ? [["Saldo da incassare (entro 2 gg dal check-in)", `€${balanceDue}`, "amber"]]
-    : balanceDue === 0 ? [["Pagamento", "Completo ✓"]] : [];
+  const paidTotal = totalPrice != null ? chargedAmount(totalPrice, cityTax ?? 0, !!cityTaxOnline) : null;
   const unit = unitLabel(params.unitId, "it");
   const rows: [string, string, ("normal"|"green"|"amber"|"gold")?][] = [
     ...(unit ? [["Alloggio", unit] as [string, string]] : []),
@@ -207,30 +201,28 @@ export async function sendHostPaymentNotification(params: {
     ["Ospiti", String(guests)],
     ["Check-in", fmtDate(checkin)],
     ["Check-out", fmtDate(checkout)],
-    ...(totalPrice ? [["Totale soggiorno", `€${totalPrice}`] as [string,string]] : []),
-    ...(depositAmount ? [["Anticipo incassato", `€${depositAmount}`] as [string,string]] : []),
-    ...balanceRow,
+    ...(totalPrice != null ? [["Totale soggiorno", `€${totalPrice}`] as [string,string]] : []),
     ...(cityTax != null ? [[cityTaxLabel, `€${cityTax}`] as [string,string]] : []),
+    ...(paidTotal != null ? [["Incassato online", `€${paidTotal}`, "green"] as [string, string, "green"]] : []),
     ["Metodo di pagamento", paymentMethod],
   ];
   await send({
     to: HOST_EMAIL,
     replyTo: email,
-    subject: `Pagamento anticipo ricevuto · Prenotazione ${code}`,
+    subject: `Pagamento ricevuto · Prenotazione ${code}`,
     text: [
-      `L'anticipo per la prenotazione ${code} è stata pagata.`,
+      `La prenotazione ${code} è stata pagata per intero.`,
       "", unit ? `Alloggio: ${unit}` : null, `Ospite: ${firstName} ${lastName}`, `Email: ${email}`,
       `Ospiti: ${guests}`, `Check-in: ${fmtDate(checkin)}`, `Check-out: ${fmtDate(checkout)}`,
-      totalPrice ? `Totale soggiorno: €${totalPrice}` : null,
-      depositAmount ? `Anticipo incassato ora: €${depositAmount}` : null,
-      balanceDue != null && balanceDue > 0 ? `Saldo da incassare entro ${POLICIES.balanceDueDays} giorni dal check-in: €${balanceDue}` : balanceDue === 0 ? `Pagamento completo — nessun saldo residuo` : null,
+      totalPrice != null ? `Totale soggiorno: €${totalPrice}` : null,
       cityTax != null ? (cityTaxOnline ? `Tassa di soggiorno inclusa nel pagamento online: €${cityTax}` : `Tassa di soggiorno da riscuotere al check-in: €${cityTax}`) : null,
+      paidTotal != null ? `Incassato online: €${paidTotal}` : null,
       `Metodo di pagamento: ${paymentMethod}`,
       "", `Dettagli su: ${siteUrl()}/admin/bookings`,
     ].filter(Boolean).join("\n"),
     html: buildHtml(
-      title("Pagamento anticipo ricevuto") +
-      para(`La prenotazione ${bold(code)} è stata pagata.`, true) +
+      title("Pagamento ricevuto") +
+      para(`La prenotazione ${bold(code)} è stata pagata per intero.`, true) +
       dataTable(rows) +
       divider() +
       button("Visualizza in admin", `${siteUrl()}/admin/bookings`)
@@ -269,25 +261,24 @@ export async function sendRejectionEmail(params: {
 export async function sendApprovalEmail(params: {
   to: string;
   code: string;
+  unitId?: string;
   locale: LocaleCode;
   totalPrice: number | null;
-  depositAmount: number | null;
-  balanceDue: number | null;
   cityTax: number | null;
   cityTaxOnline?: boolean | null;
   guests?: number;
-  unitId?: string;
+  refundPolicy: string | null;
 }) {
   const unit = unitLabel(params.unitId, params.locale);
   const payUrl = `${siteUrl()}/pay/${params.code}?t=${encodeURIComponent(generateAccessToken(params.code))}`;
   const manageUrl = `${siteUrl()}/gestione-prenotazione/${params.code}?t=${encodeURIComponent(generateAccessToken(params.code))}`;
   const { subject, text } = getEmailTemplates(params.locale).approval({
     code: params.code, payUrl, manageUrl,
-    totalPrice: params.totalPrice, depositAmount: params.depositAmount,
-    balanceDue: params.balanceDue, cityTax: params.cityTax,
+    totalPrice: params.totalPrice, cityTax: params.cityTax,
     cityTaxOnline: params.cityTaxOnline, guests: params.guests,
+    refundPolicy: params.refundPolicy,
   });
-  // Opzione A: online = tassa già inclusa nel pagamento (voce separata); altrimenti al check-in.
+  // Modello nuovo: online = tassa già inclusa nel pagamento (voce separata); altrimenti al check-in.
   const cityTaxLabel = params.cityTaxOnline
     ? "Tassa di soggiorno (inclusa nel pagamento)"
     : "Tassa di soggiorno (al check-in)";
@@ -300,9 +291,54 @@ export async function sendApprovalEmail(params: {
     accHtml(unit, params.locale) +
     para(`La tua richiesta ${bold(params.code)} è stata approvata.`) +
     (priceRows.length ? dataTable(priceRows) : "") +
-    para(`Scegli l'importo dell'anticipo (minimo ${Math.round(MIN_DEPOSIT_RATE * 100)}%) nella pagina di pagamento.`, true) +
+    para(`Per confermare la prenotazione, versa l'intero importo nella pagina di pagamento.`, true) +
     button("Procedi al pagamento", payUrl) +
     linkButton("Gestisci la prenotazione", manageUrl)
+  );
+  const finalText = (unit ? accText(unit, params.locale) + "\n\n" : "") + text;
+  await send({ to: params.to, subject, text: finalText, html, replyTo: HOST_EMAIL });
+}
+
+// Ricapitolazione check-in: prenotazione confermata SENZA pagamento online (opzione host
+// "paga al check-in"). L'ospite riceve l'importo (soggiorno + tassa) da saldare all'arrivo.
+export async function sendCheckinRecapEmail(params: {
+  to: string;
+  code: string;
+  unitId?: string;
+  locale: LocaleCode;
+  firstName: string;
+  checkin: string | Date;
+  checkout: string | Date;
+  totalPrice: number | null;
+  cityTax: number | null;
+  guests: number;
+}) {
+  const unit = unitLabel(params.unitId, params.locale);
+  const manageUrl = `${siteUrl()}/gestione-prenotazione/${params.code}?t=${encodeURIComponent(generateAccessToken(params.code))}`;
+  const { subject, text } = getEmailTemplates(params.locale).checkinRecap({
+    code: params.code, firstName: params.firstName,
+    checkin: fmtDate(params.checkin), checkout: fmtDate(params.checkout),
+    totalPrice: params.totalPrice, cityTax: params.cityTax,
+    guests: params.guests, manageUrl,
+  });
+  const totalAtCheckin = params.totalPrice != null ? params.totalPrice + (params.cityTax ?? 0) : null;
+  const rows: [string, string][] = [
+    ["Check-in", fmtDate(params.checkin)],
+    ["Check-out", fmtDate(params.checkout)],
+    ["Ospiti", String(params.guests)],
+    ...(params.totalPrice != null ? [["Soggiorno (al check-in)", `€${params.totalPrice}`] as [string,string]] : []),
+    ...(params.cityTax != null && params.cityTax > 0 ? [["Tassa di soggiorno (al check-in)", `€${params.cityTax}`] as [string,string]] : []),
+    ...(totalAtCheckin != null ? [["Totale da saldare al check-in", `€${totalAtCheckin}`] as [string,string]] : []),
+  ];
+  const html = buildHtml(
+    title("Prenotazione confermata") +
+    accHtml(unit, params.locale) +
+    para(`Ciao ${bold(params.firstName)}, la tua prenotazione ${bold(params.code)} è confermata. Non è previsto alcun pagamento online: salderai l'importo direttamente al check-in.`) +
+    dataTable(rows) +
+    linkButton("Gestisci la prenotazione", manageUrl) +
+    divider() +
+    smallPara("Check-in a partire dalle ore 14:00 · Check-out entro le ore 10:00") +
+    smallPara("Ti chiediamo di comunicarci l'orario previsto di arrivo rispondendo a questa email.")
   );
   const finalText = (unit ? accText(unit, params.locale) + "\n\n" : "") + text;
   await send({ to: params.to, subject, text: finalText, html, replyTo: HOST_EMAIL });
@@ -311,19 +347,18 @@ export async function sendApprovalEmail(params: {
 export async function sendPaymentConfirmationEmail(params: {
   to: string;
   code: string;
+  unitId?: string;
   firstName: string;
   lastName: string;
   checkin: string | Date;
   checkout: string | Date;
   totalPrice: number | null;
-  depositAmount: number | null;
-  balanceDue: number | null;
   cityTax: number | null;
   cityTaxOnline?: boolean | null;
   guests: number;
   paymentMethod: string;
+  refundPolicy: string | null;
   locale: LocaleCode;
-  unitId?: string;
 }) {
   const unit = unitLabel(params.unitId, params.locale);
   const token = generateAccessToken(params.code);
@@ -332,25 +367,27 @@ export async function sendPaymentConfirmationEmail(params: {
   const { subject, text } = getEmailTemplates(params.locale).paymentConfirmation({
     code: params.code, firstName: params.firstName, lastName: params.lastName,
     checkin: fmtDate(params.checkin), checkout: fmtDate(params.checkout),
-    totalPrice: params.totalPrice, depositAmount: params.depositAmount,
-    balanceDue: params.balanceDue, cityTax: params.cityTax,
+    totalPrice: params.totalPrice, cityTax: params.cityTax,
     cityTaxOnline: params.cityTaxOnline,
     guests: params.guests, paymentMethod: params.paymentMethod,
+    refundPolicy: params.refundPolicy,
     confirmationUrl, manageUrl,
   });
-  const isFullPayment = !params.balanceDue || Number(params.balanceDue) === 0;
-  // Opzione A: online = tassa già inclusa nel pagamento (voce separata); altrimenti al check-in.
+  // Modello nuovo: si paga l'INTERO importo del soggiorno; la tassa di soggiorno online è una
+  // voce separata già inclusa nell'incasso, altrimenti resta da riscuotere al check-in.
   const cityTaxLabel = params.cityTaxOnline
     ? "Tassa di soggiorno (inclusa nel pagamento)"
     : "Tassa di soggiorno (al check-in)";
+  const paidTotal = params.totalPrice != null
+    ? chargedAmount(params.totalPrice, params.cityTax ?? 0, !!params.cityTaxOnline)
+    : null;
   const rows: [string, string][] = [
     ["Check-in", fmtDate(params.checkin)],
     ["Check-out", fmtDate(params.checkout)],
     ["Ospiti", String(params.guests)],
     ...(params.totalPrice != null ? [["Totale soggiorno", `€${params.totalPrice}`] as [string,string]] : []),
-    [isFullPayment ? "Totale pagato" : "Anticipo pagato", `€${params.depositAmount}`],
-    ...(params.balanceDue && Number(params.balanceDue) > 0 ? [["Saldo (entro 2 gg dal check-in)", `€${params.balanceDue}`] as [string,string]] : []),
     ...(params.cityTax != null ? [[cityTaxLabel, `€${params.cityTax}`] as [string,string]] : []),
+    ...(paidTotal != null ? [["Totale pagato", `€${paidTotal}`] as [string,string]] : []),
     ["Metodo di pagamento", params.paymentMethod],
   ];
   const html = buildHtml(
@@ -406,30 +443,32 @@ export async function sendBookingRequestAutoReply(params: {
 export async function sendGuestCancellationEmail(params: {
   to: string;
   code: string;
+  unitId?: string;
   firstName: string;
   checkin: string | Date;
   checkout: string | Date;
   wasPaid: boolean;
-  refundEligible: boolean;
-  refundAmount: number;
-  feePercent: number;
+  quote: RefundQuote;
+  policy: RefundPolicy;
   locale: LocaleCode;
-  unitId?: string;
 }) {
-  const { to, code, firstName, checkin, checkout, wasPaid, refundEligible, refundAmount, feePercent, locale } = params;
+  const { to, code, firstName, checkin, checkout, quote, locale } = params;
   const unit = unitLabel(params.unitId, locale);
   const s = getExtraEmailStrings(locale);
   const ci = fmtDate(checkin);
   const co = fmtDate(checkout);
-  const refundLine = refundEligible
-    ? s.cancelRefundEligible(refundAmount.toFixed(2), feePercent)
-    : wasPaid ? s.cancelNoRefundLate : s.cancelNoRefundNoDeposit;
-  const refundHtml = refundEligible
-    ? infoBox(
-        para(`${bold(`€${refundAmount.toFixed(2)}`)}`) +
-        smallPara(s.cancelRefundFeeNote(feePercent))
-      )
-    : infoBox(smallPara(wasPaid ? s.cancelNoRefundLate : s.cancelNoRefundNoDeposit));
+  const fee = franchisePct();
+  // Esito sulla quota SOGGIORNO: pieno (con franchigia già detratta) / parziale 50% / nulla.
+  const stayLine =
+    quote.kind === "full" ? s.cancelRefundFull(quote.stayRefund.toFixed(2), fee)
+    : quote.kind === "partial" ? s.cancelRefundPartial(quote.stayRefund.toFixed(2))
+    : s.cancelNoRefund;
+  // La tassa di soggiorno incassata online è sempre rimborsata a parte al 100%.
+  const cityTaxLine = quote.cityTaxRefund > 0 ? s.cancelCityTaxRefund(quote.cityTaxRefund.toFixed(2)) : null;
+  const refundHtml = infoBox(
+    para(stayLine) +
+    (cityTaxLine ? smallPara(cityTaxLine) : "")
+  );
   const html = buildHtml(
     title(s.cancelSubject(code)) +
     accHtml(unit, locale) +
@@ -441,46 +480,61 @@ export async function sendGuestCancellationEmail(params: {
   await send({
     to, replyTo: HOST_EMAIL,
     subject: s.cancelSubject(code),
-    text: [unit ? accText(unit, locale) : null, unit ? "" : null, s.cancelBody(firstName, code, ci, co), "", refundLine, "", s.cancelFooter, "", s.houseName].filter((l) => l !== null).join("\n"),
+    text: [unit ? accText(unit, locale) : null, unit ? "" : null, s.cancelBody(firstName, code, ci, co), "", stayLine, cityTaxLine, "", s.cancelFooter, "", s.houseName].filter((l) => l !== null).join("\n"),
     html,
   });
 }
 
 export async function sendHostCancellationNotification(params: {
   code: string;
+  unitId?: string;
   firstName: string;
   lastName: string;
   email: string;
   checkin: string | Date;
   checkout: string | Date;
   wasPaid: boolean;
-  refundEligible: boolean;
-  depositAmount: number;
-  refundAmount: number;
-  feePercent: number;
+  byHost: boolean;
+  quote: RefundQuote;
   stripePaymentIntentId: string | null;
-  unitId?: string;
 }) {
-  const { code, firstName, lastName, email, checkin, checkout, wasPaid, refundEligible,
-    depositAmount, refundAmount, feePercent, stripePaymentIntentId } = params;
+  const { code, firstName, lastName, email, checkin, checkout, wasPaid, byHost, quote, stripePaymentIntentId } = params;
   const unit = unitLabel(params.unitId, "it");
+  const refundEligible = quote.amount > 0;
+  // Dettaglio del rimborso da eseguire a mano su Stripe: quota soggiorno (dopo livello/franchigia)
+  // + tassa di soggiorno (sempre 100% se incassata online).
+  const refundRows: [string, string][] = [
+    ...(quote.stayRefund > 0 ? [["Rimborso soggiorno", `€${quote.stayRefund.toFixed(2)}`] as [string,string]] : []),
+    ...(quote.franchise > 0 ? [["Franchigia trattenuta", `€${quote.franchise.toFixed(2)}`] as [string,string]] : []),
+    ...(quote.cityTaxRefund > 0 ? [["Rimborso tassa di soggiorno", `€${quote.cityTaxRefund.toFixed(2)}`] as [string,string]] : []),
+    ["Totale da rimborsare", `€${quote.amount.toFixed(2)}`],
+    ...(stripePaymentIntentId ? [["Payment Intent", stripePaymentIntentId] as [string,string]] : []),
+  ];
+  const noRefundNote = wasPaid
+    ? "Nessun rimborso dovuto secondo la politica di cancellazione della prenotazione."
+    : "Nessun rimborso dovuto (nulla è stato incassato online).";
   const refundTextLines = refundEligible
-    ? [`Rimborso da effettuare manualmente su Stripe:`, `  Importo pagato: €${depositAmount.toFixed(2)}`, `  Trattenuta ${feePercent}%: €${(depositAmount - refundAmount).toFixed(2)}`, `  Importo da rimborsare: €${refundAmount.toFixed(2)}`, stripePaymentIntentId ? `  Payment Intent: ${stripePaymentIntentId}` : `  (cerca il pagamento su Stripe per codice prenotazione)`, ``, `Come rimborsare: Stripe Dashboard → Pagamenti → cerca ${code} → Rimborsa → inserisci €${refundAmount.toFixed(2)}`]
-    : wasPaid ? [`Nessun rimborso dovuto (cancellazione nelle ultime 48 ore).`] : [`Nessun rimborso dovuto (anticipo non ancora versata).`];
+    ? [
+        `Rimborso da effettuare manualmente su Stripe:`,
+        quote.stayRefund > 0 ? `  Rimborso soggiorno: €${quote.stayRefund.toFixed(2)}` : null,
+        quote.franchise > 0 ? `  Franchigia trattenuta: €${quote.franchise.toFixed(2)}` : null,
+        quote.cityTaxRefund > 0 ? `  Rimborso tassa di soggiorno: €${quote.cityTaxRefund.toFixed(2)}` : null,
+        `  Totale da rimborsare: €${quote.amount.toFixed(2)}`,
+        stripePaymentIntentId ? `  Payment Intent: ${stripePaymentIntentId}` : `  (cerca il pagamento su Stripe per codice prenotazione)`,
+        ``,
+        `Come rimborsare: Stripe Dashboard → Pagamenti → cerca ${code} → Rimborsa → inserisci €${quote.amount.toFixed(2)}`,
+      ].filter((l) => l !== null)
+    : [noRefundNote];
   const refundBox = refundEligible
     ? infoBox(
         para(`${bold("Rimborso da effettuare manualmente su Stripe")}`) +
-        dataTable([
-          ["Importo pagato", `€${depositAmount.toFixed(2)}`],
-          [`Trattenuta ${feePercent}%`, `€${(depositAmount - refundAmount).toFixed(2)}`],
-          ["Da rimborsare", `€${refundAmount.toFixed(2)}`],
-          ...(stripePaymentIntentId ? [["Payment Intent", stripePaymentIntentId] as [string,string]] : []),
-        ]) +
-        smallPara(`Stripe Dashboard → Pagamenti → cerca ${bold(code)} → Rimborsa → inserisci ${bold(`€${refundAmount.toFixed(2)}`)}`)
+        dataTable(refundRows) +
+        smallPara(`Stripe Dashboard → Pagamenti → cerca ${bold(code)} → Rimborsa → inserisci ${bold(`€${quote.amount.toFixed(2)}`)}`)
       )
-    : infoBox(smallPara(wasPaid ? "Nessun rimborso dovuto (cancellazione nelle ultime 48 ore)." : "Nessun rimborso dovuto (anticipo non ancora versata)."));
+    : infoBox(smallPara(noRefundNote));
+  const cancelledBy = byHost ? "dalla struttura" : "dall'ospite";
   const html = buildHtml(
-    title("Prenotazione annullata dall'ospite") +
+    title(`Prenotazione annullata ${cancelledBy}`) +
     dataTable([...(unit ? [["Alloggio", unit] as [string, string]] : []), ["Ospite", `${firstName} ${lastName}`], ["Email", email], ["Check-in", fmtDate(checkin)], ["Check-out", fmtDate(checkout)]]) +
     refundBox +
     divider() +
@@ -488,8 +542,8 @@ export async function sendHostCancellationNotification(params: {
   );
   await send({
     to: HOST_EMAIL, replyTo: email,
-    subject: `Prenotazione annullata dall'ospite · ${code}`,
-    text: [`L'ospite ${firstName} ${lastName} ha annullato la prenotazione ${code}.`, "", unit ? `Alloggio: ${unit}` : null, `Email: ${email}`, `Check-in: ${fmtDate(checkin)}`, `Check-out: ${fmtDate(checkout)}`, "", ...refundTextLines, "", `Dettagli su: ${siteUrl()}/admin/bookings`].filter((l) => l !== null).join("\n"),
+    subject: `Prenotazione annullata ${cancelledBy} · ${code}`,
+    text: [`La prenotazione ${code} (${firstName} ${lastName}) è stata annullata ${cancelledBy}.`, "", unit ? `Alloggio: ${unit}` : null, `Email: ${email}`, `Check-in: ${fmtDate(checkin)}`, `Check-out: ${fmtDate(checkout)}`, "", ...refundTextLines, "", `Dettagli su: ${siteUrl()}/admin/bookings`].filter((l) => l !== null).join("\n"),
     html,
   });
 }
@@ -504,18 +558,16 @@ export async function sendHostOrphanPaymentAlert(params: {
   lastName: string;
   email: string;
   amount: number | null;
-  type: "anticipo" | "saldo";
   paymentIntentId: string | null;
 }) {
-  const { code, firstName, lastName, email, amount, type, paymentIntentId } = params;
+  const { code, firstName, lastName, email, amount, paymentIntentId } = params;
   const amountStr = amount != null ? `€${amount.toFixed(2)}` : "(vedi Stripe)";
   const html = buildHtml(
     title("⚠️ Pagamento su prenotazione ANNULLATA") +
-    para(`È arrivato un pagamento (${type}) per la prenotazione ${bold(code)}, che risulta ${bold("annullata")}. Stripe ha incassato l'importo ma non è associato a nessuna prenotazione attiva: valuta un rimborso manuale.`) +
+    para(`È arrivato un pagamento per la prenotazione ${bold(code)}, che risulta ${bold("annullata")}. Stripe ha incassato l'importo ma non è associato a nessuna prenotazione attiva: valuta un rimborso manuale.`) +
     dataTable([
       ["Ospite", `${firstName} ${lastName}`],
       ["Email", email],
-      ["Tipo pagamento", type],
       ["Importo incassato", amountStr],
       ...(paymentIntentId ? [["Payment Intent", paymentIntentId] as [string, string]] : []),
     ]) +
@@ -528,7 +580,7 @@ export async function sendHostOrphanPaymentAlert(params: {
     replyTo: email,
     subject: `⚠️ Pagamento su prenotazione annullata · ${code}`,
     text: [
-      `Pagamento (${type}) ricevuto per la prenotazione ANNULLATA ${code}.`,
+      `Pagamento ricevuto per la prenotazione ANNULLATA ${code}.`,
       "",
       `Ospite: ${firstName} ${lastName}`,
       `Email: ${email}`,
@@ -596,127 +648,6 @@ export async function sendReviewRequestEmail(params: {
     replyTo: HOST_EMAIL,
     subject: s.reviewRequestSubject(code),
     text: [s.reviewRequestBody(firstName), "", reviewUrl, "", s.houseName, `${HOST_EMAIL} · ${HOST_PHONE}`].join("\n"),
-    html,
-  });
-}
-
-export async function sendBalanceReminderEmail(params: {
-  to: string;
-  code: string;
-  firstName: string;
-  checkin: string | Date;
-  checkout: string | Date;
-  balanceDue: number | null;
-  cityTax: number | null;
-  cityTaxOnline?: boolean | null;
-  payBalanceUrl: string;
-  locale: LocaleCode;
-  unitId?: string;
-}) {
-  const { to, code, firstName, checkin, checkout, balanceDue, cityTax, cityTaxOnline, payBalanceUrl, locale } = params;
-  const unit = unitLabel(params.unitId, locale);
-  const s = getExtraEmailStrings(locale);
-  const ci = fmtDate(checkin);
-  const co = fmtDate(checkout);
-  const balanceStr = balanceDue != null && balanceDue > 0 ? `€${balanceDue}` : null;
-  // Tre stati: importo da pagare (balanceStr), saldo già completo (balanceDue === 0) o
-  // importo non ancora calcolato (null → fallback generico).
-  const fullyPaid = balanceDue != null && balanceDue <= 0;
-  const statusLine = balanceStr
-    ? s.balanceReminderAmount(balanceStr)
-    : fullyPaid
-      ? s.balanceReminderFullyPaid
-      : s.balanceReminderNoDue;
-  // Opzione A: se la tassa è già stata incassata online (con l'acconto) NON va ricordata nel
-  // promemoria del saldo — comparirebbe come "da riscuotere al check-in", cosa ormai errata.
-  const showCityTax = cityTax != null && cityTax > 0 && !cityTaxOnline;
-  const html = buildHtml(
-    title(s.balanceReminderSubject(code)) +
-    accHtml(unit, locale) +
-    para(s.balanceReminderBody(firstName, code, ci)) +
-    infoBox(
-      para(statusLine) +
-      (showCityTax ? smallPara(s.balanceReminderCityTax(String(cityTax))) : "")
-    ) +
-    // Niente da pagare online se il saldo è già completo → nessun pulsante né alternativa contanti.
-    (fullyPaid ? "" : button(s.balanceReminderButton, payBalanceUrl) + divider() + smallPara(s.balanceReminderAlternative)) +
-    smallPara(`<a href="mailto:${HOST_EMAIL}" style="color:#b8755f;">${HOST_EMAIL}</a> · +39 335 7573294`)
-  );
-  const textLines = [
-    unit ? accText(unit, locale) : null,
-    s.balanceReminderBody(firstName, code, ci), "",
-    statusLine, "",
-    fullyPaid ? null : payBalanceUrl,
-    fullyPaid ? null : "",
-    fullyPaid ? null : s.balanceReminderAlternative,
-    showCityTax ? s.balanceReminderCityTax(String(cityTax)) : null,
-    "", `${HOST_EMAIL} · +39 335 7573294`, "",
-    s.houseName,
-    `Check-in: ${ci} · Check-out: ${co}`,
-  ];
-  await send({
-    to, replyTo: HOST_EMAIL,
-    subject: s.balanceReminderSubject(code),
-    text: textLines.filter(Boolean).join("\n"),
-    html,
-  });
-}
-
-export async function sendBalanceReceiptEmail(params: {
-  to: string;
-  code: string;
-  firstName: string;
-  lastName: string;
-  checkin: string | Date;
-  checkout: string | Date;
-  totalPrice: number | null;
-  balanceDue: number | null;
-  cityTax: number | null;
-  cityTaxOnline?: boolean | null;
-  guests: number;
-  locale: LocaleCode;
-  unitId?: string;
-}) {
-  const { to, code, firstName, lastName, checkin, checkout, totalPrice, balanceDue, cityTax, cityTaxOnline, guests, locale } = params;
-  const unit = unitLabel(params.unitId, locale);
-  const s = getExtraEmailStrings(locale);
-  const token = generateAccessToken(code);
-  const receiptUrl = `${siteUrl()}/api/bookings/${code}/receipt?t=${encodeURIComponent(token)}`;
-  const manageUrl = `${siteUrl()}/gestione-prenotazione/${code}?t=${encodeURIComponent(token)}`;
-  // Opzione A: la tassa di soggiorno online è stata incassata con l'acconto, NON con il saldo,
-  // quindi non va ripetuta nella ricevuta del saldo. Per le prenotazioni vecchie resta invariata.
-  const showCityTax = cityTax != null && !cityTaxOnline;
-  const rows: [string, string][] = [
-    [s.balanceReceiptCheckin, fmtDate(checkin)],
-    [s.balanceReceiptCheckout, fmtDate(checkout)],
-    ...(totalPrice != null ? [[s.balanceReceiptTotalStay, `€${totalPrice}`] as [string,string]] : []),
-    ...(balanceDue != null ? [[s.balanceReceiptBalancePaid, `€${balanceDue}`] as [string,string]] : []),
-    ...(showCityTax ? [[s.balanceReceiptCityTax(guests), `€${cityTax}`] as [string,string]] : []),
-  ];
-  const html = buildHtml(
-    title(s.balanceReceiptSubject(code)) +
-    accHtml(unit, locale) +
-    para(s.balanceReceiptGreeting(firstName, lastName, code)) +
-    dataTable(rows) +
-    button(s.balanceReceiptButton, receiptUrl) +
-    linkButton(s.balanceReceiptManageButton, manageUrl)
-  );
-  const textLines = [
-    unit ? accText(unit, locale) : null, unit ? "" : null,
-    s.balanceReceiptGreeting(firstName, lastName, code), "",
-    totalPrice ? `  ${s.balanceReceiptTotalStay}: €${totalPrice}` : null,
-    balanceDue != null ? `  ${s.balanceReceiptBalancePaid}: €${balanceDue}` : null,
-    showCityTax ? `  ${s.balanceReceiptCityTax(guests)}: €${cityTax}` : null,
-    "", `${s.balanceReceiptCheckin}: ${fmtDate(checkin)}`,
-    `${s.balanceReceiptCheckout}: ${fmtDate(checkout)}`,
-    "", `${s.balanceReceiptButton}: ${receiptUrl}`,
-    `${s.balanceReceiptManageButton}: ${manageUrl}`,
-    "", s.balanceReceiptClosing,
-  ];
-  await send({
-    to, replyTo: HOST_EMAIL,
-    subject: s.balanceReceiptSubject(code),
-    text: textLines.filter(Boolean).join("\n"),
     html,
   });
 }

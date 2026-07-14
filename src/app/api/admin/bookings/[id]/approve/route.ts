@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { pool, ensureSchema, type Booking } from "@/lib/db";
-import { sendApprovalEmail } from "@/lib/email";
+import { sendApprovalEmail, sendCheckinRecapEmail } from "@/lib/email";
 import type { LocaleCode } from "@/i18n/index";
 import { hasOverlappingBooking } from "@/lib/bookingOverlap";
 import { markNightsBooked } from "@/lib/syncAvailability";
@@ -23,6 +23,10 @@ export async function POST(
     body.customPrice != null && !isNaN(Number(body.customPrice)) && Number(body.customPrice) > 0
       ? Number(body.customPrice)
       : null;
+  // Eccezione "paga al check-in": l'host, a sua discrezione, salta il pagamento online.
+  // La prenotazione va diretta a 'completed' (payment_method='checkin'); nessun incasso
+  // online → in caso di cancellazione non c'è nulla da rimborsare.
+  const payAtCheckin = body.payAtCheckin === true;
 
   await ensureSchema();
 
@@ -45,32 +49,32 @@ export async function POST(
     );
   }
 
-  // Se l'admin ha impostato un prezzo personalizzato, ricalcola tutto il breakdown prima di approvare.
+  // Modello a pagamento intero: niente più acconto/saldo. Congeliamo solo il prezzo
+  // (eventualmente personalizzato dall'host) e la tassa di soggiorno.
   if (customPrice !== null) {
     const pricing = computePricingBreakdown(customPrice, target.guests, target.checkin, target.checkout);
     await pool.query(
-      `UPDATE bookings SET custom_price = $2, total_price = $2, deposit_amount = $3, city_tax = $4, balance_due = $5 WHERE id = $1`,
-      [id, customPrice, pricing.depositAmount, pricing.cityTax, pricing.balanceDue]
+      `UPDATE bookings SET custom_price = $2, total_price = $2, city_tax = $3 WHERE id = $1`,
+      [id, customPrice, pricing.cityTax]
     );
-  } else if (
-    (target.deposit_amount == null || target.city_tax == null || target.balance_due == null) &&
-    target.total_price
-  ) {
-    // Fallback per prenotazioni create prima dell'introduzione della anticipo.
+  } else if (target.city_tax == null && target.total_price) {
+    // Fallback per prenotazioni create prima del calcolo della tassa di soggiorno.
     const pricing = computePricingBreakdown(
       Number(target.total_price),
       target.guests,
       target.checkin,
       target.checkout
     );
-    await pool.query(
-      `UPDATE bookings SET deposit_amount = $2, city_tax = $3, balance_due = $4 WHERE id = $1`,
-      [id, pricing.depositAmount, pricing.cityTax, pricing.balanceDue]
-    );
+    await pool.query(`UPDATE bookings SET city_tax = $2 WHERE id = $1`, [id, pricing.cityTax]);
   }
 
+  // Stato di destinazione: 'completed' se paga-al-check-in (nessun pagamento online atteso),
+  // altrimenti 'approved' (l'ospite paga l'intero importo online dalla pagina di pagamento).
+  const nextStatus = payAtCheckin ? "completed" : "approved";
   const result = await pool.query<Booking>(
-    `UPDATE bookings SET status = 'approved' WHERE id = $1 AND status = 'pending' RETURNING *`,
+    payAtCheckin
+      ? `UPDATE bookings SET status = 'completed', payment_method = 'checkin' WHERE id = $1 AND status = 'pending' RETURNING *`
+      : `UPDATE bookings SET status = 'approved' WHERE id = $1 AND status = 'pending' RETURNING *`,
     [id]
   );
 
@@ -93,23 +97,38 @@ export async function POST(
 
   let emailError: string | null = null;
   try {
-    await sendApprovalEmail({
-      to: booking.email,
-      code: booking.code,
-      unitId: booking.unit_id ?? undefined,
-      locale: (booking.locale as LocaleCode) ?? "it",
-      totalPrice: booking.total_price,
-      depositAmount: booking.deposit_amount,
-      balanceDue: booking.balance_due,
-      cityTax: booking.city_tax,
-      cityTaxOnline: booking.city_tax_online,
-      guests: booking.guests,
-    });
+    if (payAtCheckin) {
+      // Ricapitolazione check-in: importo (soggiorno + tassa) da saldare all'arrivo, nessun link di pagamento.
+      await sendCheckinRecapEmail({
+        to: booking.email,
+        code: booking.code,
+        unitId: booking.unit_id ?? undefined,
+        locale: (booking.locale as LocaleCode) ?? "it",
+        firstName: booking.first_name,
+        checkin: booking.checkin,
+        checkout: booking.checkout,
+        totalPrice: booking.total_price,
+        cityTax: booking.city_tax,
+        guests: booking.guests,
+      });
+    } else {
+      await sendApprovalEmail({
+        to: booking.email,
+        code: booking.code,
+        unitId: booking.unit_id ?? undefined,
+        locale: (booking.locale as LocaleCode) ?? "it",
+        totalPrice: booking.total_price,
+        cityTax: booking.city_tax,
+        cityTaxOnline: booking.city_tax_online,
+        guests: booking.guests,
+        refundPolicy: booking.refund_policy,
+      });
+    }
   } catch (err) {
     // Lo stato è comunque aggiornato anche se l'invio dell'email fallisce:
     // l'errore viene riportato all'admin invece di essere ignorato in silenzio.
     emailError = err instanceof Error ? err.message : "Invio email fallito";
   }
 
-  return NextResponse.json({ ok: true, booking, emailError, calendarError });
+  return NextResponse.json({ ok: true, booking, emailError, calendarError, status: nextStatus });
 }

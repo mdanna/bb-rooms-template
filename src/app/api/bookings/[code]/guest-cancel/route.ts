@@ -3,9 +3,8 @@ import { pool, ensureSchema, type Booking } from "@/lib/db";
 import { verifyAccessToken } from "@/lib/accessToken";
 import { unmarkNightsBooked } from "@/lib/syncAvailability";
 import { rootUnitId } from "@/lib/structure";
-import { parseDateOnly } from "@/lib/dateOnly";
 import { sendGuestCancellationEmail, sendHostCancellationNotification } from "@/lib/email";
-import { computeRefund, CANCEL_FEE_PERCENT } from "@/lib/pricing";
+import { quoteRefund, refundInputsFor } from "@/lib/refund";
 
 export async function POST(
   request: Request,
@@ -51,24 +50,16 @@ export async function POST(
     calendarError = err instanceof Error ? err.message : "Sincronizzazione calendario fallita";
   }
 
-  const wasPaid = booking.status === "completed";
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const daysUntilCheckin = Math.round(
-    (parseDateOnly(booking.checkin).getTime() - today.getTime()) / 86_400_000
-  );
+  // Calcolo del rimborso secondo la policy CONGELATA sulla prenotazione (ospite → con franchigia
+  // sul rimborso pieno del soggiorno). Il rimborso NON è automatico: qui salviamo l'importo dovuto
+  // (refund_due) e l'host lo esegue col pulsante "Rimborsa" dal pannello.
+  const inputs = refundInputsFor(booking, false);
+  const quote = quoteRefund(inputs);
+  const wasPaid = inputs.wasPaidOnline;
 
-  const depositAmount = Number(booking.deposit_amount ?? 0);
-  const balancePaid = booking.balance_paid_at != null ? Number(booking.balance_due ?? 0) : 0;
-  const totalPaid = depositAmount + balancePaid;
-  // Opzione A: la tassa di soggiorno online è stata incassata con l'anticipo →
-  // va rimborsata. Prenotazioni vecchie (flag null/false): tassa mai incassata →
-  // cityTax=0, nessun rimborso tassa, comportamento invariato.
-  const cityTaxCollected =
-    booking.city_tax_online === true ? Number(booking.city_tax ?? 0) : 0;
-  const refund = wasPaid
-    ? computeRefund(totalPaid, daysUntilCheckin, cityTaxCollected)
-    : { eligible: false, amount: 0, reason: "none" as const, cityTaxRefund: 0 };
+  if (wasPaid) {
+    await pool.query(`UPDATE bookings SET refund_due = $2 WHERE id = $1`, [booking.id, quote.amount]);
+  }
 
   try {
     await sendGuestCancellationEmail({
@@ -79,9 +70,8 @@ export async function POST(
       checkin: booking.checkin,
       checkout: booking.checkout,
       wasPaid,
-      refundEligible: refund.eligible,
-      refundAmount: refund.amount,
-      feePercent: CANCEL_FEE_PERCENT,
+      quote,
+      policy: inputs.policy,
       locale: (booking.locale as import("@/i18n/index").LocaleCode) ?? "it",
     });
   } catch { /* non-critical */ }
@@ -96,10 +86,8 @@ export async function POST(
       checkin: booking.checkin,
       checkout: booking.checkout,
       wasPaid,
-      refundEligible: refund.eligible,
-      depositAmount: totalPaid,
-      refundAmount: refund.amount,
-      feePercent: CANCEL_FEE_PERCENT,
+      byHost: false,
+      quote,
       stripePaymentIntentId: booking.stripe_payment_intent_id,
     });
   } catch { /* non-critical */ }
@@ -107,10 +95,10 @@ export async function POST(
   return NextResponse.json({
     ok: true,
     wasPaid,
-    refundEligible: refund.eligible,
-    refundReason: refund.reason,
-    refundAmount: refund.eligible ? refund.amount : null,
+    refundEligible: quote.amount > 0,
+    refundReason: quote.reason,
+    refundAmount: quote.amount > 0 ? quote.amount : null,
     calendarError,
-    daysUntilCheckin,
+    daysUntilCheckin: inputs.daysUntilCheckin,
   });
 }
