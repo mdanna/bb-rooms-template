@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { format } from "@/i18n/format";
 import { translations as I18N, type LocaleCode } from "@/i18n/index";
+import { cleanReviewText } from "@/lib/reviewText";
 
 function Diamond() {
   return <div className="divider-diamond text-gold">◆</div>;
@@ -60,7 +61,7 @@ function ReviewCard({ r }: { r: PublicReview }) {
   const [override, setOverride] = useState<{ forLocale: string; lang: string } | null>(null);
   const display = override && override.forLocale === locale ? override.lang : initial;
 
-  const text = (r.translations && r.translations[display]?.trim()) || r.body;
+  const text = cleanReviewText((r.translations && r.translations[display]?.trim()) || r.body);
   const isTranslated = display !== source;
 
   return (

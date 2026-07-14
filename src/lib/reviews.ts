@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import { pool, ensureReviewSchema, type Review } from "@/lib/db";
 import type { LocaleCode } from "@/i18n/index";
 import type { VacationRentalReview } from "@/lib/vacationRentalJsonLd";
+import { cleanReviewText } from "@/lib/reviewText";
 
 /** Tag di cache per invalidare (revalidateTag) dopo ogni azione di moderazione. */
 export const REVIEWS_CACHE_TAG = "reviews";
@@ -40,10 +41,8 @@ export const getPublishedReviews = unstable_cache(
 /** Testo della recensione nella lingua richiesta, con fallback a IT e all'originale. */
 export function pickReviewText(review: Review, locale: LocaleCode): string {
   const t = review.translations;
-  if (t && typeof t === "object") {
-    return (t[locale] || t.it || "").trim() || review.body;
-  }
-  return review.body;
+  const raw = t && typeof t === "object" ? (t[locale] || t.it || "").trim() || review.body : review.body;
+  return cleanReviewText(raw);
 }
 
 /** `published_at` (o data di creazione) in formato ISO `YYYY-MM-DD` per datePublished. */
