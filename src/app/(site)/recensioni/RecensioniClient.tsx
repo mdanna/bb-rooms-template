@@ -53,7 +53,12 @@ function ReviewCard({ r }: { r: PublicReview }) {
   const source = r.bodyLocale;
   // Default: la lingua del visitatore se disponibile, altrimenti l'originale.
   const initial = available.includes(locale) ? locale : source;
-  const [display, setDisplay] = useState<string>(initial);
+  // L'override manuale (pulsante "originale" / menu lingua) è LEGATO alla lingua del sito
+  // attiva: se il visitatore cambia lingua al sito, il default torna a seguire la nuova
+  // lingua (l'override valeva solo finché restava su quella). Così le recensioni seguono
+  // il cambio lingua, senza un useEffect di sincronizzazione.
+  const [override, setOverride] = useState<{ forLocale: string; lang: string } | null>(null);
+  const display = override && override.forLocale === locale ? override.lang : initial;
 
   const text = (r.translations && r.translations[display]?.trim()) || r.body;
   const isTranslated = display !== source;
@@ -77,7 +82,7 @@ function ReviewCard({ r }: { r: PublicReview }) {
         {isTranslated && <span className="text-gold/70">· {t.reviews.translated}</span>}
         {isTranslated && (
           <button
-            onClick={() => setDisplay(source)}
+            onClick={() => setOverride({ forLocale: locale, lang: source })}
             className="underline underline-offset-2 transition hover:text-gold"
           >
             {t.reviews.original}
@@ -86,7 +91,7 @@ function ReviewCard({ r }: { r: PublicReview }) {
         {available.length > 1 && (
           <select
             value={display}
-            onChange={(e) => setDisplay(e.target.value)}
+            onChange={(e) => setOverride({ forLocale: locale, lang: e.target.value })}
             aria-label={t.reviews.original}
             className="ml-auto rounded border border-gold/30 bg-background px-1.5 py-0.5 text-[10px] text-foreground/70 outline-none focus:border-gold"
           >
