@@ -30,7 +30,11 @@ export const getPublishedReviews = unstable_cache(
     }
   },
   ["published-reviews"],
-  { tags: [REVIEWS_CACHE_TAG] },
+  // `revalidateTag` resta il refresh immediato dopo ogni moderazione; il `revalidate`
+  // è una rete di sicurezza (max 10 min di staleness) perché la Data Cache di Vercel è
+  // persistente e tag-only: senza, una modifica fatta fuori dal flusso di moderazione
+  // (es. correzione diretta sul DB) non comparirebbe mai finché non si modera qualcosa.
+  { tags: [REVIEWS_CACHE_TAG], revalidate: 600 },
 );
 
 /** Testo della recensione nella lingua richiesta, con fallback a IT e all'originale. */
