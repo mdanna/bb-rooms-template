@@ -1,11 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { signInGithub, signInDemo } from "@/app/admin/actions";
+import { signInGithub, signInGoogle, signInDemo } from "@/app/admin/actions";
 import EmailLoginForm from "@/components/admin/EmailLoginForm";
 import { useAdminLanguage } from "@/i18n/AdminLanguageContext";
 
-export default function AdminLogin({ demo, callbackUrl }: { demo: boolean; callbackUrl?: string }) {
+export default function AdminLogin({
+  demo,
+  google = false,
+  callbackUrl,
+}: {
+  demo: boolean;
+  google?: boolean;
+  callbackUrl?: string;
+}) {
   const { t } = useAdminLanguage();
 
   if (demo) {
@@ -53,6 +61,19 @@ export default function AdminLogin({ demo, callbackUrl }: { demo: boolean; callb
           {t.login.github}
         </button>
       </form>
+
+      {/* Login con Google (mostrato solo se configurato per questo sito) */}
+      {google && (
+        <form action={signInGoogle}>
+          {callbackUrl && <input type="hidden" name="callbackUrl" value={callbackUrl} />}
+          <button
+            type="submit"
+            className="rounded-full border border-gold px-8 py-3 text-sm font-medium uppercase tracking-widest text-foreground transition hover:bg-gold/10"
+          >
+            {t.login.google}
+          </button>
+        </form>
+      )}
 
       <div className="flex items-center gap-3 text-xs uppercase tracking-widest text-foreground/40">
         <span className="h-px w-8 bg-foreground/20" /> {t.login.or} <span className="h-px w-8 bg-foreground/20" />

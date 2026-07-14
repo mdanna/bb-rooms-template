@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { auth, signIn } from "@/auth";
+import { auth, signIn, GOOGLE_ENABLED } from "@/auth";
 import BookingsManager from "@/components/admin/BookingsManager";
 import AdminNav from "@/components/admin/AdminNav";
 import { resolveAdminLocale } from "@/lib/policies";
@@ -37,6 +37,21 @@ export default async function AdminBookingsPage() {
             {t.login.github}
           </button>
         </form>
+        {GOOGLE_ENABLED && (
+          <form
+            action={async () => {
+              "use server";
+              await signIn("google", { redirectTo: "/admin/bookings" });
+            }}
+          >
+            <button
+              type="submit"
+              className="rounded-full border border-gold px-8 py-3 text-sm font-medium uppercase tracking-widest text-foreground transition hover:bg-gold/10"
+            >
+              {t.login.google}
+            </button>
+          </form>
+        )}
       </div>
     );
   }

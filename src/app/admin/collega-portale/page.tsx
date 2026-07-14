@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { auth, GOOGLE_ENABLED } from "@/auth";
 import AdminLogin from "@/components/admin/AdminLogin";
 import PortalLinkConfirm from "@/components/admin/PortalLinkConfirm";
 import { DEMO_MODE } from "@/lib/demo";
@@ -25,7 +25,7 @@ export default async function CollegaPortalePage({
   const callbackUrl = `/admin/collega-portale?${params.toString()}`;
 
   const session = await auth();
-  if (!session) return <AdminLogin demo={DEMO_MODE} callbackUrl={callbackUrl} />;
+  if (!session) return <AdminLogin demo={DEMO_MODE} google={GOOGLE_ENABLED} callbackUrl={callbackUrl} />;
 
   return (
     <PortalLinkConfirm

@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { auth, GOOGLE_ENABLED } from "@/auth";
 import AdminEditor from "@/components/admin/AdminEditor";
 import AdminLogin from "@/components/admin/AdminLogin";
 import AdminNav from "@/components/admin/AdminNav";
@@ -16,7 +16,7 @@ export default async function AdminPage({
 }) {
   const session = await auth();
   if (!session) {
-    return <AdminLogin demo={DEMO_MODE} />;
+    return <AdminLogin demo={DEMO_MODE} google={GOOGLE_ENABLED} />;
   }
 
   // Il calendario/prezzi riguarda solo le unità AFFITTABILI: se l'appartamento è "solo

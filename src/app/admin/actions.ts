@@ -16,6 +16,11 @@ export async function signInGithub(formData: FormData): Promise<void> {
   await signIn("github", { redirectTo: callbackUrl });
 }
 
+export async function signInGoogle(formData: FormData): Promise<void> {
+  const callbackUrl = String(formData.get("callbackUrl") ?? "").trim() || "/admin";
+  await signIn("google", { redirectTo: callbackUrl });
+}
+
 export async function signInDemo(): Promise<void> {
   await signIn("demo", { redirectTo: "/admin" });
 }

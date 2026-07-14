@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { auth, signIn } from "@/auth";
+import { auth, signIn, GOOGLE_ENABLED } from "@/auth";
 import AdminNav from "@/components/admin/AdminNav";
 import ReviewsManager from "@/components/admin/ReviewsManager";
 import { resolveAdminLocale } from "@/lib/policies";
@@ -33,6 +33,21 @@ export default async function AdminReviewsPage() {
             {t.login.github}
           </button>
         </form>
+        {GOOGLE_ENABLED && (
+          <form
+            action={async () => {
+              "use server";
+              await signIn("google", { redirectTo: "/admin/recensioni" });
+            }}
+          >
+            <button
+              type="submit"
+              className="rounded-full border border-gold px-8 py-3 text-sm font-medium uppercase tracking-widest text-foreground transition hover:bg-gold/10"
+            >
+              {t.login.google}
+            </button>
+          </form>
+        )}
       </div>
     );
   }

@@ -1,29 +1,34 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getFile, putFile, requireBotToken } from "@/lib/githubContent";
-import { ADMIN_EMAILS, isValidEmail } from "@/lib/adminAccess";
+import { ADMIN_EMAILS, ADMIN_GITHUB_LOGINS, isValidEmail, isValidGithubLogin } from "@/lib/adminAccess";
 import { DEMO_MODE } from "@/lib/demo";
 
 const FILE_PATH = "src/data/admins.json";
 
-// GET: le email attualmente autorizzate (file se presente, altrimenti env), così l'editor
-// mostra gli accessi correnti anche prima della prima modifica.
+// GET: identità attualmente autorizzate — email (magic-link + Google) e username GitHub
+// (file se presente, altrimenti env), così l'editor mostra gli accessi correnti anche
+// prima della prima modifica.
 export async function GET() {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
-  return NextResponse.json({ emails: ADMIN_EMAILS });
+  return NextResponse.json({ emails: ADMIN_EMAILS, githubLogins: ADMIN_GITHUB_LOGINS });
 }
 
-// POST: salva la nuova lista di email autorizzate su src/data/admins.json (commit su
-// GitHub → redeploy). Valida, deduplica e impedisce di svuotare la lista (anti-lockout).
+// POST: salva le liste autorizzate su src/data/admins.json (commit su GitHub → redeploy).
+// Valida, deduplica e impedisce di restare senza NESSUNA identità (anti-lockout): deve
+// rimanere almeno un'email O uno username GitHub.
 export async function POST(request: Request) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
   if (DEMO_MODE) return NextResponse.json({ ok: true, demo: true });
 
-  const body = (await request.json().catch(() => null)) as { emails?: unknown } | null;
-  if (!body || !Array.isArray(body.emails)) {
-    return NextResponse.json({ error: "Elenco email non valido" }, { status: 400 });
+  const body = (await request.json().catch(() => null)) as {
+    emails?: unknown;
+    githubLogins?: unknown;
+  } | null;
+  if (!body || !Array.isArray(body.emails) || !Array.isArray(body.githubLogins)) {
+    return NextResponse.json({ error: "Elenco accessi non valido" }, { status: 400 });
   }
 
   const emails = Array.from(
@@ -32,9 +37,17 @@ export async function POST(request: Request) {
   if (emails.some((e) => !isValidEmail(e))) {
     return NextResponse.json({ error: "Uno o più indirizzi non sono validi." }, { status: 400 });
   }
-  if (emails.length === 0) {
+
+  const githubLogins = Array.from(
+    new Set(body.githubLogins.map((g) => String(g).trim().toLowerCase()).filter(Boolean)),
+  );
+  if (githubLogins.some((g) => !isValidGithubLogin(g))) {
+    return NextResponse.json({ error: "Uno o più username GitHub non sono validi." }, { status: 400 });
+  }
+
+  if (emails.length === 0 && githubLogins.length === 0) {
     return NextResponse.json(
-      { error: "Deve restare almeno un indirizzo autorizzato all'accesso." },
+      { error: "Deve restare almeno un accesso autorizzato (email o GitHub)." },
       { status: 400 },
     );
   }
@@ -47,8 +60,8 @@ export async function POST(request: Request) {
     } catch {
       sha = "";
     }
-    const content = JSON.stringify({ emails }, null, 2) + "\n";
-    const { commitSha } = await putFile(FILE_PATH, content, sha, "Update admin access emails", token);
+    const content = JSON.stringify({ emails, githubLogins }, null, 2) + "\n";
+    const { commitSha } = await putFile(FILE_PATH, content, sha, "Update admin access list", token);
     return NextResponse.json({ ok: true, commitSha });
   } catch (err) {
     return NextResponse.json(

@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import GitHub from "next-auth/providers/github";
+import Google from "next-auth/providers/google";
 import Resend from "next-auth/providers/resend";
 import Credentials from "next-auth/providers/credentials";
 import PostgresAdapter from "@auth/pg-adapter";
@@ -7,17 +8,24 @@ import type { Adapter } from "next-auth/adapters";
 import { pool, ensureAuthSchema } from "@/lib/db";
 import { CONTENT } from "@/lib/siteContent";
 import { DEMO_MODE } from "@/lib/demo";
-import { ADMIN_EMAILS } from "@/lib/adminAccess";
+import { ADMIN_EMAILS, ADMIN_GITHUB_LOGINS } from "@/lib/adminAccess";
+import { isAuthorizedAdmin } from "@/lib/adminAuthz";
 
-// Allowlist admin. Gli username GitHub restano su env; le email autorizzate (magic-link)
-// arrivano da src/lib/adminAccess (file committato editabile da /admin/accessi, con
-// fallback alle env ADMIN_EMAILS).
-const ALLOWED_LOGINS = (process.env.ADMIN_GITHUB_LOGINS ?? "")
-  .split(",")
-  .map((s) => s.trim().toLowerCase())
-  .filter(Boolean);
+// Allowlist admin: username GitHub ED email autorizzate (magic-link + Google) arrivano
+// entrambi da src/lib/adminAccess (file committato editabile da /admin/accessi, con
+// fallback alle env ADMIN_GITHUB_LOGINS / ADMIN_EMAILS). La logica di autorizzazione
+// (incluso il super-admin di flotta "break-glass") vive in src/lib/adminAuthz (pura,
+// testabile). Vedi src/tests/adminAuthz.test.ts.
+const ALLOWED_LOGINS = ADMIN_GITHUB_LOGINS;
 
 const ALLOWED_EMAILS = ADMIN_EMAILS;
+
+// Login con Google (OAuth condiviso di flotta): attivo solo se le credenziali sono
+// configurate nell'env del sito. Senza, Auth.js darebbe "server configuration error",
+// quindi il provider va incluso in modo condizionato (come il magic-link col dominio
+// Resend). Esportato per mostrare/nascondere il pulsante nel pannello. Mai in demo.
+export const GOOGLE_ENABLED =
+  !DEMO_MODE && !!(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET);
 
 // Mittente del magic-link: di default lo stesso indirizzo (sul dominio verificato
 // in Resend) usato per le email transazionali, così eredita l'autenticazione SPF/DKIM.
@@ -75,6 +83,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           // qui basta lo scope minimo per identificare l'utente che effettua il login.
           authorization: { params: { scope: "read:user user:email" } },
         }),
+        // Google: incluso solo se configurato (OAuth condiviso di flotta). Autorizza
+        // per EMAIL verificata contro la stessa allowlist del magic-link (vedi signIn).
+        ...(GOOGLE_ENABLED
+          ? [
+              Google({
+                // Stesso motivo di GitHub: collega l'account allo stesso utente se
+                // l'email esiste già (magic-link). Il cancello resta l'allowlist.
+                allowDangerousEmailAccountLinking: true,
+              }),
+            ]
+          : []),
         Resend({
           apiKey: process.env.RESEND_API_KEY,
           from: AUTH_EMAIL_FROM,
@@ -109,23 +128,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       ],
   callbacks: {
     async signIn({ profile, user, account }) {
-      // Login demo: consentito solo con DEMO_MODE attivo.
-      if (account?.provider === "demo") return DEMO_MODE;
-      // GitHub: autorizza per username.
-      if (account?.provider === "github") {
-        const login = (profile as { login?: string } | undefined)?.login?.toLowerCase();
-        if (!login) return false;
-        // Retrocompatibilità: se nessuna allowlist è configurata, non bloccare.
-        if (ALLOWED_LOGINS.length === 0 && ALLOWED_EMAILS.length === 0) return true;
-        return ALLOWED_LOGINS.includes(login);
-      }
-      // Magic-link email: autorizza per indirizzo (allowlist obbligatoria).
-      if (account?.provider === "resend") {
-        const email = user?.email?.toLowerCase();
-        if (!email) return false;
-        return ALLOWED_EMAILS.includes(email);
-      }
-      return false;
+      const p = profile as { login?: string; id?: number; email_verified?: boolean } | undefined;
+      return isAuthorizedAdmin(
+        {
+          provider: account?.provider,
+          login: p?.login ?? null,
+          githubId: p?.id ?? null,
+          email: user?.email ?? null,
+          emailVerified: p?.email_verified ?? null,
+          demoMode: DEMO_MODE,
+        },
+        { githubLogins: ALLOWED_LOGINS, emails: ALLOWED_EMAILS },
+      );
     },
   },
   pages: {
