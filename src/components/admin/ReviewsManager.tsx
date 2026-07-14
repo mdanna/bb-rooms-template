@@ -36,6 +36,10 @@ const L: Record<string, Record<string, string>> = {
     publishing: "Pubblicazione…",
     retranslate: "Rigenera traduzioni",
     retranslating: "Traduzione…",
+    publishedOk: "Recensione pubblicata ✓",
+    translatedOk: "Traduzioni rigenerate ✓",
+    rejectedOk: "Recensione rifiutata ✓",
+    unpublishedOk: "Rimossa dalla pubblicazione ✓",
     reject: "Rifiuta",
     unpublish: "Rimuovi dalla pubblicazione",
     del: "Elimina",
@@ -61,6 +65,10 @@ const L: Record<string, Record<string, string>> = {
     publishing: "Publishing…",
     retranslate: "Regenerate translations",
     retranslating: "Translating…",
+    publishedOk: "Review published ✓",
+    translatedOk: "Translations regenerated ✓",
+    rejectedOk: "Review rejected ✓",
+    unpublishedOk: "Unpublished ✓",
     reject: "Reject",
     unpublish: "Unpublish",
     del: "Delete",
@@ -86,6 +94,10 @@ const L: Record<string, Record<string, string>> = {
     publishing: "Publicando…",
     retranslate: "Regenerar traducciones",
     retranslating: "Traduciendo…",
+    publishedOk: "Reseña publicada ✓",
+    translatedOk: "Traducciones regeneradas ✓",
+    rejectedOk: "Reseña rechazada ✓",
+    unpublishedOk: "Retirada de publicación ✓",
     reject: "Rechazar",
     unpublish: "Retirar de publicación",
     del: "Eliminar",
@@ -111,6 +123,10 @@ const L: Record<string, Record<string, string>> = {
     publishing: "Publication…",
     retranslate: "Régénérer les traductions",
     retranslating: "Traduction…",
+    publishedOk: "Avis publié ✓",
+    translatedOk: "Traductions régénérées ✓",
+    rejectedOk: "Avis rejeté ✓",
+    unpublishedOk: "Dépublié ✓",
     reject: "Refuser",
     unpublish: "Dépublier",
     del: "Supprimer",
@@ -140,6 +156,7 @@ export default function ReviewsManager() {
   const [reviews, setReviews] = useState<AdminReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState<{ kind: "ok" | "warn"; text: string } | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
 
   async function load() {
@@ -161,16 +178,24 @@ export default function ReviewsManager() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function patch(id: number, payload: Record<string, unknown>) {
+  async function patch(id: number, payload: Record<string, unknown>, okText?: string) {
     setBusyId(id);
+    setError("");
+    setNotice(null);
     try {
       const res = await fetch("/api/admin/reviews", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, ...payload }),
       });
-      if (!res.ok) throw new Error(M.error);
+      const data = (await res.json().catch(() => ({}))) as { warning?: string; error?: string };
+      if (!res.ok) throw new Error(data.error ?? M.error);
       await load();
+      // Le recensioni stanno nel DB e la pagina pubblica si rivalida SUBITO (nessun
+      // build): senza un riscontro esplicito l'host non sa se è andata. Se il server
+      // segnala un problema di traduzione lo mostriamo, altrimenti confermiamo l'esito.
+      if (data.warning) setNotice({ kind: "warn", text: data.warning });
+      else if (okText) setNotice({ kind: "ok", text: okText });
     } catch (e) {
       setError(e instanceof Error ? e.message : M.error);
     } finally {
@@ -182,12 +207,12 @@ export default function ReviewsManager() {
   // automatico (vedi /api/admin/reviews). Se la traduzione fallisce, pubblica
   // comunque: la pagina pubblica farà fallback al testo originale.
   async function publish(r: AdminReview) {
-    await patch(r.id, { status: "published" });
+    await patch(r.id, { status: "published" }, M.publishedOk);
   }
 
   // Rigenera le traduzioni on-demand (autodetect + ritraduzione del testo originale).
   async function retranslate(id: number) {
-    await patch(id, { retranslate: true });
+    await patch(id, { retranslate: true }, M.translatedOk);
   }
 
   async function remove(id: number) {
@@ -224,6 +249,11 @@ export default function ReviewsManager() {
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
+      {notice && (
+        <p className={`rounded-md border px-3 py-2 text-sm ${notice.kind === "ok" ? "border-green-600/40 bg-green-50 text-green-700" : "border-amber-500/50 bg-amber-50 text-amber-800"}`}>
+          {notice.text}
+        </p>
+      )}
 
       {reviews.length === 0 && <p className="text-sm text-foreground/60">{M.empty}</p>}
 
@@ -275,7 +305,7 @@ export default function ReviewsManager() {
                   )}
                   {r.status === "pending" && (
                     <button
-                      onClick={() => patch(r.id, { status: "rejected" })}
+                      onClick={() => patch(r.id, { status: "rejected" }, M.rejectedOk)}
                       disabled={busyId === r.id}
                       className="rounded-full border border-foreground/30 px-4 py-1.5 text-xs text-foreground/70 transition hover:bg-foreground/5 disabled:opacity-50"
                     >
@@ -284,7 +314,7 @@ export default function ReviewsManager() {
                   )}
                   {r.status === "published" && (
                     <button
-                      onClick={() => patch(r.id, { status: "pending" })}
+                      onClick={() => patch(r.id, { status: "pending" }, M.unpublishedOk)}
                       disabled={busyId === r.id}
                       className="rounded-full border border-foreground/30 px-4 py-1.5 text-xs text-foreground/70 transition hover:bg-foreground/5 disabled:opacity-50"
                     >
