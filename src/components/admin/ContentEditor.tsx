@@ -465,7 +465,9 @@ function ContentEditorInner({ unitId }: { unitId?: string }) {
               ] as [string, keyof SiteContent][]
             ).map(([label, key]) => (
               <label key={key} className={labelCls}>
-                <FieldLabel>{label}</FieldLabel>
+                {/* min-h = 2 righe: le etichette corte riservano lo stesso spazio di quelle
+                    che vanno a capo, così gli input della stessa riga restano allineati. */}
+                <span className={`${labelTextCls} flex min-h-[2.5rem] items-start`}>{label}</span>
                 <input
                   type="text"
                   value={(content[key] as string) ?? ""}
