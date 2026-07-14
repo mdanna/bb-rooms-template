@@ -6,7 +6,7 @@ import { translations, type LocaleCode } from "@/i18n/index";
 import { format } from "@/i18n/format";
 import { formatDateOnly } from "@/lib/dateOnly";
 import { POLICIES } from "@/lib/policies";
-import { refundPolicyText } from "@/lib/refundPolicyText";
+import { refundPolicyText, refundLegalNote } from "@/lib/refundPolicyText";
 
 interface BookingSummary {
   code: string;
@@ -191,6 +191,7 @@ export default function PaymentPage({ code }: { code: string }) {
           {redirecting ? t.payment.processing : t.payment.confirmButton}
         </button>
         <p className="mt-3 text-center text-xs text-foreground/50">{t.payment.secureNote}</p>
+        <p className="mt-4 text-[11px] leading-relaxed text-foreground/40">{refundLegalNote(locale)}</p>
       </div>
     </div>
   );
