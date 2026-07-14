@@ -1,15 +1,23 @@
 import { getFile } from "@/lib/githubContent";
 import { availPath } from "@/lib/unitAvailability";
 import { buildUnitICal, icalStamp } from "@/lib/icalExport";
+import { verifyIcalExportToken } from "@/lib/icalExportToken";
 import { getUnit, rootUnitId } from "@/lib/structure";
 import type { AvailabilityData } from "@/data/availability";
 
-// Feed iCal PUBBLICO di un'unità: /api/ical/<unit> (accetta anche <unit>.ics).
+// Feed iCal di un'unità: /api/ical/<unit>?key=<token> (accetta anche <unit>.ics).
 // Lo importano le OTA per bloccare le notti occupate — comprese quelle "contained"
-// (bloccate a cascata da un'altra unità). Nessuna autenticazione: sono date, non dati
-// sensibili, e le OTA lo scaricano senza credenziali.
+// (bloccate a cascata da un'altra unità). Protetto da un token segreto stabile (l'occupazione
+// non deve essere pubblica): l'URL completo, col token, si copia da Impostazioni → Calendari.
 export async function GET(request: Request, { params }: { params: Promise<{ unit: string }> }) {
   const { unit } = await params;
+
+  // Token non valido → 404 (non 401), per non rivelare l'esistenza del feed.
+  const key = new URL(request.url).searchParams.get("key");
+  if (!key || !verifyIcalExportToken(key)) {
+    return new Response("Not found", { status: 404 });
+  }
+
   const cleaned = unit.replace(/\.ics$/i, "");
   const unitId = getUnit(cleaned) ? cleaned : rootUnitId();
 

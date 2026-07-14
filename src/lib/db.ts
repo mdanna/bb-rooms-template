@@ -81,7 +81,33 @@ export async function ensureSchema() {
   await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refund_due NUMERIC;`);
   // Le colonne deposit_amount/balance_due/deposit_rate/balance_* restano per compatibilità
   // ma non sono più usate (modello a pagamento intero). refunded_at ora è attivo (rimborsi).
+  // Stato leggero chiave→valore (es. timestamp dell'ultima sincronizzazione automatica del
+  // calendario), così il pannello sa che il cron gira senza dover committare file su GitHub.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS app_state (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
   initialized = true;
+}
+
+/** Scrive (upsert) un valore nello stato applicativo. */
+export async function setAppState(key: string, value: string): Promise<void> {
+  await ensureSchema();
+  await pool.query(
+    `INSERT INTO app_state (key, value, updated_at) VALUES ($1, $2, now())
+     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
+    [key, value],
+  );
+}
+
+/** Legge un valore dallo stato applicativo, o null se assente. */
+export async function getAppState(key: string): Promise<string | null> {
+  await ensureSchema();
+  const r = await pool.query<{ value: string }>(`SELECT value FROM app_state WHERE key = $1`, [key]);
+  return r.rows[0]?.value ?? null;
 }
 
 let totpInitialized = false;
