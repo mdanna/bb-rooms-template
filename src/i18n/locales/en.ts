@@ -46,6 +46,8 @@ const en: Translation = {
     writtenIn: "Written in {lang}",
     translated: "translated",
     original: "See original",
+    readMore: "Read more",
+    close: "Close",
     autoTranslate: "Your review will be automatically translated into all supported languages.",
     title: "What guests say",
     subtitleOwn: "★ {rating} · {count} guest reviews",

@@ -46,6 +46,8 @@ const pt: Translation = {
     writtenIn: "Escrita em {lang}",
     translated: "traduzido",
     original: "Ver original",
+    readMore: "Ler mais",
+    close: "Fechar",
     autoTranslate: "A sua avaliação será traduzida automaticamente para todos os idiomas suportados.",
     title: "O que os hóspedes dizem",
     subtitleOwn: "★ {rating} · {count} avaliações dos hóspedes",

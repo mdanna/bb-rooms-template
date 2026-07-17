@@ -46,6 +46,8 @@ const ko: Translation = {
     writtenIn: "{lang}로 작성됨",
     translated: "번역됨",
     original: "원문 보기",
+    readMore: "더 보기",
+    close: "닫기",
     autoTranslate: "리뷰는 지원되는 모든 언어로 자동 번역됩니다.",
     title: "게스트 후기",
     subtitleOwn: "★ {rating} · 게스트 후기 {count}개",

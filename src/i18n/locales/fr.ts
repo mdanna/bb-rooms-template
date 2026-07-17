@@ -46,6 +46,8 @@ const fr: Translation = {
     writtenIn: "Rédigé en {lang}",
     translated: "traduit",
     original: "Voir l'original",
+    readMore: "Lire la suite",
+    close: "Fermer",
     autoTranslate: "Votre avis sera automatiquement traduit dans toutes les langues prises en charge.",
     title: "Ce que disent les hôtes",
     subtitleOwn: "★ {rating} · {count} avis des voyageurs",

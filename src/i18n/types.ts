@@ -31,6 +31,8 @@ export interface Translation {
     writtenIn: string;
     translated: string;
     original: string;
+    readMore: string;
+    close: string;
     autoTranslate: string;
     title: string;
     subtitleOwn: string;

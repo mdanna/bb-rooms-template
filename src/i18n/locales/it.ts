@@ -46,6 +46,8 @@ const it: Translation = {
     writtenIn: "Scritta in {lang}",
     translated: "tradotto",
     original: "Vedi originale",
+    readMore: "Leggi tutto",
+    close: "Chiudi",
     autoTranslate: "La tua recensione verrà tradotta automaticamente in tutte le lingue supportate.",
     title: "Cosa dicono gli ospiti",
     subtitleOwn: "★ {rating} · {count} recensioni degli ospiti",

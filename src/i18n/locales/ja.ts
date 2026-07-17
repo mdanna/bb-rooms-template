@@ -46,6 +46,8 @@ const ja: Translation = {
     writtenIn: "{lang}で書かれています",
     translated: "翻訳済み",
     original: "原文を見る",
+    readMore: "続きを読む",
+    close: "閉じる",
     autoTranslate: "レビューは対応するすべての言語に自動的に翻訳されます。",
     title: "ゲストの声",
     subtitleOwn: "★ {rating} · {count}件のゲストレビュー",

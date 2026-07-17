@@ -46,6 +46,8 @@ const de: Translation = {
     writtenIn: "Verfasst auf {lang}",
     translated: "übersetzt",
     original: "Original ansehen",
+    readMore: "Mehr lesen",
+    close: "Schließen",
     autoTranslate: "Ihre Bewertung wird automatisch in alle unterstützten Sprachen übersetzt.",
     title: "Was die Gäste sagen",
     subtitleOwn: "★ {rating} · {count} Gästebewertungen",
