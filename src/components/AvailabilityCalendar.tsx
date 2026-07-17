@@ -186,8 +186,13 @@ export default function AvailabilityCalendar({ onRequestBooking, onClear, minAdv
 
           const prevDay = new Date(d);
           prevDay.setDate(prevDay.getDate() - 1);
-          const isCheckoutDay = !booked && getRate(prevDay).status === "booked";
-          const isCheckinDay = booked && getRate(prevDay).status !== "booked";
+          // Le bande mezza-giornata (check-in pomeriggio / check-out mattina) hanno senso solo
+          // sui giorni mostrati come prenotabili: un giorno passato o troppo a ridosso è reso
+          // interamente disabilitato, SENZA banda — altrimenti il giorno di check-in di una
+          // prenotazione già iniziata resterebbe con la banda a destra invece che spento come
+          // i giorni successivi.
+          const isCheckoutDay = !past && !tooSoon && !booked && getRate(prevDay).status === "booked";
+          const isCheckinDay = !past && !tooSoon && booked && getRate(prevDay).status !== "booked";
 
           const nightsFromStart = range.start
             ? Math.round((d.getTime() - range.start.getTime()) / 86_400_000)
