@@ -1,10 +1,19 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import type { SiteContent } from "@/lib/siteContent";
+import { heroImageList, type SiteContent } from "@/lib/siteContent";
 import { useAdminLanguage } from "@/i18n/AdminLanguageContext";
 import { useDrafts } from "@/components/admin/DraftContext";
 import AdminSaveBar from "@/components/admin/AdminSaveBar";
+
+// Etichette locali per il controllo dell'intervallo del carosello (come il pannello
+// portale): niente chiavi nuove nell'i18n condiviso, solo testo per le 4 lingue admin.
+const INTERVAL_LABELS: Record<string, { label: string; seconds: string; hint: string }> = {
+  it: { label: "Carosello: cambio ogni", seconds: "secondi", hint: "Con più copertine (★) l'hero le alterna in dissolvenza." },
+  en: { label: "Carousel: change every", seconds: "seconds", hint: "With multiple covers (★) the hero cross-fades between them." },
+  es: { label: "Carrusel: cambiar cada", seconds: "segundos", hint: "Con varias portadas (★) el hero las alterna en fundido." },
+  fr: { label: "Carrousel : changer toutes les", seconds: "secondes", hint: "Avec plusieurs couvertures (★) le hero les alterne en fondu." },
+};
 
 interface ImageFile {
   name: string;
@@ -23,8 +32,9 @@ export default function ImageManager(props: { unitId?: string }) {
 }
 
 function ImageManagerInner({ unitId }: { unitId?: string }) {
-  const { t } = useAdminLanguage();
+  const { t, locale } = useAdminLanguage();
   const ti = t.images;
+  const IL = INTERVAL_LABELS[locale] ?? INTERVAL_LABELS.en;
   const DEMO = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
   // Il pool immagini (public/images) è condiviso; copertina/galleria/ordine sono
   // PER UNITÀ (stanno nel content dell'unità selezionata).
@@ -38,7 +48,10 @@ function ImageManagerInner({ unitId }: { unitId?: string }) {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
-  const [heroImage, setHeroImage] = useState<string>("");
+  // Copertina MULTIPLA: l'insieme delle foto "in evidenza" (★). heroImage (singolo) è
+  // derivato al salvataggio = prima ★ per imageOrder (invariante og:image/JSON-LD/teaser).
+  const [heroImages, setHeroImages] = useState<string[]>([]);
+  const [heroIntervalSec, setHeroIntervalSec] = useState<number>(5);
   const [inGallery, setInGallery] = useState<string[]>([]); // appartenenza alla galleria
   const [order, setOrder] = useState<string[]>([]); // ordine unificato di TUTTE le immagini
   const [fullContent, setFullContent] = useState<SiteContent | null>(null);
@@ -90,7 +103,8 @@ function ImageManagerInner({ unitId }: { unitId?: string }) {
         if (cancelled) return;
         const files = imgData.files ?? [];
         setImages(files);
-        setHeroImage(contentData.heroImage ?? "");
+        setHeroImages(contentData.heroImages ?? (contentData.heroImage ? [contentData.heroImage] : []));
+        setHeroIntervalSec(contentData.heroIntervalSec ?? 5);
         setInGallery(contentData.galleryImages ?? []);
         // Ordine unificato: usa imageOrder se presente, altrimenti l'ordine dei file
         // (così la copertina resta al suo posto naturale, non viene esiliata in fondo).
@@ -126,7 +140,7 @@ function ImageManagerInner({ unitId }: { unitId?: string }) {
   }
 
   function toggleHero(name: string) {
-    setHeroImage((prev) => (prev === name ? "" : name));
+    setHeroImages((prev) => (prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]));
     markDirty();
   }
 
@@ -159,7 +173,9 @@ function ImageManagerInner({ unitId }: { unitId?: string }) {
   function saveToDraft() {
     if (!fullContent) return;
     const galleryImages = order.filter((n) => inGallery.includes(n));
-    const body: SiteContent = { ...fullContent, heroImage, galleryImages, imageOrder: order };
+    // INVARIANTE: heroImage (singolo) = prima ★ nell'ordine dell'admin.
+    const heroImage = heroImageList({ heroImages, heroImage: "", imageOrder: order })[0] ?? "";
+    const body: SiteContent = { ...fullContent, heroImage, heroImages, heroIntervalSec, galleryImages, imageOrder: order };
     setDraft(draftKey, body);
     setFullContent(body);
     setSelectionDirty(false);
@@ -213,7 +229,7 @@ function ImageManagerInner({ unitId }: { unitId?: string }) {
   function forgetLocally(name: string) {
     setImages((prev) => prev.filter((i) => i.name !== name));
     setOrder((prev) => prev.filter((n) => n !== name));
-    if (heroImage === name) setHeroImage("");
+    setHeroImages((prev) => prev.filter((n) => n !== name));
     setInGallery((prev) => prev.filter((n) => n !== name));
     setPending((prev) => prev.filter((n) => n !== name));
   }
@@ -237,15 +253,31 @@ function ImageManagerInner({ unitId }: { unitId?: string }) {
       // Il server ha già rimosso i riferimenti da content.json (hero, galleria, ordine):
       // allinea lo stato locale senza marcare la selezione come "da salvare".
       forgetLocally(name);
-      setFullContent((prev) => prev ? {
-        ...prev,
-        heroImage: prev.heroImage === name ? "" : prev.heroImage,
-        galleryImages: prev.galleryImages.filter((n) => n !== name),
-        imageOrder: (prev.imageOrder ?? []).filter((n) => n !== name),
-      } : prev);
-      // Se c'è una bozza per questa unità, togli anche lì il riferimento all'immagine eliminata.
+      setFullContent((prev) => {
+        if (!prev) return prev;
+        const nextHeroImages = (prev.heroImages ?? (prev.heroImage ? [prev.heroImage] : [])).filter((n) => n !== name);
+        const nextOrder = (prev.imageOrder ?? []).filter((n) => n !== name);
+        return {
+          ...prev,
+          heroImages: nextHeroImages,
+          heroImage: heroImageList({ heroImages: nextHeroImages, heroImage: "", imageOrder: nextOrder })[0] ?? "",
+          galleryImages: prev.galleryImages.filter((n) => n !== name),
+          imageOrder: nextOrder,
+        };
+      });
+      // Se c'è una bozza per questa unità, togli anche lì il riferimento all'immagine eliminata (e ricalcola).
       const d = getDraft<SiteContent>(draftKey);
-      if (d) setDraft(draftKey, { ...d, heroImage: d.heroImage === name ? "" : d.heroImage, galleryImages: (d.galleryImages ?? []).filter((n) => n !== name), imageOrder: (d.imageOrder ?? []).filter((n) => n !== name) });
+      if (d) {
+        const dHeroImages = (d.heroImages ?? (d.heroImage ? [d.heroImage] : [])).filter((n) => n !== name);
+        const dOrder = (d.imageOrder ?? []).filter((n) => n !== name);
+        setDraft(draftKey, {
+          ...d,
+          heroImages: dHeroImages,
+          heroImage: heroImageList({ heroImages: dHeroImages, heroImage: "", imageOrder: dOrder })[0] ?? "",
+          galleryImages: (d.galleryImages ?? []).filter((n) => n !== name),
+          imageOrder: dOrder,
+        });
+      }
       await loadImages();
     } catch (err) {
       alert(err instanceof Error ? err.message : t.common.error);
@@ -277,6 +309,21 @@ function ImageManagerInner({ unitId }: { unitId?: string }) {
         )}
       </div>
 
+      {/* Carosello copertina: intervallo di cambio quando ci sono più ★ (copertine). */}
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <span className="text-foreground/70">{IL.label}</span>
+        <input
+          type="number"
+          min={1}
+          max={60}
+          value={heroIntervalSec}
+          onChange={(e) => { setHeroIntervalSec(Math.min(60, Math.max(1, Number(e.target.value) || 5))); markDirty(); }}
+          className="w-16 rounded border border-gold/30 bg-background px-2 py-1 text-center"
+        />
+        <span className="text-foreground/70">{IL.seconds}</span>
+        <span className="ml-1 text-xs text-foreground/45">{IL.hint}</span>
+      </div>
+
       {/* Avviso: immagini appena caricate ancora in pubblicazione (redeploy in corso).
           Sparisce da solo appena l'ultima immagine riesce a caricarsi. */}
       {pending.length > 0 && (
@@ -299,7 +346,7 @@ function ImageManagerInner({ unitId }: { unitId?: string }) {
           {order.map((name, idx) => {
             const img = images.find((i) => i.name === name);
             if (!img) return null;
-            const isHero = heroImage === name;
+            const isHero = heroImages.includes(name);
             const inGal = inGallery.includes(name);
             const galleryFull = inGallery.length >= MAX_GALLERY && !inGal;
             const isPending = pending.includes(name);

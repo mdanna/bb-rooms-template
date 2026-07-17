@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { pickL10n } from "@/lib/l10n";
-import Image from "next/image";
 import AvailabilityCalendar from "@/components/AvailabilityCalendar";
 import BookingForm from "@/components/BookingForm";
 import UnitSwitcher from "@/components/UnitSwitcher";
+import HeroBackdrop from "@/components/HeroBackdrop";
 import { useLanguage } from "@/i18n/LanguageContext";
-import type { SiteContent } from "@/lib/siteContent";
+import { heroImageList, type SiteContent } from "@/lib/siteContent";
 
 function Diamond() {
   return <div className="divider-diamond text-gold">◆</div>;
@@ -34,14 +34,11 @@ export default function CameraClient({ unitId, content, minAdvanceDays }: Props)
     <div className="flex flex-1 flex-col">
       {/* Hero della camera */}
       <header className="relative flex min-h-[55vh] flex-col items-center justify-center overflow-hidden px-6 py-20 text-center">
-        <Image
-          src={`/images/${content.heroImage}`}
-          alt={title}
-          fill
-          priority
-          className="object-cover"
+        <HeroBackdrop
+          images={heroImageList(content)}
+          intervalSec={content.heroIntervalSec ?? 5}
+          veilClassName="bg-[#f5efe1]/45"
         />
-        <div className="absolute inset-0 bg-[#f5efe1]/45" />
         <div className="relative">
           <p className="text-xs font-bold uppercase tracking-widest text-[#8a6a2a]">
             {content.locationDisplay}

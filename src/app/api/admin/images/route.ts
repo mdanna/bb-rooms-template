@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getFile, putFile, deleteFile, requireBotToken } from "@/lib/githubContent";
 import { DEMO_MODE, demoWriteBlocked } from "@/lib/demo";
-import type { SiteContent } from "@/lib/siteContent";
+import { heroImageList, type SiteContent } from "@/lib/siteContent";
 import { notifyPortalCard } from "@/lib/portalSync";
 import { allUnits, rootUnitId } from "@/lib/structure";
 import contentData from "@/data/content.json";
@@ -143,15 +143,28 @@ export async function DELETE(request: Request) {
       try {
         const { content: cur, sha: contentSha } = await getFile(path, token);
         const current = JSON.parse(cur) as Partial<SiteContent>;
-        const nextHero = current.heroImage === name ? "" : current.heroImage;
+        const hadHeroImages = Array.isArray(current.heroImages);
+        const nextHeroImages = (current.heroImages ?? []).filter((n) => n !== name);
         const nextGallery = (current.galleryImages ?? []).filter((n) => n !== name);
         const nextOrder = (current.imageOrder ?? []).filter((n) => n !== name);
+        // INVARIANTE: heroImage (singolo) resta la prima ★ dopo la rimozione. Se non ci
+        // sono ★ esplicite (contenuto legacy) ricade sulla vecchia logica a copertina unica.
+        const nextHero = hadHeroImages
+          ? (heroImageList({ heroImages: nextHeroImages, heroImage: "", imageOrder: nextOrder })[0] ?? "")
+          : (current.heroImage === name ? "" : current.heroImage);
         const changed =
           nextHero !== current.heroImage ||
+          (hadHeroImages && nextHeroImages.length !== (current.heroImages ?? []).length) ||
           nextGallery.length !== (current.galleryImages ?? []).length ||
           nextOrder.length !== (current.imageOrder ?? []).length;
         if (!changed) continue;
-        const merged = { ...current, heroImage: nextHero, galleryImages: nextGallery, imageOrder: nextOrder };
+        const merged = {
+          ...current,
+          heroImage: nextHero,
+          ...(hadHeroImages ? { heroImages: nextHeroImages } : {}),
+          galleryImages: nextGallery,
+          imageOrder: nextOrder,
+        };
         const json = JSON.stringify(merged, null, 2) + "\n";
         const res = await putFile(path, json, contentSha, `Remove image reference: ${name}`, token);
         contentUpdated = true;

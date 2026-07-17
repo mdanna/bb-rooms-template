@@ -13,7 +13,7 @@ const roomContentPath = (id: string) => `src/data/content/${id}.json`;
 // Testi in `content/<id>.json`; immagini (copertina/galleria/ordine) idem.
 const ROOM_CONTENT_KEYS = [
   "siteTitle", "heroSubtitle", "storyTitle", "storyParagraphs", "amenities",
-  "heroImage", "galleryImages", "imageOrder",
+  "heroImage", "heroImages", "heroIntervalSec", "galleryImages", "imageOrder",
 ] as const;
 
 function extractRoomContent(body: SiteContent): Partial<SiteContent> {
@@ -41,6 +41,8 @@ function isValidContent(body: unknown): body is SiteContent {
     typeof b.heroImage === "string" &&
     Array.isArray(b.galleryImages) &&
     (!("imageOrder" in b) || Array.isArray(b.imageOrder)) &&
+    (!("heroImages" in b) || (Array.isArray(b.heroImages) && b.heroImages.every((n) => typeof n === "string"))) &&
+    (!("heroIntervalSec" in b) || typeof b.heroIntervalSec === "number") &&
     Array.isArray(b.amenities) &&
     (!("heroSubtitle" in b) || typeof b.heroSubtitle === "object") &&
     (!("storyTitle" in b) || typeof b.storyTitle === "object") &&
