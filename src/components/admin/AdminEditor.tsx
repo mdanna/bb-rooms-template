@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { DayRate, StayRule } from "@/data/availability";
+import { POLICIES } from "@/lib/policies";
 import AdminCalendar from "./AdminCalendar";
 import { useAdminLanguage } from "@/i18n/AdminLanguageContext";
 import { useDrafts } from "@/components/admin/DraftContext";
@@ -228,7 +229,12 @@ function AdminEditorInner({ initialDefaultPrice, initialOverrides, initialStayRu
 
   // Regole di soggiorno per date (min/max notti per intervallo di check-in) di questa unità.
   function addStayRule() {
-    setStayRules((prev) => [...prev, { from: today, to: today }]);
+    // Pre-compila i campi con i valori di default (min/max notti da Impostazioni),
+    // così l'host vede subito quanto valgono senza doverli cercare. Restano editabili.
+    setStayRules((prev) => [
+      ...prev,
+      { from: today, to: today, minStay: POLICIES.minNights, maxStay: POLICIES.maxNights },
+    ]);
   }
   function updateStayRule(i: number, patch: Partial<StayRule>) {
     setStayRules((prev) => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
