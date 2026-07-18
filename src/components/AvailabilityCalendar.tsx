@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { getDayRate, makeDayRateFn, toISODate, type DayRate } from "@/data/availability";
+import {
+  getDayRate,
+  makeDayRateFn,
+  toISODate,
+  stayLimitsFor,
+  availableGapNights,
+  STAY_RULES,
+  type DayRate,
+  type StayRule,
+} from "@/data/availability";
+import { POLICIES } from "@/lib/policies";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { format } from "@/i18n/format";
 
@@ -32,7 +42,12 @@ interface Props {
   unitId?: string;
 }
 
-export default function AvailabilityCalendar({ onRequestBooking, onClear, minAdvanceDays = 2, unitId }: Props) {
+export default function AvailabilityCalendar({
+  onRequestBooking,
+  onClear,
+  minAdvanceDays = POLICIES.minAdvanceBookingDays,
+  unitId,
+}: Props) {
   const { t } = useLanguage();
   const today = startOfDay(new Date());
   const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
@@ -43,6 +58,9 @@ export default function AvailabilityCalendar({ onRequestBooking, onClear, minAdv
 
   // Fetch fresh availability data from GitHub (bypasses the static build-time bundle).
   const [liveGetDayRate, setLiveGetDayRate] = useState<((d: Date) => DayRate) | null>(null);
+  // Regole di durata soggiorno per-data dell'UNITÀ mostrata: dalla stessa risposta di
+  // /api/availability?unit= (fallback al bundle build-time finché il fetch non risolve).
+  const [stayRules, setStayRules] = useState<StayRule[]>(STAY_RULES);
   useEffect(() => {
     fetch(`/api/availability${unitId ? `?unit=${encodeURIComponent(unitId)}` : ""}`)
       .then((r) => r.json())
@@ -50,6 +68,7 @@ export default function AvailabilityCalendar({ onRequestBooking, onClear, minAdv
         if (data.overrides && typeof data.defaultPrice === "number") {
           setLiveGetDayRate(() => makeDayRateFn(data.defaultPrice, data.overrides as DayRate[]));
         }
+        if (Array.isArray(data.stayRules)) setStayRules(data.stayRules as StayRule[]);
       })
       .catch(() => { /* fallback to static data */ });
   }, [unitId]);
@@ -72,19 +91,6 @@ export default function AvailabilityCalendar({ onRequestBooking, onClear, minAdv
     return startOfDay(d) < minCheckin;
   }
 
-  // Returns the size of the "gap" between two booked blocks around a free period starting at `start`.
-  // Used to allow 2-night bookings when the gap between two bookings is exactly 2 nights.
-  function gapSize(start: Date): number {
-    let count = 0;
-    const cur = new Date(start);
-    while (getRate(cur).status !== "booked") {
-      count++;
-      cur.setDate(cur.getDate() + 1);
-      if (count > 10) return count; // no relevant gap
-    }
-    return count;
-  }
-
   function isSelected(d: Date) {
     if (!range.start) return false;
     const end = range.end ?? range.start;
@@ -105,9 +111,25 @@ export default function AvailabilityCalendar({ onRequestBooking, onClear, minAdv
     return false;
   }
 
+  // Durata minima effettiva per un check-in: valore di policy sovrascritto dalle regole
+  // per-data (stayRules). Gap-fill preservato: se il buco disponibile è più piccolo del
+  // minimo, si consente comunque un soggiorno che lo riempie esattamente.
   function minNights(start: Date): number {
-    // Allow 2 nights only when the available gap is exactly 2 (squeezed between two bookings)
-    return gapSize(start) === 2 ? 2 : 3;
+    const iso = toISODate(start);
+    const policyMin = stayLimitsFor(iso, stayRules, {
+      min: POLICIES.minNights,
+      max: POLICIES.maxNights,
+    }).min;
+    const gap = availableGapNights(iso, getRate);
+    return Math.min(policyMin, gap);
+  }
+
+  // Durata massima effettiva per un check-in (policy sovrascritta dalle regole per-data).
+  function maxNights(start: Date): number {
+    return stayLimitsFor(toISODate(start), stayRules, {
+      min: POLICIES.minNights,
+      max: POLICIES.maxNights,
+    }).max;
   }
 
   function handleDayClick(d: Date) {
@@ -118,7 +140,8 @@ export default function AvailabilityCalendar({ onRequestBooking, onClear, minAdv
     if (pickingEnd && range.start) {
       const nightCount = Math.round((d.getTime() - range.start.getTime()) / 86_400_000);
       const min = minNights(range.start);
-      if (d > range.start && nightCount >= min && !hasBookedNightBetween(range.start, d)) {
+      const max = maxNights(range.start);
+      if (d > range.start && nightCount >= min && nightCount <= max && !hasBookedNightBetween(range.start, d)) {
         setRange({ start: range.start, end: d });
       } else if (d < range.start && getRate(d).status !== "booked") {
         setRange({ start: d, end: range.start });
@@ -198,6 +221,7 @@ export default function AvailabilityCalendar({ onRequestBooking, onClear, minAdv
             ? Math.round((d.getTime() - range.start.getTime()) / 86_400_000)
             : 0;
           const meetsMinNights = range.start ? nightsFromStart >= minNights(range.start) : false;
+          const withinMaxNights = range.start ? nightsFromStart <= maxNights(range.start) : false;
 
           const selectableAsCheckout =
             booked &&
@@ -205,6 +229,7 @@ export default function AvailabilityCalendar({ onRequestBooking, onClear, minAdv
             !range.end &&
             d > range.start &&
             meetsMinNights &&
+            withinMaxNights &&
             !hasBookedNightBetween(range.start, d);
 
           // Gli estremi dell'intervallo selezionato occupano solo metà giornata (check-in il

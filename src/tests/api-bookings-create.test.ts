@@ -27,6 +27,13 @@ vi.mock("@/lib/pricing", async (importOriginal) => {
   const real = await importOriginal<typeof import("@/lib/pricing")>();
   return { ...real };
 });
+// La route carica la disponibilità PER UNITÀ da GitHub per le regole di soggiorno:
+// mock deterministico (calendario vuoto → solo default di policy, nessun buco rilevante).
+vi.mock("@/lib/githubContent", () => ({
+  getFile: vi.fn().mockResolvedValue({ content: JSON.stringify({ defaultPrice: 100, overrides: [] }), sha: "sha" }),
+  putFile: vi.fn().mockResolvedValue({ commitSha: "sha" }),
+  requireBotToken: vi.fn().mockReturnValue("token"),
+}));
 
 import { pool } from "@/lib/db";
 
@@ -103,9 +110,12 @@ describe("POST /api/bookings — validazione input", () => {
   });
 
   it("rigetta checkin meno di minAdvanceBookingDays giorni da oggi", async () => {
+    const { POLICIES } = await import("@/lib/policies");
     const { POST } = await import("@/app/api/bookings/route");
+    // Un giorno sotto la soglia di preavviso della policy (guardato a ≥0).
+    const belowAdvance = Math.max(0, POLICIES.minAdvanceBookingDays - 1);
     const res = await POST(
-      makeRequest({ ...VALID_BODY, checkin: futureDate(1), checkout: futureDate(4) })
+      makeRequest({ ...VALID_BODY, checkin: futureDate(belowAdvance), checkout: futureDate(belowAdvance + 3) })
     );
     expect(res.status).toBe(400);
     const data = await res.json();
@@ -122,14 +132,25 @@ describe("POST /api/bookings — validazione input", () => {
     expect(res.status).toBe(400);
   });
 
-  it("rigetta soggiorno inferiore a 2 notti", async () => {
+  it("applica il soggiorno minimo di notti secondo la policy", async () => {
+    const { POLICIES } = await import("@/lib/policies");
     const { POST } = await import("@/app/api/bookings/route");
-    const res = await POST(
-      makeRequest({ ...VALID_BODY, checkin: futureDate(10), checkout: futureDate(11) })
-    );
-    expect(res.status).toBe(400);
-    const data = await res.json();
-    expect(data.error).toContain("soggiorno minimo");
+    const start = 10 + POLICIES.minAdvanceBookingDays;
+    if (POLICIES.minNights > 1) {
+      // Un soggiorno di (min-1) notti, oltre il preavviso, va rifiutato.
+      const res = await POST(
+        makeRequest({ ...VALID_BODY, checkin: futureDate(start), checkout: futureDate(start + POLICIES.minNights - 1) })
+      );
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toContain("soggiorno minimo");
+    } else {
+      // minNights = 1: un soggiorno di 1 notte è valido.
+      const res = await POST(
+        makeRequest({ ...VALID_BODY, checkin: futureDate(start), checkout: futureDate(start + 1) })
+      );
+      expect(res.status).toBe(200);
+    }
   });
 
   it("rigetta se ci sono prenotazioni sovrapposte (409)", async () => {

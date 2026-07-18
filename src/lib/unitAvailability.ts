@@ -1,5 +1,5 @@
 import { getFile, putFile } from "./githubContent";
-import type { DayRate, AvailabilityData } from "@/data/availability";
+import type { DayRate, StayRule, AvailabilityData } from "@/data/availability";
 import { allUnits, unitsToBlockFrom } from "./structure";
 
 // Disponibilità PER UNITÀ. Ogni unità (appartamento intero + camere) ha il suo file
@@ -75,11 +75,18 @@ function sameOverrides(a: DayRate[], b: DayRate[]): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
+/** Confronto stabile di due liste di regole di soggiorno. */
+function sameStayRules(a: StayRule[], b: StayRule[]): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
 /**
  * Ricalcola il layer "contained" di TUTTE le unità e scrive su GitHub solo i file
  * effettivamente cambiati. `mutatedOwn` permette di passare gli override "propri"
  * appena modificati di un'unità (es. una prenotazione appena confermata), evitando
  * una lettura-dopo-scrittura e usandoli come sorgente al posto del file su GitHub.
+ * `stayRulesOverride` imposta le regole di durata soggiorno di un'unità; le regole delle
+ * altre unità vengono SEMPRE preservate leggendole dal file (la cascata non le tocca).
  */
 export interface SyncContainedResult {
   // Override finali (proprio + contained) di ogni unità, per id.
@@ -92,16 +99,22 @@ export async function syncContainedLayer(
   token: string,
   message: string,
   mutatedOwn: Record<string, DayRate[]> = {},
-  defaultPriceOverride: Record<string, number> = {}
+  defaultPriceOverride: Record<string, number> = {},
+  stayRulesOverride: Record<string, StayRule[]> = {}
 ): Promise<SyncContainedResult> {
   const units = allUnits();
 
-  // Carica lo stato corrente di ogni unità.
-  const loaded = new Map<string, { defaultPrice: number; overrides: DayRate[]; sha: string }>();
+  // Carica lo stato corrente di ogni unità (incluse le stayRules da preservare).
+  const loaded = new Map<string, { defaultPrice: number; overrides: DayRate[]; stayRules: StayRule[]; sha: string }>();
   for (const u of units) {
     const { content, sha } = await getFile(availPath(u.id), token);
     const data = JSON.parse(content) as AvailabilityData;
-    loaded.set(u.id, { defaultPrice: data.defaultPrice, overrides: data.overrides ?? [], sha });
+    loaded.set(u.id, {
+      defaultPrice: data.defaultPrice,
+      overrides: data.overrides ?? [],
+      stayRules: data.stayRules ?? [],
+      sha,
+    });
   }
 
   // Override "propri" (con le eventuali mutazioni passate), senza il layer contained.
@@ -124,11 +137,24 @@ export async function syncContainedLayer(
     const dp = defaultPriceOverride[u.id] ?? cur.defaultPrice;
     const own = ownByUnit.get(u.id)!;
     const next = mergeOwnAndContained(own, containedEntries(contained.get(u.id)!, dp));
+    // Regole di soggiorno: nuove se passate per QUESTA unità, altrimenti quelle già sul file.
+    const rules = stayRulesOverride[u.id] ?? cur.stayRules;
     overrides[u.id] = next;
-    if (dp === cur.defaultPrice && sameOverrides(next, cur.overrides)) continue;
+    if (
+      dp === cur.defaultPrice &&
+      sameOverrides(next, cur.overrides) &&
+      sameStayRules(rules, cur.stayRules)
+    ) {
+      continue;
+    }
     const { commitSha: sha } = await putFile(
       availPath(u.id),
-      JSON.stringify({ defaultPrice: dp, overrides: next }, null, 2),
+      // `stayRules` scritto solo se non vuoto → i file senza regole restano invariati.
+      JSON.stringify(
+        { defaultPrice: dp, overrides: next, ...(rules.length ? { stayRules: rules } : {}) },
+        null,
+        2
+      ),
       cur.sha,
       `${message} — ${u.id}`,
       token

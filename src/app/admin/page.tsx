@@ -6,7 +6,7 @@ import AdminUnitSwitcher from "@/components/admin/AdminUnitSwitcher";
 import { getFile } from "@/lib/githubContent";
 import { availPath } from "@/lib/unitAvailability";
 import { getUnit, rootUnitId, isBookable, bookableUnits } from "@/lib/structure";
-import type { AvailabilityData, DayRate } from "@/data/availability";
+import type { AvailabilityData, DayRate, StayRule } from "@/data/availability";
 import { DEMO_MODE } from "@/lib/demo";
 
 export default async function AdminPage({
@@ -33,12 +33,14 @@ export default async function AdminPage({
   // non sono editabili e vengono comunque scartati/ricalcolati al salvataggio.
   let defaultPrice = 100;
   let overrides: DayRate[] = [];
+  let stayRules: StayRule[] = [];
   try {
     const token = process.env.GITHUB_BOT_TOKEN ?? "";
     const { content } = await getFile(availPath(unitId), token);
     const data = JSON.parse(content) as AvailabilityData;
     defaultPrice = data.defaultPrice;
     overrides = data.overrides ?? [];
+    stayRules = data.stayRules ?? [];
   } catch {
     /* file non leggibile: si parte da un calendario vuoto */
   }
@@ -50,7 +52,7 @@ export default async function AdminPage({
         <AdminUnitSwitcher activeUnitId={unitId} basePath="/admin" bookableOnly />
         {/* key=unitId: rimonta l'editor al cambio unità (lo stato del calendario è in
             useState dalle props → altrimenti mostrerebbe i dati del tab precedente). */}
-        <AdminEditor key={unitId} unitId={unitId} initialDefaultPrice={defaultPrice} initialOverrides={overrides} />
+        <AdminEditor key={unitId} unitId={unitId} initialDefaultPrice={defaultPrice} initialOverrides={overrides} initialStayRules={stayRules} />
       </div>
     </div>
   );

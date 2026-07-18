@@ -10,6 +10,16 @@ import { computePricingBreakdown } from "@/lib/pricing";
 import { refundPolicyOf } from "@/lib/refund";
 import { nightsBetween } from "@/lib/dateOnly";
 import { POLICIES } from "@/lib/policies";
+import { getFile } from "@/lib/githubContent";
+import { availPath } from "@/lib/unitAvailability";
+import {
+  makeDayRateFn,
+  stayLimitsFor,
+  availableGapNights,
+  type DayRate,
+  type StayRule,
+  type AvailabilityData,
+} from "@/data/availability";
 import { DEMO_MODE } from "@/lib/demo";
 
 const MAX_NAME_LENGTH = 100;
@@ -75,9 +85,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Dati non validi" }, { status: 400 });
   }
 
-  if (nightsBetween(body.checkin, body.checkout) > POLICIES.maxNights) {
-    return NextResponse.json({ error: `Soggiorno massimo: ${POLICIES.maxNights} notti` }, { status: 400 });
-  }
+  const nights = nightsBetween(body.checkin, body.checkout);
 
   const locale: LocaleCode = (localeOrder as string[]).includes(body.locale)
     ? (body.locale as LocaleCode)
@@ -104,11 +112,30 @@ export async function POST(request: Request) {
     );
   }
 
-  // Minimum 2 days advance notice
+  // Regole di durata soggiorno dell'UNITÀ prenotata: lette dal suo calendario per-unità
+  // (src/data/availability/<unitId>.json → stayRules + overrides). Fallback ai default di
+  // policy se il file non è leggibile.
+  let unitRules: StayRule[] = [];
+  let unitGetRate: (d: Date) => DayRate = () => ({ date: "", price: 0, status: "available" });
+  try {
+    const token = process.env.GITHUB_BOT_TOKEN ?? "";
+    const { content } = await getFile(availPath(unitId), token);
+    const availData = JSON.parse(content) as AvailabilityData;
+    unitRules = availData.stayRules ?? [];
+    unitGetRate = makeDayRateFn(availData.defaultPrice, availData.overrides ?? []);
+  } catch {
+    /* calendario non leggibile: solo default di policy */
+  }
+  const limits = stayLimitsFor(body.checkin, unitRules, { min: POLICIES.minNights, max: POLICIES.maxNights });
+  if (nights > limits.max) {
+    return NextResponse.json({ error: `Soggiorno massimo: ${limits.max} notti` }, { status: 400 });
+  }
+
+  // Preavviso minimo: il check-in deve essere almeno `minAdvanceBookingDays` giorni dopo oggi.
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const minCheckin = new Date(today);
-  minCheckin.setDate(minCheckin.getDate() + 2);
+  minCheckin.setDate(minCheckin.getDate() + POLICIES.minAdvanceBookingDays);
   const [cy, cm, cd] = body.checkin.split("-").map(Number);
   const checkinDate = new Date(cy!, (cm ?? 1) - 1, cd ?? 1);
   if (checkinDate < minCheckin) {
@@ -118,13 +145,12 @@ export async function POST(request: Request) {
     );
   }
 
-  // Minimum 3 nights (enforced client-side too, server validates as defence)
-  const [oy, om, od] = body.checkout.split("-").map(Number);
-  const checkoutDate = new Date(oy!, (om ?? 1) - 1, od ?? 1);
-  const nights = Math.round((checkoutDate.getTime() - checkinDate.getTime()) / 86_400_000);
-  if (nights < 2) {
+  // Durata minima (difesa lato server; il calendario la applica già lato client). Eccezione:
+  // se il soggiorno riempie ESATTAMENTE un buco disponibile dell'unità (nights === buco), è
+  // ammesso anche sotto il minimo — così il server non rifiuta una selezione valida del client.
+  if (nights < limits.min && nights !== availableGapNights(body.checkin, unitGetRate)) {
     return NextResponse.json(
-      { error: "Il soggiorno minimo è di 2 notti." },
+      { error: `Il soggiorno minimo è di ${limits.min} notti.` },
       { status: 400 }
     );
   }
