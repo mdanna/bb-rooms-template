@@ -50,14 +50,14 @@ export default function SiteFooter() {
   const hasWa = !!waLink(HOST_WHATSAPP);
 
   return (
-    <footer className="border-t border-gold/30 px-6 py-10 text-xs text-foreground/60">
+    <footer className="border-t border-gold/30 px-6 py-6 text-xs text-foreground/60">
       <div className="mx-auto max-w-4xl">
-        <div className="flex flex-col items-center gap-8 text-center sm:flex-row sm:items-start sm:justify-between sm:text-left">
-          {/* Sinistra: struttura + link di navigazione */}
+        <div className="flex flex-col items-center gap-6 text-center sm:flex-row sm:items-start sm:justify-between sm:text-left">
+          {/* Sinistra: struttura + "La mia prenotazione" in evidenza */}
           <div className="sm:max-w-[58%]">
             <div className="font-serif-display text-base italic text-foreground">{siteName}</div>
             <div className="mt-1 text-foreground/50">{CONTENT.city}</div>
-            <div className="mt-4 flex flex-col items-center gap-2 sm:items-start">
+            <div className="mt-3 flex flex-col items-center gap-3 sm:items-start">
               {PORTAL_URL && (
                 <a
                   href={PORTAL_URL}
@@ -66,19 +66,29 @@ export default function SiteFooter() {
                   {portalLabel} →
                 </a>
               )}
-              <a
-                href="/privacy"
-                className="underline decoration-gold/40 underline-offset-2 transition hover:text-gold"
+              {/* Gestione prenotazione (anche per le camere: si prenota l'intero o si sceglie la camera). */}
+              <Link
+                href="/gestione-prenotazione"
+                className="inline-flex items-center gap-2 rounded-[9px] border border-gold/50 px-3.5 py-1.5 font-medium text-gold transition hover:bg-gold/10"
               >
-                {t.footer.privacy}
-              </a>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" width="15" height="15" aria-hidden="true">
+                  <rect x="3" y="4" width="18" height="18" rx="2" />
+                  <path d="M16 2v4M8 2v4M3 10h18" />
+                  <path d="m9 16 2 2 4-4" />
+                </svg>
+                {t.nav.manage}
+              </Link>
             </div>
           </div>
 
-          {/* Destra: contatti — WhatsApp accanto al telefono */}
-          <div className="sm:text-right">
-            <p className="text-[11px] uppercase tracking-widest text-foreground/40">{t.footer.contacts}</p>
-            <div className="mt-2 space-y-2">
+          {/* Destra: contatti (WhatsApp accanto al telefono) + privacy sopra la barra "powered by". */}
+          <div className="flex flex-col items-center gap-3 sm:items-end sm:text-right">
+            <div className="space-y-2">
+              <div>
+                <a href={`mailto:${CONTENT.email}`} className="transition hover:text-gold">
+                  {CONTENT.email}
+                </a>
+              </div>
               <div className="flex items-center justify-center gap-2.5 sm:justify-end">
                 <a href={`tel:${CONTENT.phone.replace(/\s+/g, "")}`} className="transition hover:text-gold">
                   {CONTENT.phone}
@@ -98,17 +108,18 @@ export default function SiteFooter() {
                   </a>
                 )}
               </div>
-              <div>
-                <a href={`mailto:${CONTENT.email}`} className="transition hover:text-gold">
-                  {CONTENT.email}
-                </a>
-              </div>
             </div>
+            <a
+              href="/privacy"
+              className="underline decoration-gold/40 underline-offset-2 transition hover:text-gold"
+            >
+              {t.footer.privacy}
+            </a>
           </div>
         </div>
 
         {/* Barra in fondo: copyright + codice identificativo a sinistra, Powered + Gestione (⚙) a destra */}
-        <div className="mt-8 flex flex-col items-center gap-2 border-t border-gold/20 pt-4 text-foreground/40 sm:flex-row sm:justify-between">
+        <div className="mt-6 flex flex-col items-center gap-2 border-t border-gold/20 pt-4 text-foreground/40 sm:flex-row sm:justify-between">
           <span>
             © {year} {siteName}
             {CONTENT.cin ? ` · ${CONTENT.cin}` : ""}
