@@ -371,7 +371,7 @@ export default function BookingsManager() {
     );
 
   return (
-    <div className="mt-10 space-y-4">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="font-serif-display text-lg italic text-foreground">
           {showArchived ? tb.titleArchived : tb.title} ({visibleBookings.length})
