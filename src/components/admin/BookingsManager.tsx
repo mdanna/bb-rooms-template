@@ -370,7 +370,7 @@ export default function BookingsManager() {
     .sort((a, b) => a.checkin.localeCompare(b.checkin));
 
   return (
-    <div className="space-y-4">
+    <div className="-mt-5 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <h2 className="font-serif-display text-lg italic text-foreground">
           {tb.title} ({visibleBookings.length})
