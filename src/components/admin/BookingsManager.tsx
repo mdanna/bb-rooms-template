@@ -408,38 +408,38 @@ export default function BookingsManager() {
         const isExp = expanded.has(b.id);
         return (
         <div key={b.id} className={`rounded-lg border p-5 ${b.status === "cancelled" ? "border-red-300 bg-red-50/30 dark:border-red-900/60 dark:bg-red-950/20" : isCurrent ? "border-l-4 border-gold/40 border-l-[#a87f36] bg-gold/5" : "border-gold/40 bg-card"}`}>
-          <div className="flex items-start justify-between gap-3">
-            <button
-              type="button"
-              onClick={() => toggleExpand(b.id)}
-              aria-expanded={isExp}
-              className="flex min-w-0 flex-1 items-start gap-2 text-left"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`mt-1.5 h-3.5 w-3.5 flex-none text-gold transition-transform ${isExp ? "rotate-90" : ""}`} aria-hidden="true">
+          <button
+            type="button"
+            onClick={() => toggleExpand(b.id)}
+            aria-expanded={isExp}
+            className="flex w-full items-center justify-between gap-3 text-left"
+          >
+            <span className="min-w-0">
+              <span className="block font-serif-display text-lg italic text-foreground">
+                {b.code} · {b.first_name} {b.last_name}
+              </span>
+              {unitLabel(b.unit_id, locale) && (
+                <span className="mt-1 inline-block rounded-full border border-gold/40 px-2.5 py-0.5 text-[10px] uppercase tracking-widest text-foreground/70">
+                  {unitLabel(b.unit_id, locale)}
+                </span>
+              )}
+              <span className="mt-0.5 block text-sm text-foreground/70">
+                {formatStayDate(b.checkin)} → {formatStayDate(b.checkout)} · {b.guests} {tb.guests}
+                {b.total_price ? ` · €${b.total_price}` : ""}
+              </span>
+            </span>
+            <span className="flex flex-none items-center gap-3">
+              <span className={`text-xs font-semibold uppercase tracking-widest ${DISPLAY_COLOR[ds]}`}>
+                {tb.statusLabels[ds]}
+              </span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`h-3.5 w-3.5 flex-none text-gold transition-transform ${isExp ? "rotate-90" : ""}`} aria-hidden="true">
                 <path d="M9 6l6 6-6 6" />
               </svg>
-              <span className="min-w-0">
-                <span className="block font-serif-display text-lg italic text-foreground">
-                  {b.code} · {b.first_name} {b.last_name}
-                </span>
-                {unitLabel(b.unit_id, locale) && (
-                  <span className="mt-1 inline-block rounded-full border border-gold/40 px-2.5 py-0.5 text-[10px] uppercase tracking-widest text-foreground/70">
-                    {unitLabel(b.unit_id, locale)}
-                  </span>
-                )}
-                <span className="mt-0.5 block text-sm text-foreground/70">
-                  {formatStayDate(b.checkin)} → {formatStayDate(b.checkout)} · {b.guests} {tb.guests}
-                  {b.total_price ? ` · €${b.total_price}` : ""}
-                </span>
-              </span>
-            </button>
-            <span className={`flex-none text-xs font-semibold uppercase tracking-widest ${DISPLAY_COLOR[ds]}`}>
-              {tb.statusLabels[ds]}
             </span>
-          </div>
+          </button>
 
           {isExp && (
-          <div className="mt-3 border-t border-gold/15 pt-3">
+          <div className="mt-2">
               <p className="text-xs text-foreground/50">
                 {b.email} · {b.phone}
               </p>
