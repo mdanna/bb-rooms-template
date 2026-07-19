@@ -44,6 +44,8 @@ export const adminTranslations = {
     // Bookings
     bookings: {
       title: "Prenotazioni",
+      titleArchived: "Prenotazioni Archiviate",
+      viewArchived: "Archiviate",
       loading: "Caricamento...",
       error: "Errore nel caricamento delle prenotazioni.",
       showArchived: "Mostra archiviate",
@@ -86,6 +88,8 @@ export const adminTranslations = {
         approved: "Approvata · in attesa di pagamento",
         rejected: "Rifiutata",
         completed: "Completata",
+        confirmed: "Confermata",
+        inProgress: "In corso",
         cancelled: "Annullata",
       },
     },
@@ -240,6 +244,8 @@ export const adminTranslations = {
     },
     bookings: {
       title: "Bookings",
+      titleArchived: "Archived bookings",
+      viewArchived: "Archived",
       loading: "Loading...",
       error: "Error loading bookings.",
       showArchived: "Show archived",
@@ -282,6 +288,8 @@ export const adminTranslations = {
         approved: "Approved · awaiting payment",
         rejected: "Rejected",
         completed: "Completed",
+        confirmed: "Confirmed",
+        inProgress: "In progress",
         cancelled: "Cancelled",
       },
     },
@@ -430,6 +438,8 @@ export const adminTranslations = {
     },
     bookings: {
       title: "Reservas",
+      titleArchived: "Reservas archivadas",
+      viewArchived: "Archivadas",
       loading: "Cargando...",
       error: "Error al cargar las reservas.",
       showArchived: "Mostrar archivadas",
@@ -472,6 +482,8 @@ export const adminTranslations = {
         approved: "Aprobada · esperando pago",
         rejected: "Rechazada",
         completed: "Completada",
+        confirmed: "Confirmada",
+        inProgress: "En curso",
         cancelled: "Cancelada",
       },
     },
@@ -620,6 +632,8 @@ export const adminTranslations = {
     },
     bookings: {
       title: "Réservations",
+      titleArchived: "Réservations archivées",
+      viewArchived: "Archivées",
       loading: "Chargement...",
       error: "Erreur lors du chargement des réservations.",
       showArchived: "Afficher les archivées",
@@ -662,6 +676,8 @@ export const adminTranslations = {
         approved: "Approuvée · en attente de paiement",
         rejected: "Refusée",
         completed: "Complétée",
+        confirmed: "Confirmée",
+        inProgress: "En cours",
         cancelled: "Annulée",
       },
     },
@@ -784,7 +800,7 @@ export const adminTranslations = {
 export type AdminTranslation = {
   langName: string;
   nav: { title: string; calendar: string; rooms: string; policy: string; contents: string; images: string; bookings: string; reviews: string; dashboard: string; stripe: string; theme: string; settings: string; manual: string; publicSite: string; signOut: string; structures: string; groupManage: string; groupSite: string; groupSettings: string; rules: string; payments: string; access: string; sync: string; translations: string };
-  bookings: { title: string; loading: string; error: string; showArchived: string; hideArchived: string; noBookings: string; code: string; guest: string; period: string; guests: string; status: string; price: string; cityTax: string; payment: string; message: string; customPrice: string; approve: string; approving: string; reject: string; rejecting: string; cancel: string; cancelling: string; archive: string; unarchive: string; archiving: string; rejectionReason: string; confirmReject: string; confirmCancel: string; cancelReason: string; receiptLink: string; paidAt: string; paymentMethod: string; card: string; paypal: string; cash: string; transfer: string; loginTitle: string; loginSubtitle: string; statusLabels: Record<string, string> };
+  bookings: { title: string; titleArchived: string; viewArchived: string; loading: string; error: string; showArchived: string; hideArchived: string; noBookings: string; code: string; guest: string; period: string; guests: string; status: string; price: string; cityTax: string; payment: string; message: string; customPrice: string; approve: string; approving: string; reject: string; rejecting: string; cancel: string; cancelling: string; archive: string; unarchive: string; archiving: string; rejectionReason: string; confirmReject: string; confirmCancel: string; cancelReason: string; receiptLink: string; paidAt: string; paymentMethod: string; card: string; paypal: string; cash: string; transfer: string; loginTitle: string; loginSubtitle: string; statusLabels: Record<string, string> };
   calendar: { title: string; syncAirbnb: string; syncing: string; syncDone: string; blockDays: string; unblockDays: string; addBooking: string; price: string; pricePerNight: string; setPrice: string; guestName: string; save: string; saving: string; cancel: string; confirmBlock: string; confirmUnblock: string; nights: string; selectDates: string; from: string; to: string; type: string; directBooking: string; manualBlock: string };
   contents: { title: string; intro: string; save: string; saving: string; saved: string; translate: string; translating: string; translated: string; translateAll: string; field: string; preview: string; addItem: string; removeItem: string; moveUp: string; moveDown: string };
   policy: { title: string; intro: string; save: string; saving: string; saved: string };

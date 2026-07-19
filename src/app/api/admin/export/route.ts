@@ -2,17 +2,41 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { pool, ensureSchema, type Booking } from "@/lib/db";
 
-function escapeCsv(value: unknown): string {
+// Export in formato Excel (SpreadsheetML 2003, XML): un vero foglio Excel con celle
+// tipizzate (numeri come numeri), senza dipendenze esterne. Excel lo apre come foglio
+// di calcolo; alcune versioni chiedono una conferma di formato all'apertura.
+
+function xmlEscape(value: unknown): string {
   if (value === null || value === undefined) return "";
-  const str = String(value);
-  if (str.includes(",") || str.includes('"') || str.includes("\n")) {
-    return `"${str.replace(/"/g, '""')}"`;
-  }
-  return str;
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
 }
 
-function row(values: unknown[]): string {
-  return values.map(escapeCsv).join(",");
+type CellValue = { v: string | number | null; num?: boolean };
+
+function cell(c: CellValue): string {
+  if (c.v === null || c.v === undefined || c.v === "") return "<Cell/>";
+  const type = c.num ? "Number" : "String";
+  return `<Cell><Data ss:Type="${type}">${xmlEscape(c.v)}</Data></Cell>`;
+}
+
+function rowXml(cells: CellValue[]): string {
+  return `<Row>${cells.map(cell).join("")}</Row>`;
+}
+
+function numOrNull(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const n = Number(value);
+  return isNaN(n) ? null : n;
+}
+
+function dateOnly(value: unknown): string {
+  if (!value) return "";
+  return typeof value === "object" ? (value as Date).toISOString().slice(0, 10) : String(value).slice(0, 10);
 }
 
 export async function GET(request: Request) {
@@ -50,8 +74,8 @@ export async function GET(request: Request) {
     params
   );
 
-  // Modello a pagamento intero: niente più acconto/saldo. Le colonne rilevanti sono
-  // ora la policy di rimborso congelata, l'eventuale rimborso dovuto e la data di rimborso.
+  // Modello a pagamento intero: le colonne rilevanti sono la policy di rimborso congelata,
+  // l'eventuale rimborso dovuto e la data di rimborso. Prezzi/tasse/ospiti come numeri.
   const headers = [
     "Codice", "Nome", "Cognome", "Email", "Telefono", "Ospiti",
     "Check-in", "Check-out", "Stato", "Prezzo totale", "Tassa soggiorno",
@@ -59,38 +83,48 @@ export async function GET(request: Request) {
     "Pagato il", "Rimborsato il", "Lingua", "Creato il",
   ];
 
-  const lines = [
-    row(headers),
-    ...result.rows.map((b) =>
-      row([
-        b.code,
-        b.first_name,
-        b.last_name,
-        b.email,
-        b.phone,
-        b.guests,
-        typeof b.checkin === "object" ? (b.checkin as Date).toISOString().slice(0, 10) : String(b.checkin).slice(0, 10),
-        typeof b.checkout === "object" ? (b.checkout as Date).toISOString().slice(0, 10) : String(b.checkout).slice(0, 10),
-        b.status,
-        b.total_price != null ? Number(b.total_price).toFixed(2) : "",
-        b.city_tax != null ? Number(b.city_tax).toFixed(2) : "",
-        b.payment_method ?? "",
-        b.refund_policy ?? "",
-        b.refund_due != null ? Number(b.refund_due).toFixed(2) : "",
-        b.paid_at ? new Date(b.paid_at).toISOString().slice(0, 10) : "",
-        b.refunded_at ? new Date(b.refunded_at).toISOString().slice(0, 10) : "",
-        b.locale,
-        new Date(b.created_at).toISOString().slice(0, 10),
+  const headerRow = rowXml(headers.map((h) => ({ v: h })));
+  const dataRows = result.rows
+    .map((b) =>
+      rowXml([
+        { v: b.code },
+        { v: b.first_name },
+        { v: b.last_name },
+        { v: b.email },
+        { v: b.phone },
+        { v: numOrNull(b.guests), num: true },
+        { v: dateOnly(b.checkin) },
+        { v: dateOnly(b.checkout) },
+        { v: b.status },
+        { v: numOrNull(b.total_price), num: true },
+        { v: numOrNull(b.city_tax), num: true },
+        { v: b.payment_method ?? "" },
+        { v: b.refund_policy ?? "" },
+        { v: numOrNull(b.refund_due), num: true },
+        { v: dateOnly(b.paid_at) },
+        { v: dateOnly(b.refunded_at) },
+        { v: b.locale },
+        { v: dateOnly(b.created_at) },
       ])
-    ),
-  ];
+    )
+    .join("");
 
-  const csv = lines.join("\r\n");
-  const filename = `prenotazioni-${new Date().toISOString().slice(0, 10)}.csv`;
+  const xml = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+ <Worksheet ss:Name="Prenotazioni">
+  <Table>
+   ${headerRow}
+   ${dataRows}
+  </Table>
+ </Worksheet>
+</Workbook>`;
 
-  return new Response(csv, {
+  const filename = `prenotazioni-${new Date().toISOString().slice(0, 10)}.xls`;
+
+  return new Response(xml, {
     headers: {
-      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Type": "application/vnd.ms-excel; charset=utf-8",
       "Content-Disposition": `attachment; filename="${filename}"`,
     },
   });

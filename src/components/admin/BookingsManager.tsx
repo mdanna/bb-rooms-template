@@ -101,18 +101,38 @@ function unitLabel(unitId: string | null, locale: string): string {
   return u.name[locale as keyof typeof u.name] || u.name.it || u.id;
 }
 
-const STATUS_COLOR: Record<Booking["status"], string> = {
+// Fasi derivate dalle DATE per una prenotazione pagata (status "completed"): futura
+// (Confermata) → check-in non ancora arrivato, annullabile+rimborsabile; in corso →
+// ospiti in casa, nessuna azione; passata (Completata) → check-out superato, archiviabile.
+// Non è uno stato nel DB: si calcola alla lettura (niente cron, sempre esatto).
+type DisplayStatus = Booking["status"] | "confirmed" | "inProgress";
+
+const DISPLAY_COLOR: Record<DisplayStatus, string> = {
   pending: "text-gold",
   approved: "text-blue-700",
+  confirmed: "text-green-700",
+  inProgress: "text-[#a87f36]",
+  completed: "text-foreground/50",
   rejected: "text-red-600",
-  completed: "text-green-700",
   cancelled: "text-foreground/40",
 };
 
-function isPast(checkout: string) {
+function startOfToday() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  return new Date(checkout) < today;
+  return today;
+}
+function isPast(checkout: string) {
+  return new Date(checkout) < startOfToday();
+}
+function isFuture(checkin: string) {
+  return new Date(checkin) > startOfToday();
+}
+function displayStatus(b: Booking): DisplayStatus {
+  if (b.status !== "completed") return b.status;
+  if (isFuture(b.checkin)) return "confirmed";
+  if (isPast(b.checkout)) return "completed";
+  return "inProgress";
 }
 
 export default function BookingsManager() {
@@ -340,7 +360,7 @@ export default function BookingsManager() {
       )}
       <div className="flex items-center justify-between">
         <h2 className="font-serif-display text-lg italic text-foreground">
-          {showArchived ? tb.hideArchived : tb.title}
+          {showArchived ? tb.titleArchived : tb.title}
         </h2>
         <div className="flex items-center gap-3">
           <a
@@ -348,13 +368,13 @@ export default function BookingsManager() {
             download
             className="rounded-full border border-gold/40 px-4 py-1.5 text-xs uppercase tracking-widest text-foreground/70 transition hover:bg-gold/10"
           >
-            ↓ CSV
+            ↓ Excel
           </a>
           <button
             onClick={() => setShowArchived((v) => !v)}
             className="rounded-full border border-gold/40 px-4 py-1.5 text-xs uppercase tracking-widest text-foreground/70 transition hover:bg-gold/10"
           >
-            {showArchived ? `← ${tb.title}` : `${tb.archive} (${archivedCount})`}
+            {showArchived ? `← ${tb.title}` : `${tb.viewArchived} (${archivedCount}) →`}
           </button>
         </div>
       </div>
@@ -362,8 +382,11 @@ export default function BookingsManager() {
       {visibleBookings.length === 0 && (
         <p className="text-sm text-foreground/60">{tb.noBookings}</p>
       )}
-      {visibleBookings.map((b) => (
-        <div key={b.id} className={`rounded-lg border p-5 ${b.status === "cancelled" ? "border-red-300 bg-red-50/30 dark:border-red-900/60 dark:bg-red-950/20" : "border-gold/40 bg-card"}`}>
+      {visibleBookings.map((b) => {
+        const ds = displayStatus(b);
+        const isCurrent = ds === "inProgress";
+        return (
+        <div key={b.id} className={`rounded-lg border p-5 ${b.status === "cancelled" ? "border-red-300 bg-red-50/30 dark:border-red-900/60 dark:bg-red-950/20" : isCurrent ? "border-l-4 border-gold/40 border-l-[#a87f36] bg-gold/5" : "border-gold/40 bg-card"}`}>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="font-serif-display text-lg italic text-foreground">
@@ -438,8 +461,8 @@ export default function BookingsManager() {
                 </div>
               )}
             </div>
-            <span className={`text-xs font-semibold uppercase tracking-widest ${STATUS_COLOR[b.status]}`}>
-              {tb.statusLabels[b.status]}
+            <span className={`text-xs font-semibold uppercase tracking-widest ${DISPLAY_COLOR[ds]}`}>
+              {tb.statusLabels[ds]}
             </span>
           </div>
 
@@ -559,7 +582,7 @@ export default function BookingsManager() {
                 {t.common.confirm}
               </button>
             )}
-            {(b.status === "approved" || b.status === "completed") && !showArchived && (
+            {!showArchived && (b.status === "approved" || ds === "confirmed") && (
               <button
                 onClick={() => cancel(b.id)}
                 disabled={busyId === b.id}
@@ -590,7 +613,8 @@ export default function BookingsManager() {
             )}
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
