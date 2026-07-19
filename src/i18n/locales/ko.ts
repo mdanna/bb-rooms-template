@@ -5,7 +5,7 @@ const ko: Translation = {
   nav: {
     location: "도시 · 지역",
     home: "홈",
-    gallery: "이미지",
+    gallery: "갤러리",
     amenities: "편의시설",
     area: "주변 지역",
     reviews: "리뷰",

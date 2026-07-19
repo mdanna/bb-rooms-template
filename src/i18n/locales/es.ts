@@ -5,7 +5,7 @@ const es: Translation = {
   nav: {
     location: "Ciudad · Barrio",
     home: "Inicio",
-    gallery: "Imágenes",
+    gallery: "Galería",
     amenities: "Servicios",
     area: "Zona",
     reviews: "Opiniones",

@@ -71,8 +71,10 @@ export default function NavBar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
 
-  // "Solo camere": l'appartamento intero non è prenotabile → nessuna voce "Prenota"
-  // (che porterebbe al flusso dell'intero); si prenota dalle pagine camera.
+  // Stessa struttura dei siti mono-struttura: link "contenuto" (browse), l'azione
+  // principale (Prenota) è un pulsante CTA a parte e "gestisci prenotazione" vive
+  // nel footer. Unica differenza data-driven: "solo camere" (l'appartamento intero
+  // non è prenotabile) → niente CTA "Prenota" dell'intero, si prenota dalle camere.
   const rootU = getUnit(rootUnitId());
   const wholeBookable = rootU ? isBookable(rootU) : true;
 
@@ -82,8 +84,6 @@ export default function NavBar() {
     { href: "/servizi", label: t.nav.amenities },
     { href: "/zona", label: t.nav.area },
     { href: "/recensioni", label: t.nav.reviews },
-    ...(wholeBookable ? [{ href: "/prenota", label: t.nav.booking }] : []),
-    { href: "/gestione-prenotazione", label: t.nav.manage },
   ];
 
   function isActive(href: string) {
@@ -130,6 +130,14 @@ export default function NavBar() {
               </Link>
             ))}
           </div>
+          {wholeBookable && (
+            <Link
+              href="/prenota"
+              className="rounded-full border border-gold bg-gold px-5 py-1.5 text-xs uppercase tracking-widest text-[#faf6ec] transition hover:bg-transparent hover:text-gold"
+            >
+              {t.nav.booking}
+            </Link>
+          )}
           <LanguagePicker locale={locale} setLocale={setLocale} open={langOpen} setOpen={setLangOpen} />
         </div>
       </div>
@@ -149,6 +157,15 @@ export default function NavBar() {
                 {link.label}
               </Link>
             ))}
+            {wholeBookable && (
+              <Link
+                href="/prenota"
+                onClick={() => setMobileOpen(false)}
+                className="mt-1 rounded-full border border-gold bg-gold px-5 py-2 text-center text-xs uppercase tracking-widest text-[#faf6ec] transition hover:bg-transparent hover:text-gold"
+              >
+                {t.nav.booking}
+              </Link>
+            )}
           </div>
         </div>
       )}

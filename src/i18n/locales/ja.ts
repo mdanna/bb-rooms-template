@@ -5,7 +5,7 @@ const ja: Translation = {
   nav: {
     location: "都市 · 地区",
     home: "ホーム",
-    gallery: "画像",
+    gallery: "ギャラリー",
     amenities: "設備",
     area: "周辺エリア",
     reviews: "レビュー",

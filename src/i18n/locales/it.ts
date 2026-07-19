@@ -5,12 +5,12 @@ const it: Translation = {
   nav: {
     location: "Città · Quartiere",
     home: "Home",
-    gallery: "Immagini",
+    gallery: "Galleria",
     amenities: "Servizi",
-    area: "Zona",
+    area: "Dintorni",
     reviews: "Recensioni",
     booking: "Prenota",
-    manage: "Prenotazione",
+    manage: "La mia prenotazione",
   },
   hero: {
     subtitle: "Un appartamento accogliente nel cuore della città.",

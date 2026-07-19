@@ -5,7 +5,7 @@ const zh: Translation = {
   nav: {
     location: "城市 · 街区",
     home: "首页",
-    gallery: "图片",
+    gallery: "画廊",
     amenities: "设施",
     area: "周边",
     reviews: "评价",
