@@ -167,7 +167,6 @@ export default function AdminSidebar({ userName: _userName }: { userName?: strin
     {
       header: t.nav.groupManage,
       items: [
-        { href: "/admin/dashboard", label: t.nav.dashboard, icon: "dashboard" },
         { href: "/admin", label: t.nav.calendar, icon: "calendar" },
         { href: "/admin/bookings", label: t.nav.bookings, icon: "bookings" },
         { href: "/admin/recensioni", label: t.nav.reviews, icon: "reviews" },
