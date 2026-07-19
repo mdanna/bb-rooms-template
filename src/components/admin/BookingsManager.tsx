@@ -134,6 +134,12 @@ function displayStatus(b: Booking): DisplayStatus {
   if (isPast(b.checkout)) return "completed";
   return "inProgress";
 }
+// Auto-archiviazione DERIVATA: una prenotazione col check-out passato finisce da sé
+// nel pannello archiviate (niente cron). Il flag `archived` manuale resta per nascondere
+// in anticipo una cancellata/rifiutata ancora futura.
+function effectiveArchived(b: Booking) {
+  return b.archived || isPast(b.checkout);
+}
 
 export default function BookingsManager() {
   const { t, locale } = useAdminLanguage();
@@ -144,6 +150,15 @@ export default function BookingsManager() {
   const [rejectingId, setRejectingId] = useState<number | null>(null);
   const [reason, setReason] = useState("");
   const [showArchived, setShowArchived] = useState(false);
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  function toggleExpand(id: number) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
   const [customPrices, setCustomPrices] = useState<Record<number, string>>({});
   const [checkinIds, setCheckinIds] = useState<Record<number, boolean>>({});
   const pl = PAY_LABELS[locale] ?? PAY_LABELS.en;
@@ -348,8 +363,13 @@ export default function BookingsManager() {
   }
 
   const pendingCount = bookings.filter((b) => b.status === "pending").length;
-  const visibleBookings = bookings.filter((b) => (showArchived ? b.archived : !b.archived));
-  const archivedCount = bookings.filter((b) => b.archived).length;
+  const archivedCount = bookings.filter(effectiveArchived).length;
+  // Ordine cronologico per check-in: attive dalla più imminente; archiviate dalla più recente.
+  const visibleBookings = bookings
+    .filter((b) => (showArchived ? effectiveArchived(b) : !effectiveArchived(b)))
+    .sort((a, b) =>
+      showArchived ? b.checkin.localeCompare(a.checkin) : a.checkin.localeCompare(b.checkin)
+    );
 
   return (
     <div className="mt-10 space-y-4">
@@ -385,23 +405,42 @@ export default function BookingsManager() {
       {visibleBookings.map((b) => {
         const ds = displayStatus(b);
         const isCurrent = ds === "inProgress";
+        const isExp = expanded.has(b.id);
         return (
         <div key={b.id} className={`rounded-lg border p-5 ${b.status === "cancelled" ? "border-red-300 bg-red-50/30 dark:border-red-900/60 dark:bg-red-950/20" : isCurrent ? "border-l-4 border-gold/40 border-l-[#a87f36] bg-gold/5" : "border-gold/40 bg-card"}`}>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="font-serif-display text-lg italic text-foreground">
-                {b.code} · {b.first_name} {b.last_name}
-              </p>
-              {unitLabel(b.unit_id, locale) && (
-                <span className="mt-1 inline-block rounded-full border border-gold/40 px-2.5 py-0.5 text-[10px] uppercase tracking-widest text-foreground/70">
-                  {unitLabel(b.unit_id, locale)}
+          <div className="flex items-start justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => toggleExpand(b.id)}
+              aria-expanded={isExp}
+              className="flex min-w-0 flex-1 items-start gap-2 text-left"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`mt-1.5 h-3.5 w-3.5 flex-none text-gold transition-transform ${isExp ? "rotate-90" : ""}`} aria-hidden="true">
+                <path d="M9 6l6 6-6 6" />
+              </svg>
+              <span className="min-w-0">
+                <span className="block font-serif-display text-lg italic text-foreground">
+                  {b.code} · {b.first_name} {b.last_name}
                 </span>
-              )}
-              <p className="mt-1 text-sm text-foreground/70">
-                {formatStayDate(b.checkin)} → {formatStayDate(b.checkout)} · {b.guests} {tb.guests}
-                {b.total_price ? ` · €${b.total_price}` : ""}
-              </p>
-              <p className="mt-1 text-xs text-foreground/50">
+                {unitLabel(b.unit_id, locale) && (
+                  <span className="mt-1 inline-block rounded-full border border-gold/40 px-2.5 py-0.5 text-[10px] uppercase tracking-widest text-foreground/70">
+                    {unitLabel(b.unit_id, locale)}
+                  </span>
+                )}
+                <span className="mt-0.5 block text-sm text-foreground/70">
+                  {formatStayDate(b.checkin)} → {formatStayDate(b.checkout)} · {b.guests} {tb.guests}
+                  {b.total_price ? ` · €${b.total_price}` : ""}
+                </span>
+              </span>
+            </button>
+            <span className={`flex-none text-xs font-semibold uppercase tracking-widest ${DISPLAY_COLOR[ds]}`}>
+              {tb.statusLabels[ds]}
+            </span>
+          </div>
+
+          {isExp && (
+          <div className="mt-3 border-t border-gold/15 pt-3">
+              <p className="text-xs text-foreground/50">
                 {b.email} · {b.phone}
               </p>
               {waLink(b.phone) && (
@@ -460,11 +499,6 @@ export default function BookingsManager() {
                   )}
                 </div>
               )}
-            </div>
-            <span className={`text-xs font-semibold uppercase tracking-widest ${DISPLAY_COLOR[ds]}`}>
-              {tb.statusLabels[ds]}
-            </span>
-          </div>
 
           {b.status === "pending" && !showArchived && (
             <div className="mt-4 space-y-3">
@@ -591,9 +625,7 @@ export default function BookingsManager() {
                 {busyId === b.id ? tb.cancelling : tb.cancel}
               </button>
             )}
-            {!showArchived &&
-              (b.status === "completed" || b.status === "rejected" || b.status === "cancelled") &&
-              isPast(b.checkout) && (
+            {!showArchived && (b.status === "rejected" || b.status === "cancelled") && (
                 <button
                   onClick={() => setArchived(b.id, true)}
                   disabled={busyId === b.id}
@@ -602,7 +634,7 @@ export default function BookingsManager() {
                   {busyId === b.id ? tb.archiving : tb.archive}
                 </button>
               )}
-            {showArchived && (
+            {showArchived && b.archived && !isPast(b.checkout) && (
               <button
                 onClick={() => setArchived(b.id, false)}
                 disabled={busyId === b.id}
@@ -612,6 +644,8 @@ export default function BookingsManager() {
               </button>
             )}
           </div>
+          </div>
+          )}
         </div>
         );
       })}
