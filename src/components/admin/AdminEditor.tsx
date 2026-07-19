@@ -22,28 +22,28 @@ interface Props {
 const STAY_LABELS = {
   it: {
     title: "Regole di soggiorno per date",
-    desc: "Durata minima/massima delle notti per i CHECK-IN in un intervallo di date, per questa unità. Lascia un campo vuoto per usare il valore di default (Impostazioni).",
+    desc: "Durata minima/massima delle notti per i CHECK-IN in un intervallo di date, per questa unità. Vengono mostrati i valori di default stabiliti in Impostazioni.",
     from: "Dal", to: "Al", minStay: "Min notti", maxStay: "Max notti",
     add: "Aggiungi regola", remove: "Rimuovi",
     empty: "Nessuna regola: valgono i valori di default delle Impostazioni.",
   },
   en: {
     title: "Stay rules by date",
-    desc: "Minimum/maximum nights for CHECK-IN dates within a range, for this unit. Leave a field empty to use the default value (Settings).",
+    desc: "Minimum/maximum nights for CHECK-IN dates within a range, for this unit. The default values set in Settings are shown.",
     from: "From", to: "To", minStay: "Min nights", maxStay: "Max nights",
     add: "Add rule", remove: "Remove",
     empty: "No rules: the default values from Settings apply.",
   },
   es: {
     title: "Reglas de estancia por fechas",
-    desc: "Noches mínimas/máximas para los CHECK-IN dentro de un rango de fechas, para esta unidad. Deja un campo vacío para usar el valor por defecto (Ajustes).",
+    desc: "Noches mínimas/máximas para los CHECK-IN dentro de un rango de fechas, para esta unidad. Se muestran los valores predeterminados establecidos en Ajustes.",
     from: "Del", to: "Al", minStay: "Mín noches", maxStay: "Máx noches",
     add: "Añadir regla", remove: "Quitar",
     empty: "Sin reglas: se aplican los valores por defecto de Ajustes.",
   },
   fr: {
     title: "Règles de séjour par dates",
-    desc: "Nuits minimum/maximum pour les CHECK-IN dans une plage de dates, pour cette unité. Laissez un champ vide pour utiliser la valeur par défaut (Réglages).",
+    desc: "Nuits minimum/maximum pour les CHECK-IN dans une plage de dates, pour cette unité. Les valeurs par défaut définies dans les Réglages sont affichées.",
     from: "Du", to: "Au", minStay: "Min nuits", maxStay: "Max nuits",
     add: "Ajouter une règle", remove: "Retirer",
     empty: "Aucune règle : les valeurs par défaut des Réglages s'appliquent.",
