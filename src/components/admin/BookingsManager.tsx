@@ -134,12 +134,20 @@ function displayStatus(b: Booking): DisplayStatus {
   if (isPast(b.checkout)) return "completed";
   return "inProgress";
 }
-// Auto-archiviazione DERIVATA: una prenotazione col check-out passato finisce da sé
-// nel pannello archiviate (niente cron). Il flag `archived` manuale resta per nascondere
-// in anticipo una cancellata/rifiutata ancora futura.
-function effectiveArchived(b: Booking) {
-  return b.archived || isPast(b.checkout);
-}
+// Filtri per stato (al posto dell'archivio): ordine dei chip, selezione di default
+// (le prenotazioni "attive": il passato/concluse partono spente = archivio nascosto),
+// e colore del pallino di ogni stato.
+const STATE_ORDER: DisplayStatus[] = ["pending", "approved", "confirmed", "inProgress", "completed", "rejected", "cancelled"];
+const DEFAULT_FILTERS: DisplayStatus[] = ["pending", "approved", "confirmed", "inProgress"];
+const DISPLAY_DOT: Record<DisplayStatus, string> = {
+  pending: "#a87f36",
+  approved: "#185fa5",
+  confirmed: "#3b6d11",
+  inProgress: "#b8791a",
+  completed: "#9a938a",
+  rejected: "#a32d2d",
+  cancelled: "#9a938a",
+};
 
 export default function BookingsManager() {
   const { t, locale } = useAdminLanguage();
@@ -149,7 +157,15 @@ export default function BookingsManager() {
   const [busyId, setBusyId] = useState<number | null>(null);
   const [rejectingId, setRejectingId] = useState<number | null>(null);
   const [reason, setReason] = useState("");
-  const [showArchived, setShowArchived] = useState(false);
+  const [filters, setFilters] = useState<Set<DisplayStatus>>(new Set(DEFAULT_FILTERS));
+  function toggleFilter(sf: DisplayStatus) {
+    setFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(sf)) next.delete(sf);
+      else next.add(sf);
+      return next;
+    });
+  }
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   function toggleExpand(id: number) {
     setExpanded((prev) => {
@@ -338,59 +354,62 @@ export default function BookingsManager() {
     }
   }
 
-  async function setArchived(id: number, archived: boolean) {
-    setBusyId(id);
-    setError("");
-    if (DEMO) { patchBooking(id, { archived }); setBusyId(null); return; }
-    try {
-      const res = await fetch(`/api/admin/bookings/${id}/archive`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ archived }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? t.common.error);
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t.common.error);
-    } finally {
-      setBusyId(null);
-    }
-  }
-
   if (bookings === null) {
     return <p className="mt-10 text-sm text-foreground/60">{t.common.loading}</p>;
   }
 
-  const archivedCount = bookings.filter(effectiveArchived).length;
-  // Ordine cronologico per check-in: attive dalla più imminente; archiviate dalla più recente.
+  // Conteggio per stato visualizzato (per i chip) e lista filtrata + ordinata per check-in.
+  const stateCounts = STATE_ORDER.reduce((acc, sf) => {
+    acc[sf] = bookings.filter((b) => displayStatus(b) === sf).length;
+    return acc;
+  }, {} as Record<DisplayStatus, number>);
+  const presentStates = STATE_ORDER.filter((sf) => stateCounts[sf] > 0);
+  const allSelected = presentStates.length > 0 && presentStates.every((sf) => filters.has(sf));
   const visibleBookings = bookings
-    .filter((b) => (showArchived ? effectiveArchived(b) : !effectiveArchived(b)))
-    .sort((a, b) =>
-      showArchived ? b.checkin.localeCompare(a.checkin) : a.checkin.localeCompare(b.checkin)
-    );
+    .filter((b) => filters.has(displayStatus(b)))
+    .sort((a, b) => a.checkin.localeCompare(b.checkin));
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <h2 className="font-serif-display text-lg italic text-foreground">
-          {showArchived ? tb.titleArchived : tb.title} ({visibleBookings.length})
+          {tb.title} ({visibleBookings.length})
         </h2>
-        <div className="flex items-center gap-3">
-          <a
-            href="/api/admin/export"
-            download
-            className="rounded-full border border-gold/40 px-4 py-1.5 text-xs uppercase tracking-widest text-foreground/70 transition hover:bg-gold/10"
-          >
-            ↓ Excel
-          </a>
-          <button
-            onClick={() => setShowArchived((v) => !v)}
-            className="rounded-full border border-gold/40 px-4 py-1.5 text-xs uppercase tracking-widest text-foreground/70 transition hover:bg-gold/10"
-          >
-            {showArchived ? `← ${tb.title}` : `${tb.viewArchived} (${archivedCount}) →`}
-          </button>
-        </div>
+        <a
+          href="/api/admin/export"
+          download
+          className="flex-none rounded-full border border-gold/40 px-4 py-1.5 text-xs uppercase tracking-widest text-foreground/70 transition hover:bg-gold/10"
+        >
+          ↓ Excel
+        </a>
+      </div>
+
+      {/* Filtri per stato (multiselezione). "Tutte" seleziona tutti gli stati presenti;
+          i chip a conteggio zero non compaiono. */}
+      <div className="flex flex-wrap items-center gap-2 border-t border-gold/20 pt-3">
+        <button
+          onClick={() => setFilters(new Set(presentStates))}
+          className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+            allSelected ? "border-gold bg-gold/10 text-gold" : "border-gold/40 text-foreground/70 hover:bg-gold/5"
+          }`}
+        >
+          {tb.filterLabels.all}
+        </button>
+        {presentStates.map((sf) => {
+          const on = filters.has(sf);
+          return (
+            <button
+              key={sf}
+              onClick={() => toggleFilter(sf)}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition ${
+                on ? "border-gold bg-gold/10 font-medium text-gold" : "border-gold/40 text-foreground/70 hover:bg-gold/5"
+              }`}
+            >
+              <span className="h-2 w-2 flex-none rounded-full" style={{ backgroundColor: DISPLAY_DOT[sf] }} aria-hidden />
+              {tb.filterLabels[sf]} <span className="tabular-nums opacity-70">{stateCounts[sf]}</span>
+            </button>
+          );
+        })}
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
       {visibleBookings.length === 0 && (
@@ -494,7 +513,7 @@ export default function BookingsManager() {
                 </div>
               )}
 
-          {b.status === "pending" && !showArchived && (
+          {b.status === "pending" && (
             <div className="mt-4 space-y-3">
               <div className="flex items-center gap-2">
                 <label className="text-xs uppercase tracking-widest text-foreground/50 whitespace-nowrap">
@@ -610,31 +629,13 @@ export default function BookingsManager() {
                 {t.common.confirm}
               </button>
             )}
-            {!showArchived && (b.status === "approved" || ds === "confirmed") && (
+            {(b.status === "approved" || ds === "confirmed") && (
               <button
                 onClick={() => cancel(b.id)}
                 disabled={busyId === b.id}
                 className="rounded-full border border-foreground/30 px-5 py-2 text-xs uppercase tracking-widest text-foreground/70 transition hover:border-red-600 hover:text-red-600 disabled:opacity-50"
               >
                 {busyId === b.id ? tb.cancelling : tb.cancel}
-              </button>
-            )}
-            {!showArchived && (b.status === "rejected" || b.status === "cancelled") && (
-                <button
-                  onClick={() => setArchived(b.id, true)}
-                  disabled={busyId === b.id}
-                  className="rounded-full border border-foreground/30 px-5 py-2 text-xs uppercase tracking-widest text-foreground/70 transition hover:bg-foreground/10 disabled:opacity-50"
-                >
-                  {busyId === b.id ? tb.archiving : tb.archive}
-                </button>
-              )}
-            {showArchived && b.archived && !isPast(b.checkout) && (
-              <button
-                onClick={() => setArchived(b.id, false)}
-                disabled={busyId === b.id}
-                className="rounded-full border border-foreground/30 px-5 py-2 text-xs uppercase tracking-widest text-foreground/70 transition hover:bg-foreground/10 disabled:opacity-50"
-              >
-                {tb.unarchive}
               </button>
             )}
           </div>
