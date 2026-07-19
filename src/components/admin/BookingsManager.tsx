@@ -362,7 +362,6 @@ export default function BookingsManager() {
     return <p className="mt-10 text-sm text-foreground/60">{t.common.loading}</p>;
   }
 
-  const pendingCount = bookings.filter((b) => b.status === "pending").length;
   const archivedCount = bookings.filter(effectiveArchived).length;
   // Ordine cronologico per check-in: attive dalla più imminente; archiviate dalla più recente.
   const visibleBookings = bookings
@@ -373,14 +372,9 @@ export default function BookingsManager() {
 
   return (
     <div className="mt-10 space-y-4">
-      {pendingCount > 0 && (
-        <p className="rounded-md border border-gold bg-gold/10 px-4 py-2 text-sm font-semibold text-foreground">
-          {pendingCount} {pendingCount === 1 ? tb.noBookings : `${pendingCount} ${tb.title}`}
-        </p>
-      )}
       <div className="flex items-center justify-between">
         <h2 className="font-serif-display text-lg italic text-foreground">
-          {showArchived ? tb.titleArchived : tb.title}
+          {showArchived ? tb.titleArchived : tb.title} ({visibleBookings.length})
         </h2>
         <div className="flex items-center gap-3">
           <a
