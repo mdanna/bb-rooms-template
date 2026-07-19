@@ -78,6 +78,15 @@ export default function NavBar() {
   const rootU = getUnit(rootUnitId());
   const wholeBookable = rootU ? isBookable(rootU) : true;
 
+  // Il CTA "Prenota" prenota l'ELEMENTO CORRENTE, come i pulsanti in pagina: su una
+  // pagina camera scrolla al form di QUELLA camera (#prenota, come l'hero camera);
+  // sulle pagine dell'intero porta alla pagina di prenotazione dell'intero (/prenota,
+  // come l'hero della home). Sulla camera il CTA c'è sempre; sull'intero solo se
+  // l'intero è prenotabile (in "solo camere" si prenota dalla pagina camera).
+  const onRoomPage = pathname.startsWith("/camera/");
+  const bookHref = onRoomPage ? "#prenota" : "/prenota";
+  const showBook = onRoomPage || wholeBookable;
+
   const links = [
     { href: "/", label: t.nav.home },
     { href: "/galleria", label: t.nav.gallery },
@@ -130,9 +139,9 @@ export default function NavBar() {
               </Link>
             ))}
           </div>
-          {wholeBookable && (
+          {showBook && (
             <Link
-              href="/prenota"
+              href={bookHref}
               className="rounded-full border border-gold bg-gold px-5 py-1.5 text-xs uppercase tracking-widest text-[#faf6ec] transition hover:bg-transparent hover:text-gold"
             >
               {t.nav.booking}
@@ -157,9 +166,9 @@ export default function NavBar() {
                 {link.label}
               </Link>
             ))}
-            {wholeBookable && (
+            {showBook && (
               <Link
-                href="/prenota"
+                href={bookHref}
                 onClick={() => setMobileOpen(false)}
                 className="mt-1 rounded-full border border-gold bg-gold px-5 py-2 text-center text-xs uppercase tracking-widest text-[#faf6ec] transition hover:bg-transparent hover:text-gold"
               >
