@@ -23,6 +23,7 @@ export const adminTranslations = {
       payments: "Pagamenti",
       access: "Accessi",
       sync: "Sincronizzazione calendari",
+      translations: "Traduzioni",
       title: "Amministrazione",
       calendar: "Calendario",
       rooms: "Camere",
@@ -219,6 +220,7 @@ export const adminTranslations = {
       payments: "Payments",
       access: "Access",
       sync: "Calendar sync",
+      translations: "Translations",
       title: "Administration",
       calendar: "Calendar",
       rooms: "Rooms",
@@ -408,6 +410,7 @@ export const adminTranslations = {
       payments: "Pagos",
       access: "Accesos",
       sync: "Sincronización de calendarios",
+      translations: "Traducciones",
       title: "Administración",
       calendar: "Calendario",
       rooms: "Habitaciones",
@@ -597,6 +600,7 @@ export const adminTranslations = {
       payments: "Paiements",
       access: "Accès",
       sync: "Synchronisation des calendriers",
+      translations: "Traductions",
       title: "Administration",
       calendar: "Calendrier",
       rooms: "Chambres",
@@ -779,7 +783,7 @@ export const adminTranslations = {
 
 export type AdminTranslation = {
   langName: string;
-  nav: { title: string; calendar: string; rooms: string; policy: string; contents: string; images: string; bookings: string; reviews: string; dashboard: string; stripe: string; theme: string; settings: string; manual: string; publicSite: string; signOut: string; structures: string; groupManage: string; groupSite: string; groupSettings: string; rules: string; payments: string; access: string; sync: string };
+  nav: { title: string; calendar: string; rooms: string; policy: string; contents: string; images: string; bookings: string; reviews: string; dashboard: string; stripe: string; theme: string; settings: string; manual: string; publicSite: string; signOut: string; structures: string; groupManage: string; groupSite: string; groupSettings: string; rules: string; payments: string; access: string; sync: string; translations: string };
   bookings: { title: string; loading: string; error: string; showArchived: string; hideArchived: string; noBookings: string; code: string; guest: string; period: string; guests: string; status: string; price: string; cityTax: string; payment: string; message: string; customPrice: string; approve: string; approving: string; reject: string; rejecting: string; cancel: string; cancelling: string; archive: string; unarchive: string; archiving: string; rejectionReason: string; confirmReject: string; confirmCancel: string; cancelReason: string; receiptLink: string; paidAt: string; paymentMethod: string; card: string; paypal: string; cash: string; transfer: string; loginTitle: string; loginSubtitle: string; statusLabels: Record<string, string> };
   calendar: { title: string; syncAirbnb: string; syncing: string; syncDone: string; blockDays: string; unblockDays: string; addBooking: string; price: string; pricePerNight: string; setPrice: string; guestName: string; save: string; saving: string; cancel: string; confirmBlock: string; confirmUnblock: string; nights: string; selectDates: string; from: string; to: string; type: string; directBooking: string; manualBlock: string };
   contents: { title: string; intro: string; save: string; saving: string; saved: string; translate: string; translating: string; translated: string; translateAll: string; field: string; preview: string; addItem: string; removeItem: string; moveUp: string; moveDown: string };

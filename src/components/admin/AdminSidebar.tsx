@@ -67,6 +67,16 @@ function NavIcon({ name }: { name: string }) {
     colors: (
       <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z" />
     ),
+    translations: (
+      <>
+        <path d="M5 8l6 6" />
+        <path d="M4 14l6-6 2-3" />
+        <path d="M2 5h12" />
+        <path d="M7 2h1" />
+        <path d="M22 22l-5-10-5 10" />
+        <path d="M14 18h6" />
+      </>
+    ),
     rooms: (
       <>
         <path d="M2 4v16" />
@@ -170,6 +180,7 @@ export default function AdminSidebar({ userName: _userName }: { userName?: strin
         { href: "/admin/immagini", label: t.nav.images, icon: "images" },
         ...(isRoomsStructure ? [{ href: "/admin/camere", label: t.nav.rooms, icon: "rooms" }] : []),
         { href: "/admin/tema", label: t.nav.theme, icon: "colors" },
+        { href: "/admin/traduzioni", label: t.nav.translations, icon: "translations" },
       ],
     },
     {
