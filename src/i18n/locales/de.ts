@@ -78,6 +78,7 @@ const de: Translation = {
   },
   booking: {
     title: "Verfügbarkeit und Buchung",
+    wholeUnit: "Gesamte Unterkunft",
     subtitle:
       "Wählen Sie Ihre Daten im Kalender: verfügbare Tage zeigen den Preis pro Nacht an, bereits belegte Tage sind deaktiviert.",
     preferAirbnb: "Lieber über Airbnb buchen?",

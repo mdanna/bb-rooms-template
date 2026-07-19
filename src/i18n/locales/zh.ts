@@ -78,6 +78,7 @@ const zh: Translation = {
   },
   booking: {
     title: "空房情况与预订",
+    wholeUnit: "整套房源",
     subtitle: "请在日历上选择日期:可预订的日期会显示每晚价格,已被预订的日期则不可选。",
     preferAirbnb: "更想通过 Airbnb 预订?",
     goToListing: "前往房源页面(★{rating})",

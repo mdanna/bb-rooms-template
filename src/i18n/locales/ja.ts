@@ -78,6 +78,7 @@ const ja: Translation = {
   },
   booking: {
     title: "空室状況とご予約",
+    wholeUnit: "施設全体",
     subtitle: "カレンダーで日付を選択してください。予約可能な日には1泊あたりの料金が表示され、既に予約済みの日は選択できません。",
     preferAirbnb: "Airbnbでの予約をご希望ですか?",
     goToListing: "掲載ページへ(★{rating})",

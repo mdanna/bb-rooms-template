@@ -78,6 +78,7 @@ const en: Translation = {
   },
   booking: {
     title: "Availability and booking",
+    wholeUnit: "Entire property",
     subtitle:
       "Select your dates on the calendar: available days show the price per night, while booked days are disabled.",
     preferAirbnb: "Prefer to book through Airbnb?",

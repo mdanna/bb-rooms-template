@@ -78,6 +78,7 @@ const fr: Translation = {
   },
   booking: {
     title: "Disponibilité et réservation",
+    wholeUnit: "Hébergement entier",
     subtitle:
       "Sélectionnez vos dates sur le calendrier : les jours disponibles affichent le prix par nuit, les jours déjà réservés sont désactivés.",
     preferAirbnb: "Vous préférez réserver via Airbnb ?",

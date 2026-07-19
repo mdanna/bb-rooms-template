@@ -78,6 +78,7 @@ const ko: Translation = {
   },
   booking: {
     title: "예약 가능 여부 및 예약",
+    wholeUnit: "숙소 전체",
     subtitle: "캘린더에서 날짜를 선택하세요. 예약 가능한 날에는 1박 요금이 표시되고, 이미 예약된 날은 선택할 수 없습니다.",
     preferAirbnb: "에어비앤비로 예약하고 싶으신가요?",
     goToListing: "숙소 페이지로 이동 (★{rating})",
