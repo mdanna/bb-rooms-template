@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import AdminNav from "@/components/admin/AdminNav";
+import AdminShell from "@/components/admin/AdminShell";
 import AdminAccessEditor from "@/components/admin/AdminAccessEditor";
 
 export default async function AccessPage() {
@@ -8,13 +8,10 @@ export default async function AccessPage() {
   if (!session) redirect("/admin");
 
   return (
-    <div className="min-h-screen bg-background">
-      <AdminNav />
-      <div className="mx-auto max-w-3xl px-6 py-12">
+    <AdminShell width="max-w-3xl">
         <div className="rounded-lg border border-gold/40 bg-card p-6">
           <AdminAccessEditor />
         </div>
-      </div>
-    </div>
+    </AdminShell>
   );
 }

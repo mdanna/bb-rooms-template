@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import AdminNav from "@/components/admin/AdminNav";
+import AdminShell from "@/components/admin/AdminShell";
 import SettingsManager from "@/components/admin/SettingsManager";
 
 export default async function ImpostazioniPage() {
@@ -8,11 +8,8 @@ export default async function ImpostazioniPage() {
   if (!session) redirect("/admin");
 
   return (
-    <div className="min-h-screen bg-background">
-      <AdminNav />
-      <div className="mx-auto max-w-3xl px-6 py-12">
+    <AdminShell width="max-w-3xl">
         <SettingsManager />
-      </div>
-    </div>
+    </AdminShell>
   );
 }

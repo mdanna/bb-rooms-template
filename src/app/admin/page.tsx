@@ -1,7 +1,7 @@
 import { auth, GOOGLE_ENABLED } from "@/auth";
 import AdminEditor from "@/components/admin/AdminEditor";
 import AdminLogin from "@/components/admin/AdminLogin";
-import AdminNav from "@/components/admin/AdminNav";
+import AdminShell from "@/components/admin/AdminShell";
 import AdminUnitSwitcher from "@/components/admin/AdminUnitSwitcher";
 import { getFile } from "@/lib/githubContent";
 import { availPath } from "@/lib/unitAvailability";
@@ -46,14 +46,11 @@ export default async function AdminPage({
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <AdminNav userName={session.user?.name ?? session.user?.email} />
-      <div className="mx-auto max-w-3xl px-6 py-12">
+    <AdminShell userName={session.user?.name ?? session.user?.email} width="max-w-3xl">
         <AdminUnitSwitcher activeUnitId={unitId} basePath="/admin" bookableOnly />
         {/* key=unitId: rimonta l'editor al cambio unità (lo stato del calendario è in
             useState dalle props → altrimenti mostrerebbe i dati del tab precedente). */}
         <AdminEditor key={unitId} unitId={unitId} initialDefaultPrice={defaultPrice} initialOverrides={overrides} initialStayRules={stayRules} />
-      </div>
-    </div>
+    </AdminShell>
   );
 }

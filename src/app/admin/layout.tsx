@@ -6,7 +6,7 @@ import AdminFooter from "@/components/admin/AdminFooter";
 import { DraftProvider } from "@/components/admin/DraftContext";
 
 // Il pannello admin è sempre dinamico (auth + dati freschi): niente prerender statico.
-// Serve anche perché AdminNav legge il parametro ?unit con useSearchParams (l'header
+// Serve anche perché AdminSidebar legge il parametro ?unit con useSearchParams (l'header
 // mostra la struttura o la camera corrente) — richiederebbe un boundary Suspense se
 // la pagina fosse statica.
 export const dynamic = "force-dynamic";

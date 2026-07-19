@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import AdminNav from "@/components/admin/AdminNav";
+import AdminShell from "@/components/admin/AdminShell";
 import { CONTENT } from "@/lib/siteContent";
 import { useAdminLanguage } from "@/i18n/AdminLanguageContext";
 
@@ -47,9 +47,7 @@ export default function DashboardPage() {
   const quarterMonths = QUARTER_MONTHS[locale] ?? QUARTER_MONTHS["en"]!;
 
   return (
-    <div className="min-h-screen bg-background">
-      <AdminNav />
-      <div className="mx-auto max-w-3xl px-6 py-12">
+    <AdminShell width="max-w-3xl">
         <h1 className="font-serif-display text-3xl italic text-foreground">{td.title}</h1>
 
         <div className="mt-8 grid grid-cols-3 gap-4">
@@ -107,7 +105,6 @@ export default function DashboardPage() {
             </table>
           </div>
         )}
-      </div>
-    </div>
+    </AdminShell>
   );
 }

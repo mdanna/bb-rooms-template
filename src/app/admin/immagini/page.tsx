@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import AdminNav from "@/components/admin/AdminNav";
+import AdminShell from "@/components/admin/AdminShell";
 import ImageManager from "@/components/admin/ImageManager";
 import AdminUnitSwitcher from "@/components/admin/AdminUnitSwitcher";
 import { getUnit, rootUnitId } from "@/lib/structure";
@@ -19,9 +19,7 @@ export default async function ImmaginiPage({
   const unitId = unit && getUnit(unit) ? unit : rootUnitId();
 
   return (
-    <div className="min-h-screen bg-background">
-      <AdminNav />
-      <div className="mx-auto max-w-3xl px-6 py-12">
+    <AdminShell width="max-w-3xl">
         <AdminUnitSwitcher activeUnitId={unitId} basePath="/admin/immagini" />
         <div className="rounded-lg border border-gold/40 bg-card p-5 space-y-4">
           <p className="text-sm text-foreground/60">
@@ -29,7 +27,6 @@ export default async function ImmaginiPage({
           </p>
           <ImageManager unitId={unitId} />
         </div>
-      </div>
-    </div>
+    </AdminShell>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useAdminLanguage } from "@/i18n/AdminLanguageContext";
 import { adminLocaleOrder, adminTranslations, type AdminLocaleCode } from "@/i18n/admin";
 import type { CalendarSyncResult } from "@/app/api/admin/calendar-sync/route";
@@ -437,39 +436,6 @@ export default function SettingsManager() {
 
   return (
     <div className="space-y-6">
-      {/* Collegamenti alle altre aree di configurazione (spostate qui dalla nav) */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Link href="/admin/policy" className="group flex items-center justify-between rounded-lg border border-gold/40 bg-card p-5 transition hover:bg-gold/5">
-          <div>
-            <h3 className="font-serif-display text-lg italic text-foreground">{L.policyCard}</h3>
-            <p className="mt-0.5 text-sm text-foreground/60">{L.policyCardDesc}</p>
-          </div>
-          <span className="text-gold transition group-hover:translate-x-0.5">→</span>
-        </Link>
-        <Link href="/admin/tema" className="group flex items-center justify-between rounded-lg border border-gold/40 bg-card p-5 transition hover:bg-gold/5">
-          <div>
-            <h3 className="font-serif-display text-lg italic text-foreground">{L.themeCard}</h3>
-            <p className="mt-0.5 text-sm text-foreground/60">{L.themeCardDesc}</p>
-          </div>
-          <span className="text-gold transition group-hover:translate-x-0.5">→</span>
-        </Link>
-        <Link href="/admin/accessi" className="group flex items-center justify-between rounded-lg border border-gold/40 bg-card p-5 transition hover:bg-gold/5">
-          <div>
-            <h3 className="font-serif-display text-lg italic text-foreground">{L.accessCard}</h3>
-            <p className="mt-0.5 text-sm text-foreground/60">{L.accessCardDesc}</p>
-          </div>
-          <span className="text-gold transition group-hover:translate-x-0.5">→</span>
-        </Link>
-        {!DEMO && (
-          <Link href="/admin/stripe" className="group flex items-center justify-between rounded-lg border border-gold/40 bg-card p-5 transition hover:bg-gold/5">
-            <div>
-              <h3 className="font-serif-display text-lg italic text-foreground">{L.stripeCard}</h3>
-              <p className="mt-0.5 text-sm text-foreground/60">{L.stripeCardDesc}</p>
-            </div>
-            <span className="text-gold transition group-hover:translate-x-0.5">→</span>
-          </Link>
-        )}
-      </div>
 
       {/* Lingua del pannello admin */}
       <div className="rounded-lg border border-gold/40 bg-card p-5 space-y-3">

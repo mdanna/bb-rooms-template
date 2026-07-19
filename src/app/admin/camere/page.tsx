@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { redirect, notFound } from "next/navigation";
-import AdminNav from "@/components/admin/AdminNav";
+import AdminShell from "@/components/admin/AdminShell";
 import RoomsManager from "@/components/admin/RoomsManager";
 import { allUnits } from "@/lib/structure";
 
@@ -13,11 +13,8 @@ export default async function CamerePage() {
   if (!allUnits().some((u) => u.kind === "room")) notFound();
 
   return (
-    <div className="min-h-screen bg-background">
-      <AdminNav />
-      <div className="mx-auto max-w-3xl px-6 py-12">
+    <AdminShell width="max-w-3xl">
         <RoomsManager />
-      </div>
-    </div>
+    </AdminShell>
   );
 }

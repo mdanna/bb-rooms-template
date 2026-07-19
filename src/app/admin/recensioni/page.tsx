@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { auth, signIn, GOOGLE_ENABLED } from "@/auth";
-import AdminNav from "@/components/admin/AdminNav";
+import AdminShell from "@/components/admin/AdminShell";
 import ReviewsManager from "@/components/admin/ReviewsManager";
 import { resolveAdminLocale } from "@/lib/policies";
 import { adminTranslations } from "@/i18n/admin";
@@ -53,11 +53,8 @@ export default async function AdminReviewsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <AdminNav userName={session.user?.name ?? session.user?.email} />
-      <div className="mx-auto max-w-5xl px-6 py-12">
+    <AdminShell userName={session.user?.name ?? session.user?.email} width="max-w-5xl">
         <ReviewsManager />
-      </div>
-    </div>
+    </AdminShell>
   );
 }
