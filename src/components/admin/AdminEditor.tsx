@@ -292,6 +292,50 @@ function AdminEditorInner({ initialDefaultPrice, initialOverrides, initialStayRu
         </section>
 
         <section className="rounded-lg border border-gold/40 bg-card p-5">
+          <h2 className="font-serif-display text-xl italic text-foreground">{SL.title}</h2>
+          <p className="mt-1 text-sm text-foreground/60">{SL.desc}</p>
+          <div className="mt-4 space-y-3">
+            {stayRules.length === 0 && <p className="text-xs text-foreground/50">{SL.empty}</p>}
+            {stayRules.map((r, i) => (
+              <div key={i} className="flex flex-wrap items-end gap-3">
+                <label className="flex flex-col gap-1 text-xs">
+                  <span className="uppercase tracking-widest text-foreground/60">{SL.from}</span>
+                  <input type="date" value={r.from}
+                    onChange={(e) => updateStayRule(i, { from: e.target.value })}
+                    className="rounded border border-gold/40 bg-background px-2 py-1.5 text-sm text-foreground outline-none focus:border-gold" />
+                </label>
+                <label className="flex flex-col gap-1 text-xs">
+                  <span className="uppercase tracking-widest text-foreground/60">{SL.to}</span>
+                  <input type="date" value={r.to}
+                    onChange={(e) => updateStayRule(i, { to: e.target.value })}
+                    className="rounded border border-gold/40 bg-background px-2 py-1.5 text-sm text-foreground outline-none focus:border-gold" />
+                </label>
+                <label className="flex flex-col gap-1 text-xs">
+                  <span className="uppercase tracking-widest text-foreground/60">{SL.minStay}</span>
+                  <input type="number" min={1} value={r.minStay ?? ""}
+                    onChange={(e) => updateStayRule(i, { minStay: e.target.value === "" ? undefined : Number(e.target.value) })}
+                    className="w-24 rounded border border-gold/40 bg-background px-2 py-1.5 text-sm text-foreground outline-none focus:border-gold" />
+                </label>
+                <label className="flex flex-col gap-1 text-xs">
+                  <span className="uppercase tracking-widest text-foreground/60">{SL.maxStay}</span>
+                  <input type="number" min={1} value={r.maxStay ?? ""}
+                    onChange={(e) => updateStayRule(i, { maxStay: e.target.value === "" ? undefined : Number(e.target.value) })}
+                    className="w-24 rounded border border-gold/40 bg-background px-2 py-1.5 text-sm text-foreground outline-none focus:border-gold" />
+                </label>
+                <button onClick={() => removeStayRule(i)}
+                  className="rounded-full border border-red-400/60 px-3 py-1.5 text-xs uppercase tracking-widest text-red-600 transition hover:bg-red-50">
+                  {SL.remove}
+                </button>
+              </div>
+            ))}
+          </div>
+          <button onClick={addStayRule}
+            className="mt-4 rounded-full border border-gold bg-gold px-6 py-2 text-xs uppercase tracking-widest text-[#faf6ec] transition hover:bg-transparent hover:text-gold">
+            {SL.add}
+          </button>
+        </section>
+
+        <section className="rounded-lg border border-gold/40 bg-card p-5">
           <h2 className="font-serif-display text-xl italic text-foreground">{L.setRange}</h2>
           <p className="mt-1 text-sm text-foreground/60">{L.setRangeDesc}</p>
           <div className="mt-4 flex flex-wrap items-end gap-4">
@@ -349,50 +393,6 @@ function AdminEditorInner({ initialDefaultPrice, initialOverrides, initialStayRu
           </button>
           {rangeEnd < rangeStart && <p className="mt-2 text-xs text-red-600">{L.dateError}</p>}
           {rangeError && <p className="mt-2 text-xs text-red-600">{rangeError}</p>}
-        </section>
-
-        <section className="rounded-lg border border-gold/40 bg-card p-5">
-          <h2 className="font-serif-display text-xl italic text-foreground">{SL.title}</h2>
-          <p className="mt-1 text-sm text-foreground/60">{SL.desc}</p>
-          <div className="mt-4 space-y-3">
-            {stayRules.length === 0 && <p className="text-xs text-foreground/50">{SL.empty}</p>}
-            {stayRules.map((r, i) => (
-              <div key={i} className="flex flex-wrap items-end gap-3">
-                <label className="flex flex-col gap-1 text-xs">
-                  <span className="uppercase tracking-widest text-foreground/60">{SL.from}</span>
-                  <input type="date" value={r.from}
-                    onChange={(e) => updateStayRule(i, { from: e.target.value })}
-                    className="rounded border border-gold/40 bg-background px-2 py-1.5 text-sm text-foreground outline-none focus:border-gold" />
-                </label>
-                <label className="flex flex-col gap-1 text-xs">
-                  <span className="uppercase tracking-widest text-foreground/60">{SL.to}</span>
-                  <input type="date" value={r.to}
-                    onChange={(e) => updateStayRule(i, { to: e.target.value })}
-                    className="rounded border border-gold/40 bg-background px-2 py-1.5 text-sm text-foreground outline-none focus:border-gold" />
-                </label>
-                <label className="flex flex-col gap-1 text-xs">
-                  <span className="uppercase tracking-widest text-foreground/60">{SL.minStay}</span>
-                  <input type="number" min={1} value={r.minStay ?? ""}
-                    onChange={(e) => updateStayRule(i, { minStay: e.target.value === "" ? undefined : Number(e.target.value) })}
-                    className="w-24 rounded border border-gold/40 bg-background px-2 py-1.5 text-sm text-foreground outline-none focus:border-gold" />
-                </label>
-                <label className="flex flex-col gap-1 text-xs">
-                  <span className="uppercase tracking-widest text-foreground/60">{SL.maxStay}</span>
-                  <input type="number" min={1} value={r.maxStay ?? ""}
-                    onChange={(e) => updateStayRule(i, { maxStay: e.target.value === "" ? undefined : Number(e.target.value) })}
-                    className="w-24 rounded border border-gold/40 bg-background px-2 py-1.5 text-sm text-foreground outline-none focus:border-gold" />
-                </label>
-                <button onClick={() => removeStayRule(i)}
-                  className="rounded-full border border-red-400/60 px-3 py-1.5 text-xs uppercase tracking-widest text-red-600 transition hover:bg-red-50">
-                  {SL.remove}
-                </button>
-              </div>
-            ))}
-          </div>
-          <button onClick={addStayRule}
-            className="mt-4 rounded-full border border-gold bg-gold px-6 py-2 text-xs uppercase tracking-widest text-[#faf6ec] transition hover:bg-transparent hover:text-gold">
-            {SL.add}
-          </button>
         </section>
 
         <section>
